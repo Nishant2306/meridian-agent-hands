@@ -111,6 +111,18 @@ export class EvidenceWriter {
     });
   }
 
+  /**
+   * The conversation, kept separately from the typed event stream.
+   *
+   * Two files because they answer different questions. `events.jsonl` is what the SYSTEM did:
+   * every action, every block, every wait. `transcript.jsonl` is what was SAID: what the model was
+   * shown and what it asked for. A reviewer auditing a decision needs the second; a reviewer
+   * auditing a guardrail needs the first, and mixing them buries each in the other.
+   */
+  transcript(entry: Record<string, unknown>): void {
+    appendFileSync(join(this.runDir, 'transcript.jsonl'), JSON.stringify(entry) + LF, 'utf8');
+  }
+
   writeScreenshot(data: Buffer): string {
     this.#sequence += 1;
     const name = String(this.#sequence).padStart(4, '0') + '.png';

@@ -194,7 +194,7 @@ the pasted phase is not** (Hard Rule 7).
 | 1     | Scaffold + types + DiscoverySpec + target app                                                                                               | ✅ Complete    |
 | 2     | Surface / perception / lease - `resolveAndPerform` exists and enforces the **bootstrap safety minimum** from here onward                    | ✅ Complete    |
 | 3     | Artifact schema + profiles + store - the **final versioned condition + safety profile YAML** is written here and does not change afterwards | ✅ Complete    |
-| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ⬜ Not started |
+| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete    |
 | 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ⬜ Not started |
 | 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ⬜ Not started |
 | 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started |
@@ -208,6 +208,7 @@ the pasted phase is not** (Hard Rule 7).
 
 - `docs/STATUS.md` - what is built, how it works, and how to verify it. Updated every phase.
 - `docs/SCHEMA.md` - the annotated capability artifact. Hand-written, and machine-checked.
+- `DATA_HANDLING.md` - what leaves this process, what is written down, what is still open.
 - `DECISIONS.md` - the calls that could reasonably have gone the other way. Appended every phase.
 
 ### Deferred work (noted, not built - Hard Rule 7)
@@ -241,16 +242,25 @@ the pasted phase is not** (Hard Rule 7).
   `schemaVersion` bump): tenant overrides, locator stability scores, automatic demotion, an evidence
   policy, and any approval workflow beyond a single status flip.
 - **A step bound to an OPTIONAL parameter** needs a replay skip rule. PHASE 5. See DECISIONS.md D16.
-- **`checkResumeEligibleExclusivity` and `checkStepDiscrimination`** exist and are tested against
-  recorded observations. Wiring them into distillation is PHASE 4.
+- **A pseudonymizer for read-only sensitive nodes** at the model boundary is written up in
+  `DATA_HANDLING.md` and not built. Rule 3 forbids blind substitution, and doing it properly changes
+  what the model sees on every screen; doing that before GATE 1 would mean the first real discovery
+  run was driven against a view nobody had validated.
+- **`read_value` binds an output and emits no step**, so the distiller's read-step exemption is
+  tested directly rather than by the happy path. See DECISIONS.md D19.
 - **Materializing the effective detector set and the global policy hash into run evidence** has its
   helpers; a runner wires them in from PHASE 4 onward.
 - **The async status API** for `needs_human` is deliberately not built - see the note at the bottom
   of `src/types/run.ts`.
 - **`README.md` / `REPORT.md` / `/evidence/README.md`** are PHASE 10.
-- `npm run discover | replay | operator` currently point at `scripts/not-implemented.ts` and exit 2
+- `npm run test:fast` excludes `**/*.live.test.ts` (the browser-driven files) and nothing else.
+  `npm test` remains the full run and is what a gate requires.
+- `npm run distill:demo` runs the scripted fake client end to end and writes a real distilled
+  artifact to the throwaway `artifacts-demo/`. No model is called, and the artifact's provenance
+  says so.
+- `npm run replay | operator` currently point at `scripts/not-implemented.ts` and exit 2
   with the phase that builds them. Each is repointed at its real `src/cli/*.ts` entry point by that
-  phase. `capability:approve` is real as of PHASE 3.
+  phase. `capability:approve` is real as of PHASE 3, `discover` as of PHASE 4.
 
 ---
 
@@ -341,3 +351,29 @@ the pasted phase is not** (Hard Rule 7).
     decided. The demo in `docs/STATUS.md` was also repointed at a throwaway store, so it cannot
     leave a published version at the path discovery writes to at GATE 1.
   - **Decisions recorded**: `DECISIONS.md` D14-D18.
+
+- **PHASE 4** - Discovery and the distiller. **No real model call was made.**
+  - **Action space** (`src/agent/tools.ts`): mark ids only, no selector of any kind, `value` always
+    a ValueBinding, no `press_key`.
+  - **Conversion before acting** (`src/agent/proposal.ts`): the mandated six steps, including the
+    screen-context staleness check that re-resolution alone cannot replace.
+  - **Descriptor synthesis** (`src/agent/descriptors.ts`): interactive controls by accessible name,
+    cells by their label, a PARAMETERIZED row key preferred whenever one exists, no ordinal
+    fallback.
+  - **Verified completion** (`src/agent/completion.ts`): a FRESH observation, every declared output
+    extracted and validated against its declared type, and the record identity checked by the
+    system.
+  - **Model boundary** (`src/agent/boundary.ts`): secrets never sent, typed values shown as
+    `[PARAM:name]`, inventory capped, no screenshots, and NO blind substitution over text the model
+    read off the page. Written up in `DATA_HANDLING.md`.
+  - **Prompt** (`src/agent/prompts/v1.ts`), versioned, and deliberately silent about error states.
+  - **Distiller** (`src/artifact/distill.ts`, `path.ts`, `parameterize.ts`): segment-based path
+    reconstruction, the four-class parameterization sweep, states from observed screens, effects
+    versus invariants, profile pins written BEFORE the content hash, and a reviewability lint.
+    Fails closed throughout.
+  - **CLI**: `npm run discover`, repointed from the not-implemented stub.
+  - **Three real bugs found by tests, all silent**: a search classified as a no-op and deleted
+    (D21), row-keyed descriptors discarded because parameters were unbound during validation (D23),
+    and a literal-valued fill deriving no expected effect at all.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 209 passing (`npm run test:fast` 191 in ~5s).
+  - **Decisions recorded**: `DECISIONS.md` D19-D23.

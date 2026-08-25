@@ -15,10 +15,23 @@ import type { Observation, PerceivedControl } from '../types/perception.js';
  */
 const ROLE_COLUMN = 9;
 
-function renderControl(control: PerceivedControl): string {
+/**
+ * How a control's value is shown. Returning a replacement hides the real value.
+ *
+ * This is the hook the MODEL BOUNDARY uses: when the executor typed a declared parameter into a
+ * field, the model is shown `[PARAM:memberId]` rather than the value it already asked for. See
+ * src/agent/boundary.ts for why this only ever applies where the origin of a value is KNOWN.
+ */
+export interface InventoryRenderOptions {
+  controls?: readonly PerceivedControl[];
+  renderValue?: (control: PerceivedControl) => string | undefined;
+}
+
+function renderControl(control: PerceivedControl, options: InventoryRenderOptions): string {
   const parts = [`[${control.markId}]`, control.role.padEnd(ROLE_COLUMN), `"${control.name}"`];
 
-  if (control.value !== undefined && control.value !== '') parts.push(`= "${control.value}"`);
+  const shown = options.renderValue?.(control) ?? control.value;
+  if (shown !== undefined && shown !== '') parts.push(`= "${shown}"`);
   if (!control.enabled) parts.push('(disabled)');
   if (control.nearbyText.length > 0) {
     parts.push(`near: ${control.nearbyText.map((text) => `"${text}"`).join(' | ')}`);
@@ -27,7 +40,10 @@ function renderControl(control: PerceivedControl): string {
   return parts.join(' ');
 }
 
-export function renderInventory(observation: Observation): string {
+export function renderInventory(
+  observation: Observation,
+  options: InventoryRenderOptions = {},
+): string {
   const lines: string[] = [];
   const identity = observation.screenIdentity;
 
@@ -37,7 +53,7 @@ export function renderInventory(observation: Observation): string {
   lines.push(`path:    ${observation.perceptionPath}`);
 
   const byFrame = new Map<string, PerceivedControl[]>();
-  for (const control of observation.controls) {
+  for (const control of options.controls ?? observation.controls) {
     const key = control.contextPath.join(' > ') || '(top document)';
     const bucket = byFrame.get(key);
     if (bucket === undefined) byFrame.set(key, [control]);
@@ -47,7 +63,7 @@ export function renderInventory(observation: Observation): string {
   for (const [frame, controls] of byFrame) {
     lines.push('');
     lines.push(`frame: ${frame}`);
-    for (const control of controls) lines.push(renderControl(control));
+    for (const control of controls) lines.push(renderControl(control, options));
   }
 
   if (observation.truncation.kept < observation.truncation.perceived) {

@@ -19,8 +19,34 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, **174 tests passing across 15 files**. One of those files
-drives a real Chromium against the real fixture; the rest are fast and browser-free.
+Expect: no type errors, no lint errors, **209 tests passing across 19 files**, in about 70 seconds.
+
+### Two test commands
+
+| Command             | What it runs                                                | Time |
+| ------------------- | ----------------------------------------------------------- | ---- |
+| `npm run test:fast` | everything except the browser-driven files                  | ~10s |
+| `npm test`          | all of it, including three files that drive a real Chromium | ~70s |
+
+`test:fast` excludes `**/*.live.test.ts` and nothing else. **No test is weakened or skipped to
+achieve it** - the same assertions run, in fewer files. Use the fast one while working inside a
+phase and the full one at every gate; the browser-driven files are where perception, the input path
+and the discovery loop are actually proven, so they are not optional before a gate.
+
+### Reading real distiller output
+
+```bash
+npm run distill:demo
+```
+
+Runs the scripted happy path against the real fixture and writes a distilled artifact to the
+throwaway `artifacts-demo/`. Everything except the choice of action is genuine - real browser, real
+accessibility tree, real input path, real guardrails, real distiller - and **no model is called**.
+The artifact says so about itself: its provenance records
+`model: "scripted-fake-NO-MODEL-WAS-CALLED"`.
+
+It exists so the distiller can be examined while it is the ONLY variable. At GATE 1 the model
+becomes a variable too, and debugging two things at once is how a gate turns into an afternoon.
 
 The single most useful thing to look at:
 
@@ -385,6 +411,126 @@ distilled artifact would. See `examples/artifacts/README.md`.
 
 ---
 
+## Phase 4 - discovery and the distiller (COMPLETE)
+
+**No real model call was made in this phase.** Every behaviour below is exercised with a scripted
+fake client and no API key. The first genuine discovery run is GATE 1, at the end of PHASE 5.
+
+### What exists
+
+**The action space** (`src/agent/tools.ts`). No tool accepts a CSS selector, an XPath or
+coordinates: there is nowhere to put one. The model may reference exactly one kind of thing, a
+`markId` from the inventory it was just shown, and the system converts that into a full
+`TargetDescriptor` before anything is recorded. Mark ids never reach an artifact, and `value` is
+always the `ValueBinding` union - `{kind:'literal',value:'memberId'}` and
+`{kind:'param',name:'memberId'}` are different things, and a bare string cannot tell them apart.
+There is no `press_key` in v1.
+
+**Conversion and validation before acting** (`src/agent/proposal.ts`). Six steps, in order: look the
+mark up in the exact observation the model saw, build a descriptor, capture a FRESH observation,
+check screen-context compatibility, resolve the DESCRIPTOR through the same resolver replay uses,
+and only then act. Step 4 does more than it looks like: it proves DURING DISCOVERY that every
+descriptor about to be recorded is resolvable by the replay engine.
+
+**Descriptor synthesis** (`src/agent/descriptors.ts`). Interactive controls are identified by their
+accessible NAME; cells and text by their nearby LABEL, never by their own text. The member-name cell
+is called "Avery Lin", and identifying it that way would produce a capability that only worked for
+Avery Lin and would write a member's name into a stored artifact. A control sitting in a row keyed
+by an invocation value gets a PARAMETERIZED row key, preferred over the plain name even when the
+name resolves uniquely today: a search for one member returns one row, so "the link named Open" is
+unambiguous now and wrong on the next invocation that returns four. There is no ordinal fallback.
+
+**Verified completion** (`src/agent/completion.ts`). `propose_goal_reached` does not end the run.
+The system captures a FRESH observation, extracts every declared output from its bound source,
+validates each against its DECLARED type, and re-checks the record identity itself.
+
+**The model boundary** (`src/agent/boundary.ts`, and `DATA_HANDLING.md`).
+
+**The system prompt** (`src/agent/prompts/v1.ts`), versioned, with `promptVersion` recorded in every
+artifact. It does NOT tell the model to go looking for error states: known error semantics come from
+the reviewed condition profile and controlled fault injection, not from a model improvising what an
+error looks like.
+
+**Stopping conditions** (`src/agent/loop.ts`), all bounded and all recorded: 30 steps, 5 minutes,
+3 consecutive no-progress steps, a repeated-action loop, one tolerated parse failure, `give_up`,
+`request_human`.
+
+**The distiller** (`src/artifact/distill.ts`, `path.ts`, `parameterize.ts`). Fails closed at every
+stage: a run that cannot be distilled into something satisfying every rule produces no artifact at
+all, with the reasons listed. It has no access to a model - its only input is a
+`DiscoveryRunRecord`.
+
+### The two things worth checking closely
+
+**1. Verified completion is genuinely independent.** It takes a FRESH observation, not the cached
+one the model reasoned over - a model that has convinced itself it is finished has by construction
+been reasoning over a screen that supports that conclusion.
+
+`tests/agent.verification.test.ts` runs a discovery that does everything right **on the wrong
+member**. Every declared output extracts and validates: the member name is a real name, the account
+type is a declared enum member, the status really is `PENDING REVIEW`. The only thing wrong is the
+identity, which is precisely the failure no output check would catch. Discovery does not succeed,
+`successObservationId` stays null, and the reason names it:
+
+```
+THE RECORD ON SCREEN IS NOT THE RECORD THAT WAS REQUESTED.
+```
+
+**2. Path reconstruction is segment-based.** The tempting algorithm - "drop any action whose
+resulting state was already visited" - deletes two of three field fills, because three fills all
+leave you on the same screen. The artifact still distils and still looks plausible; replay then
+fails on Continue, several steps from the two that were quietly removed, and the failure looks
+nothing like a distiller bug.
+
+So the unit of reasoning is the SEGMENT. Within a retained segment, the ONLY thing removed is an
+action the run itself RECORDED as a no-op. `tests/agent.discovery.test.ts` asserts against a real
+scripted run that all three parameter bindings survive; `tests/artifact.distill.test.ts` tests the
+algorithm directly, including a branch the run backed out of.
+
+A third signal had to be added to make "no-op" mean something precise: `changedInventory`. Running a
+search changes neither the screen name nor the button that ran it, so on screen identity and target
+value alone a search looks like a no-op and would be deleted.
+
+### How to check it
+
+```bash
+npm test -- tests/agent.discovery.test.ts tests/agent.verification.test.ts
+```
+
+```bash
+npm test -- tests/agent.proposal.test.ts tests/artifact.distill.test.ts
+```
+
+**What each file is for.**
+
+- `agent.discovery.test.ts` - a full scripted run against the real fixture and a real browser: the
+  goal is reached and the SYSTEM declares it; the model is never shown a value it typed or any
+  secret; the model IS still shown values it read (rule 3); all three fills survive distillation;
+  the artifact carries verified pins and no runtime values; a condition the run merely MET stays out
+  of the artifact.
+- `agent.verification.test.ts` - the hallucinated completion, the wrong-member completion, and the
+  no-progress stopping condition.
+- `agent.proposal.test.ts` - conversion, including the STALE_OBSERVATION_CONTEXT case where a
+  same-named control exists on the new screen so re-resolution alone would have succeeded; row-key
+  parameterization; a value cell identified by its label rather than its value.
+- `artifact.distill.test.ts` - the segment algorithm, the parameterization sweep (four classes), and
+  the reviewability lint including the read-step exemption.
+
+**The real run**, once you have a key in `.env`:
+
+```bash
+npm run discover -- --spec config/specs/prepare_subaccount_review.yaml --goal "Find the member identified by parameter memberId, prepare the requested sub-account, and reach the review screen without submitting." --target tenant-a --inputs '{"memberId":"10001","accountType":"Savings","nickname":"Vacation","initialDeposit":"250.00"}'
+```
+
+It writes `/runs/<runId>/` with `events.jsonl`, `transcript.jsonl`, screenshots,
+`proposed-conditions.json`, `result.json` and `metrics.json`, and puts a **draft** artifact in the
+store. **That call is yours to make at GATE 1.** The fixture must be running (`npm run dev:app-a`).
+
+Sign-on is a PRECONDITION, not part of the capability: the CLI authenticates and then hands over. A
+capability that carried a credential would be a capability that could be replayed into an account.
+
+---
+
 ## Deliberately absent
 
 Not oversights. Each belongs to a later phase, and building it now would be building ahead.
@@ -400,7 +546,7 @@ Not oversights. Each belongs to a later phase, and building it now would be buil
 | Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then | 11    |
 | `README.md`, `REPORT.md`, `/evidence/README.md`                                    | 10    |
 
-`npm run discover | replay | operator` currently exit 2 and name the phase that builds them.
+`npm run replay | operator` currently exit 2 and name the phase that builds them.
 `capability:approve` is real as of PHASE 3. That is deliberate: a script that fails loudly beats one that is missing.
 
 **Also disclosed:** screenshots captured today are UNMASKED. Without OCR it is not possible to prove

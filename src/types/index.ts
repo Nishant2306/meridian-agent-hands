@@ -20,4 +20,5 @@ export * from './resolution.js';
 export * from './session.js';
 export * from './surface.js';
 export * from './proposal.js';
+export * from './discovery.js';
 export * from './normalize.js';

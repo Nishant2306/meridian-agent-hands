@@ -162,6 +162,28 @@ export function checkStepDiscrimination(
     }
   }
 
+  // EVERY expected effect must actually HOLD after the action. Requiring one DISCRIMINATING effect
+  // says the action did something; this says nothing we recorded about it is false. Without it a
+  // step can carry an assertion that was never true after the action, distil cleanly, and then
+  // fail on the first replay - and the failure looks like drift in the application rather than a
+  // defect in the recording.
+  for (const effect of step.expectedEffects) {
+    const outcome = evaluator.evaluate(effect, afterContext);
+    if (!outcome.skipped && !outcome.passed) {
+      issues.push({
+        code: 'EXPECTED_EFFECT_FALSE_AFTER_ACTION',
+        message:
+          'expected effect "' +
+          effect.id +
+          '" on step "' +
+          step.id +
+          '" is FALSE after the ' +
+          'action it is supposed to prove: ' +
+          outcome.detail,
+      });
+    }
+  }
+
   for (const invariant of step.invariants) {
     const wasTrue = evaluator.evaluate(invariant, beforeContext);
     const isTrue = evaluator.evaluate(invariant, afterContext);

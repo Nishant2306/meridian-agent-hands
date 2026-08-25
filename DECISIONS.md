@@ -339,3 +339,188 @@ never pass unremarked, whatever its merits.
 and whether the screen matched a known state, so all five rungs are expressible in one function
 rather than split between the detector layer and its callers. Tested with a screen that matches a
 recovery and a known outcome simultaneously.
+
+---
+
+## D19 - `read_value` binds an output; it does not become a step
+
+**Decision.** When the model calls `read_value`, the read goes through the input path (it is an
+action, and its result enters the output contract), the OutputBinding is recorded - and NO step is
+emitted into the artifact.
+
+**Why.** PHASE 3 established that an output belongs to a STATE, not to a step position, so that
+extraction stays valid when a HUMAN reached the state during a handoff or a recovery made the step
+sequence differ from the recorded one. Replay extracts outputs from `output.source`, so a read step
+in the step list would be executed for a value the engine is going to read from the state anyway.
+
+**Cost, stated plainly.** The distiller's read-step handling - no transition required, exempt from
+the discriminating-effect rule - is therefore not exercised by the happy path. It is tested
+directly in `tests/artifact.distill.test.ts` instead. The rule has to exist because `Step` admits a
+`read` action and replay must handle one; it is simply not what THIS capability produces.
+
+---
+
+## D20 - `give_up` is `needs_human`, not a failure
+
+**Decision.** `request_human` and `give_up` both terminate the run with `status: 'needs_human'`.
+They differ only in the recorded reason.
+
+**Why.** There is no ErrorCode that honestly describes "the model could not see a way forward". The
+closest candidates all mean something else: `UNKNOWN` says we do not know what happened when we do,
+and `PRECONDITION_FAILED` says something specific we did not check. Meanwhile `needs_human` is
+operationally exact - the automation could not proceed and the correct next actor is a person.
+
+**What it costs.** A model that gives up too readily shows up as intervention volume rather than as
+an error rate. That is the right place for it: it is a quality problem, not an outage.
+
+---
+
+## D21 - `changedInventory`, the third change signal
+
+**Decision.** A step is recorded as a no-op only when the screen identity, the target control's
+value, AND the set of controls on screen are all unchanged.
+
+**Why.** Screen identity and target value between them cannot see a SEARCH. Running a query leaves
+the screen name the same and the button the same; the only thing that moves is the content that came
+back. With two signals a search is classified a no-op, and since recorded no-ops are the one thing
+the distiller is allowed to delete from a retained segment, the search would be deleted from the
+capability - and replay would then try to open a result row on a screen that never ran the query.
+
+Found by writing the happy-path test, not by reasoning about it.
+
+---
+
+## D22 - Every tool call in a model turn shares one source observation
+
+**Decision.** All tool calls returned in a single model turn are converted against the SAME
+observation: the one the model was holding when it produced them. `shown` advances for the next
+turn, not mid-batch.
+
+**Why.** A model that returns two calls in one turn formed both against one inventory. Re-reading
+the current screen between them would validate the second call against a screen the model never saw,
+and its mark ids would be silently reinterpreted against a different numbering.
+
+**Consequence, and it is the desirable one.** If the first call changes the screen, the second is
+correctly rejected with `STALE_OBSERVATION_CONTEXT` and fed back. That is the check doing exactly
+what it exists for, in the most likely case where it matters.
+
+---
+
+## D23 - A descriptor is validated with its parameters BOUND
+
+**Decision.** When descriptor synthesis tests whether a candidate resolves uniquely, it binds the
+invocation's values first.
+
+**Why.** A parameterized row key is `{ kind: 'param' }`, and the resolver refuses to resolve one
+rather than guessing. Without binding, EVERY row-keyed candidate fails validation and is silently
+discarded in favour of a weaker descriptor that happens to work on this one screen - so the search
+result link would have been recorded as "the link named Open", which is unambiguous for a search
+returning one row and wrong for the next invocation that returns four.
+
+The failure mode was silent: the artifact still distilled, still validated, and was still wrong.
+
+---
+
+## D24 - `test:fast` splits by naming convention, not by tag
+
+**Decision.** Browser-driven test files are named `*.live.test.ts`. `npm run test:fast` excludes
+that glob; `npm test` runs everything.
+
+**Why a file naming convention** rather than per-test tags or a vitest workspace: the split is
+visible in `ls`. A reviewer can see which three files need a browser without reading a config, and
+a new browser-driven test is opted in by its filename rather than by remembering to tag it. The
+cost is that a file is all-or-nothing, which is the right granularity here - a file that boots a
+browser pays that cost once for every test in it anyway.
+
+**What it must never become.** `test:fast` excludes FILES. It does not skip, weaken or shorten a
+single assertion, and the browser-driven files are where perception, the input path and the
+discovery loop are actually proven. A gate requires `npm test`.
+
+---
+
+## D25 - Three defects found by looking at real distiller output
+
+`npm run distill:demo` exists so the distiller can be read while it is the only variable. It earned
+that on its first run, and all three of these would have been much harder to see at GATE 1 with a
+real model also in play.
+
+**1. Risk was decided by whether a field happened to have a name.** `stepRisk` asked the safety
+profile first for any NAMED control. Typing into the search box - which has a real `<label for>`,
+so it is named "Member ID", which matches no risk phrase - fell through to `defaultRisk` and came
+out RISKY_REVERSIBLE, while typing into the unnamed nickname box beside it came out
+SAFE_REVERSIBLE. Same kind of action, opposite classification, decided by an accident of markup.
+
+Now the ACTION decides first: filling a field on an unsubmitted form is SAFE_REVERSIBLE whatever
+the field is called, and a CLICK is where the profile's opinion of the control name governs,
+because a click is the action that can do anything.
+
+**2. Three consecutive steps called `step-5-type`, `step-6-type`, `step-7-type`.** The step id fell
+back to the action type whenever the control had no accessible name - which on this application is
+every form field. Now it falls back to the nearby LABEL first, giving `step-6-nickname-optional`.
+Cosmetic, and it is the difference between an artifact a reviewer can skim and one they have to
+decode.
+
+**3. An expected effect that was FALSE after the action.** The click that opens a member record
+navigates away from the results row, so the "Open" link is gone afterwards - and the distiller was
+deriving `control_visible` on it, asserting the opposite of what had been observed. It distilled
+cleanly because the discriminating-effect rule only requires that ONE effect flips false-to-true,
+and the screen-identity effect did.
+
+Two fixes, because the second one is the general case:
+
+- the bogus derivation is gone
+- `checkStepDiscrimination` now requires that EVERY expected effect HOLDS after the action
+
+The general rule matters more than the specific bug. Requiring one discriminating effect says the
+action did something; requiring all of them to hold says nothing we recorded about it is false.
+Without the second, a step can carry an assertion that was never true, distil cleanly, and fail on
+the first replay - where it reads as drift in the application rather than a defect in the recording.
+
+---
+
+## D26 - `recordedTier` describes the DESCRIPTOR, not the screen it was recorded on
+
+**Decision.** A descriptor carrying a `rowKey` records `T5_STRUCTURAL_ROW`, whatever tier the
+cascade happened to fire on when it was built.
+
+**Why.** A search for one member returns one row. Role-plus-name resolves the "Open" link uniquely
+on that screen, so the cascade reports `T1_EXACT_ROLE_NAME` - while the row key, which is the only
+thing separating those links when four come back, did no work at all.
+
+Recording T1 there is wrong **in the direction that looks fine.** `recordedTier` is what replay
+compares its own tier against to raise a drift signal, so claiming the strongest tier when a weaker
+one is what the descriptor actually relies on means a genuine downgrade later reads as normal
+operation. Drift detection that fails silently is worse than none, because it is trusted.
+
+**The general form of the rule:** the recorded tier is a statement about which EVIDENCE the
+descriptor depends on. It is not a measurement of how many rows a particular screen happened to
+have on the day it was recorded.
+
+**Noted while fixing it, not changed.** The resolver still tries T1 before T5, so on a single-row
+results screen a row-keyed descriptor resolves by name without the row key being checked. If the
+application ever returned a different single member than the one requested, that resolution would
+succeed on the wrong row - and be caught one step later by the record-identity invariant on the
+member-details state. Making `rowKey` a constraint on every tier rather than a tier of its own is
+the cleaner fix, and it changes resolver semantics that PHASE 2 tests pin, so it is not something
+to do in passing.
+
+---
+
+## D27 - `intent` is the model's account; `notes` is the system's
+
+**Decision.** `intent` carries the MODEL's reason for choosing a control. `notes` carries the
+RESOLVER's account of how the control was identified and which tier recorded it, and is OMITTED
+when it would only restate the intent.
+
+**Why.** They were the same string on all eight steps, which made `notes` pure noise in the first
+document a reviewer reads. But the fix is not simply to delete the field: there genuinely are two
+different things to say, from two different actors, and a reviewer needs both.
+
+```
+intent: "Open the member record from the results row for the member we were asked about."
+notes:  "Identified by accessible name \"Open\" within the row identified by {{memberId}},
+         recorded at T5_STRUCTURAL_ROW."
+```
+
+The first says what the step is FOR. The second says whether it will still find the right control
+next week. Reviewing a capability needs both questions answered, and neither answers the other.

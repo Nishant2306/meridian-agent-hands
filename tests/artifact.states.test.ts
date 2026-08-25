@@ -173,6 +173,35 @@ describe('step rules, checked against real before/after observations', () => {
     expect(issues.map((issue) => issue.code)).toContain('NO_DISCRIMINATING_EFFECT');
   });
 
+  it('[MUST] rejects an expected effect that is FALSE after the action', () => {
+    // Requiring one DISCRIMINATING effect says the action did something. This says nothing we
+    // recorded about it is false. Without it a step can carry an assertion that was never true
+    // after the action, distil cleanly, and fail on the first replay - where it looks like drift
+    // in the application rather than a defect in the recording.
+    const wrong = {
+      ...step8,
+      expectedEffects: [
+        ...step8.expectedEffects,
+        {
+          id: 'still-on-the-form',
+          kind: 'screen_identity' as const,
+          expected: { kind: 'literal' as const, value: 'New Sub-Account' },
+          description: 'we are still on the form, which we are not',
+        },
+      ],
+    };
+
+    const issues = checkStepDiscrimination(
+      wrong,
+      before,
+      after,
+      evaluator,
+      PARAMS,
+      artifact.inputs,
+    );
+    expect(issues.map((issue) => issue.code)).toContain('EXPECTED_EFFECT_FALSE_AFTER_ACTION');
+  });
+
   it('[MUST] rejects an invariant that is really an effect', () => {
     const mislabelled = {
       ...step8,
