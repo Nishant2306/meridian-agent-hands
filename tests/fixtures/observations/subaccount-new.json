@@ -1,0 +1,849 @@
+{
+  "observationId": "8f90cae2-1cb0-46f7-bcf1-a56ce2746a45",
+  "surfaceId": "playwright-web",
+  "capturedAt": "2026-08-23T23:11:46.401Z",
+  "perceptionPath": "cdp_ax",
+  "screenIdentity": {
+    "title": "MERIDIAN Core Servicing - MERIDIAN Core Servicing",
+    "canonicalScreenName": "New Sub-Account",
+    "contextPaths": [
+      [],
+      [
+        "navFrame"
+      ],
+      [
+        "contentFrame"
+      ]
+    ],
+    "headings": [
+      "Servicing",
+      "New Sub-Account"
+    ],
+    "versionMarker": "MERIDIAN Core v3.2.1",
+    "url": "http://127.0.0.1:64452/app"
+  },
+  "controls": [
+    {
+      "markId": 1,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 1279,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 2,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 1279,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 3,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 689.5,
+        "width": 1279,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 4,
+      "role": "cell",
+      "name": "Navigation",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 53,
+        "width": 194,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 5,
+      "role": "cell",
+      "name": "Content",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 205,
+        "y": 53,
+        "width": 784,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 6,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 189,
+        "height": 31
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 7,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 31.5,
+        "width": 189,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 8,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 155.96875,
+        "width": 189,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 9,
+      "role": "heading",
+      "name": "Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 79.734375,
+        "width": 126.5625,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 10,
+      "role": "link",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 51,
+        "y": 121.46875,
+        "width": 86.5625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "listitem"
+        },
+        {
+          "role": "list"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 11,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 779,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 12,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 779,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 13,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 257.96875,
+        "width": 779,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 14,
+      "role": "heading",
+      "name": "New Sub-Account",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 67.734375,
+        "width": 355.3125,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "New Sub-Account Member Name: Avery Lin (10001) Account Type Select an account typeSavingsChecking Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 15,
+      "role": "text",
+      "name": "Member Name: Avery Lin (10001)",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 109.46875,
+        "width": 355.3125,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "New Sub-Account Member Name: Avery Lin (10001) Account Type Select an account typeSavingsChecking Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 16,
+      "role": "cell",
+      "name": "Account Type",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 133.46875,
+        "width": 122.3125,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Type",
+        "Select an account typeSavingsChecking"
+      ]
+    },
+    {
+      "markId": 17,
+      "role": "cell",
+      "name": "Nickname (optional)",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 160.46875,
+        "width": 122.3125,
+        "height": 29
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 18,
+      "role": "cell",
+      "name": "Initial Deposit",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 189.46875,
+        "width": 122.3125,
+        "height": 29
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Initial Deposit"
+      ]
+    },
+    {
+      "markId": 19,
+      "role": "combobox",
+      "name": "",
+      "value": "Select an account type",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Type",
+        "New Sub-Account"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$ddlAccountType"
+      },
+      "box": {
+        "x": 133.3125,
+        "y": 137.46875,
+        "width": 157,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Type",
+        "Select an account typeSavingsChecking"
+      ]
+    },
+    {
+      "markId": 20,
+      "role": "textbox",
+      "name": "",
+      "value": "",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Nickname (optional)",
+        "New Sub-Account"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$txtNickname"
+      },
+      "box": {
+        "x": 133.3125,
+        "y": 164.46875,
+        "width": 233,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 21,
+      "role": "textbox",
+      "name": "",
+      "value": "",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Initial Deposit",
+        "New Sub-Account"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$txtInitialDeposit"
+      },
+      "box": {
+        "x": 133.3125,
+        "y": 193.46875,
+        "width": 135,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Initial Deposit"
+      ]
+    },
+    {
+      "markId": 22,
+      "role": "button",
+      "name": "Continue",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "New Sub-Account"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$btnContinue"
+      },
+      "box": {
+        "x": 133.3125,
+        "y": 222.46875,
+        "width": 69.359375,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Continue"
+      ]
+    }
+  ],
+  "truncation": {
+    "perceived": 22,
+    "kept": 22,
+    "droppedByPriority": []
+  }
+}

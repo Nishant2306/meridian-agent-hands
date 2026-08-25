@@ -1,0 +1,115 @@
+# DiscoverySpec - the DECLARED half of the capability contract.
+#
+# A human writes this file. It says WHAT the capability takes, WHAT it must produce, which
+# parameter identifies the record, and which condition/safety profiles govern it. It says nothing
+# about WHERE any of that lives on screen - discovery finds that and binds it.
+#
+# Its SHA-256 (canonicalized, see src/config/spec.ts) is the specHash pinned into every artifact
+# built from it.
+#
+# NOTE: every `example` below is obviously synthetic and is deliberately chosen NOT to collide with
+# any value used in an evidence run (member 00000 does not exist in the fixture seed data).
+
+capabilityId: prepare_subaccount_review
+name: Prepare sub-account review
+description: >-
+  Open a member record in MERIDIAN Core Servicing, complete the new sub-account form, and advance to
+  the review screen. The request is NEVER submitted: the capability's whole purpose is to leave a
+  fully prepared, human-reviewable request in place.
+
+goalTemplate: >-
+  In MERIDIAN Core Servicing, find member {{memberId}} and prepare a new sub-account request for
+  them of type {{accountType}} with nickname {{nickname}} and an initial deposit of
+  {{initialDeposit}}. Advance to the review screen and stop there. Do not submit the request.
+
+target:
+  product: MERIDIAN Core Servicing
+  entryPoint: http://localhost:4180/
+  compatibility:
+    versionRange: '>=3.2.0 <4.0.0'
+
+inputs:
+  - name: memberId
+    type: string
+    pattern: '^[0-9]{5}$'
+    required: true
+    sensitivity: pii
+    description: Five-digit member identifier used to locate the member record.
+    example: '00000'
+
+  - name: accountType
+    type: enum
+    values:
+      - Savings
+      - Checking
+    required: true
+    sensitivity: public
+    description: Which kind of sub-account to prepare.
+    example: Savings
+
+  - name: nickname
+    type: string
+    required: false
+    sensitivity: pii
+    description: >-
+      Optional display label for the sub-account. Optional on purpose: assertions that reference it
+      must be guarded with `when.paramPresent`, or every no-nickname invocation fails.
+    example: EXAMPLE-NOT-REAL
+
+  - name: initialDeposit
+    type: currency
+    required: true
+    sensitivity: pii
+    description: Opening deposit amount. Compared in minor units, never as a string.
+    example: '$1,234.56'
+
+outputs:
+  - name: memberName
+    type: string
+    sensitivity: pii
+    required: true
+    when: success
+    description: The member identity displayed on the prepared request, as shown by the application.
+
+  - name: accountType
+    type: enum
+    values:
+      - Savings
+      - Checking
+    sensitivity: public
+    required: true
+    when: success
+    description: The account type shown on the review screen, read back from the application.
+
+  - name: reviewStatus
+    type: enum
+    values:
+      - PENDING REVIEW
+    sensitivity: public
+    required: true
+    when: success
+    description: The status the application reports for the prepared, unsubmitted request.
+
+recordIdentity:
+  param: memberId
+  description: displayed member identity
+
+# Optional labels the model MAY propose for the screens it reaches. Suggestions for legibility,
+# not a state machine, and not a constraint on the path discovery finds.
+logicalStates:
+  - login
+  - member_search
+  - search_results
+  - member_detail
+  - subaccount_form
+  - subaccount_review
+
+# Referenced by id + version only. The SHA-256 of each profile's content is pinned into the
+# artifact during DISTILLATION, never here. See CLAUDE.md clarification 1.
+conditionProfile:
+  id: meridian-subaccount
+  version: 1.0.0
+
+safetyProfile:
+  id: banking-default
+  version: 1.0.0

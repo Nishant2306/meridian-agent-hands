@@ -1,0 +1,116 @@
+# SAFETY PROFILE - banking-default 1.0.0
+#
+# ==============================================================================================
+# THIS FILE IS IMMUTABLE. See the same banner in the condition profile.
+# ==============================================================================================
+# Finalized in PHASE 3. Its SHA-256 is pinned into every artifact and is part of the artifact
+# content hash. A change means a NEW VERSION FILE, never an edit.
+#
+# ------------------------------------------------------------------------------------------------
+# WHY THERE IS NO REGEX IN THIS FILE
+# ------------------------------------------------------------------------------------------------
+# Every pattern below is a PHRASE, matched case-insensitively on word boundaries against normalized
+# text. Not a regular expression. Two reasons:
+#   - a safety rule that a reviewer cannot read is not a safety rule
+#   - an over-permissive pattern in THIS file fails open, and failing open is the one failure mode
+#     this profile exists to prevent
+# The matching rule is implemented once, in src/artifact/phrases.ts, and is tested.
+#
+# ------------------------------------------------------------------------------------------------
+# RELATIONSHIP TO THE BOOTSTRAP MINIMUM
+# ------------------------------------------------------------------------------------------------
+# src/surface/bootstrap-policy.ts hardcodes a minimum that is active from PHASE 2 onward, because
+# GATE 1 runs a real model before the policy engine exists. PHASE 7 replaces that minimum with an
+# engine driven by THIS file - alongside the minimum, never instead of it. A test asserts that
+# every control the bootstrap minimum refuses is also refused by this profile, so PHASE 7 cannot
+# accidentally ship a weaker rule than PHASE 2 already had.
+
+id: banking-default
+version: 1.0.0
+description: >-
+  The default safety posture for retail banking servicing software: what may never be clicked, what
+  may never be clicked ON A PARTICULAR SCREEN, and how to classify the risk of anything else.
+
+# ------------------------------------------------------------------------------------------------
+# IRREVERSIBLE CONTROLS - never actionable by automation, on any screen, under any policy.
+#
+# Matched against the RESOLVED control's accessible name, which is why the check runs after
+# resolution: no policy can classify "click Delete Member" before it knows what resolved.
+# ------------------------------------------------------------------------------------------------
+irreversibleControls:
+  - phrase: 'submit request'
+    why: 'Commits the prepared request. Cannot be undone from inside the application.'
+  - phrase: 'delete'
+    why: 'Destroys a record.'
+  - phrase: 'remove'
+    why: 'Destroys an association. Frequently unrecoverable in servicing software.'
+  - phrase: 'close account'
+    why: 'Terminates an account. Reopening is a different, manual process.'
+  - phrase: 'transfer'
+    why: 'Moves money.'
+  - phrase: 'wire'
+    why: 'Moves money, usually irrevocably once released.'
+  - phrase: 'approve'
+    why: 'Exercises an authority the automation does not hold.'
+  - phrase: 'authorize'
+    why: 'Exercises an authority the automation does not hold.'
+  - phrase: 'post transaction'
+    why: 'Writes to the ledger.'
+
+# ------------------------------------------------------------------------------------------------
+# CONTEXTUAL DENY - controls that are safe on one screen and a commit on another.
+#
+# This is the rule that pure name matching cannot express. "Continue" advances a form; on a screen
+# whose whole purpose is confirmation, the same word means "do it".
+# ------------------------------------------------------------------------------------------------
+contextualDeny:
+  - id: continue-on-a-confirmation-screen
+    screenPhrase: 'review'
+    controlPhrase: 'continue'
+    why: >-
+      On a form, Continue advances. On a review or confirmation screen, Continue IS the commit. The
+      control name is identical; only the screen tells them apart.
+  - id: continue-on-a-confirm-screen
+    screenPhrase: 'confirm'
+    controlPhrase: 'continue'
+    why: 'Same rule, for applications that label the screen Confirm rather than Review.'
+  - id: export-from-a-member-screen
+    screenPhrase: 'member'
+    controlPhrase: 'export'
+    why: >-
+      Exporting from a screen showing member data moves PII out of the application, where none of
+      this system redaction applies to it any more.
+
+# ------------------------------------------------------------------------------------------------
+# RISK RULES - how to classify anything not outright denied.
+#
+# `defaultRisk` is RISKY_REVERSIBLE on purpose. An unrecognised control is assumed to change
+# something. Defaulting to SAFE_REVERSIBLE would mean every control nobody thought about is treated
+# as harmless, which is precisely backwards.
+# ------------------------------------------------------------------------------------------------
+defaultRisk: RISKY_REVERSIBLE
+
+riskRules:
+  - id: read-only-navigation
+    risk: SAFE_REVERSIBLE
+    phrases: ['search', 'open', 'back', 'cancel', 'member search', 'log in', 'view', 'refresh']
+    why: 'Queries and navigation. Changes nothing a person would have to undo.'
+  - id: draft-amendment
+    risk: RISKY_REVERSIBLE
+    phrases: ['continue', 'save draft', 'apply', 'add', 'update']
+    why: >-
+      Creates or amends an unsubmitted draft. A person can discard it, so it is reversible, but it
+      is not nothing: it leaves state behind that somebody has to look at.
+
+# ------------------------------------------------------------------------------------------------
+# GLOBAL POLICY CEILING
+#
+# A capability may make its own policy STRICTER than this. It may never make it weaker: approval
+# refuses an artifact that tries, and at run time the effective policy is the strictest of every
+# layer. The global ceiling may also tighten over time, and when it does it overrides capabilities
+# that were approved under a looser one.
+# ------------------------------------------------------------------------------------------------
+policy:
+  maxRiskAllowed: RISKY_REVERSIBLE
+  maxSteps: 60
+  maxDurationMs: 300000

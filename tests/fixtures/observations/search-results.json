@@ -1,0 +1,1778 @@
+{
+  "observationId": "02cd26d4-ab85-4700-bbd8-7e9515782420",
+  "surfaceId": "playwright-web",
+  "capturedAt": "2026-08-23T23:11:45.765Z",
+  "perceptionPath": "cdp_ax",
+  "screenIdentity": {
+    "title": "MERIDIAN Core Servicing - MERIDIAN Core Servicing",
+    "canonicalScreenName": "Member Search",
+    "contextPaths": [
+      [],
+      [
+        "navFrame"
+      ],
+      [
+        "contentFrame"
+      ]
+    ],
+    "headings": [
+      "Servicing",
+      "Member Search",
+      "Search Results"
+    ],
+    "versionMarker": "MERIDIAN Core v3.2.1",
+    "url": "http://127.0.0.1:64452/app"
+  },
+  "controls": [
+    {
+      "markId": 1,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 1279,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 2,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 1279,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 3,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 689.5,
+        "width": 1279,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 4,
+      "role": "cell",
+      "name": "Navigation",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 53,
+        "width": 194,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 5,
+      "role": "cell",
+      "name": "Content",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 205,
+        "y": 53,
+        "width": 784,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 6,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 189,
+        "height": 31
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 7,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 31.5,
+        "width": 189,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 8,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 155.96875,
+        "width": 189,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 9,
+      "role": "heading",
+      "name": "Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 79.734375,
+        "width": 126.5625,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 10,
+      "role": "link",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 51,
+        "y": 121.46875,
+        "width": 86.5625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "listitem"
+        },
+        {
+          "role": "list"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 11,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 779,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 12,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 779,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 13,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 307.34375,
+        "width": 779,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 14,
+      "role": "heading",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 67.734375,
+        "width": 306.859375,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Search Member ID Search Search Results"
+      ]
+    },
+    {
+      "markId": 15,
+      "role": "heading",
+      "name": "Search Results",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Member Search"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 152.15625,
+        "width": 306.859375,
+        "height": 20
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Search Member ID Search Search Results"
+      ]
+    },
+    {
+      "markId": 16,
+      "role": "cell",
+      "name": "10001",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 208.34375,
+        "width": 85.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001",
+        "Avery Lin",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 17,
+      "role": "cell",
+      "name": "Avery Lin",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10001",
+        "Name",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 97.234375,
+        "y": 208.34375,
+        "width": 95.015625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001",
+        "Avery Lin",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 18,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Avery Lin",
+        "Status",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 192.25,
+        "y": 208.34375,
+        "width": 56.5625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001",
+        "Avery Lin",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 19,
+      "role": "cell",
+      "name": "10002",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 230.34375,
+        "width": 85.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10002",
+        "Jordan Reyes",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 20,
+      "role": "cell",
+      "name": "Jordan Reyes",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10002",
+        "Name",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 97.234375,
+        "y": 230.34375,
+        "width": 95.015625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10002",
+        "Jordan Reyes",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 21,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Jordan Reyes",
+        "Status",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 192.25,
+        "y": 230.34375,
+        "width": 56.5625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10002",
+        "Jordan Reyes",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 22,
+      "role": "cell",
+      "name": "10003",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 252.34375,
+        "width": 85.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10003",
+        "Casey Morgan",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 23,
+      "role": "cell",
+      "name": "Casey Morgan",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10003",
+        "Name",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 97.234375,
+        "y": 252.34375,
+        "width": 95.015625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10003",
+        "Casey Morgan",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 24,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Casey Morgan",
+        "Status",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 192.25,
+        "y": 252.34375,
+        "width": 56.5625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10003",
+        "Casey Morgan",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 25,
+      "role": "cell",
+      "name": "10004",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 274.34375,
+        "width": 85.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10004",
+        "Riley Chen",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 26,
+      "role": "cell",
+      "name": "Riley Chen",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10004",
+        "Name",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 97.234375,
+        "y": 274.34375,
+        "width": 95.015625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10004",
+        "Riley Chen",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 27,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Riley Chen",
+        "Status",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 192.25,
+        "y": 274.34375,
+        "width": 56.5625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10004",
+        "Riley Chen",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 28,
+      "role": "cell",
+      "name": "Member ID",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Search"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 109.46875,
+        "width": 71.609375,
+        "height": 29
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Search"
+      ]
+    },
+    {
+      "markId": 29,
+      "role": "cell",
+      "name": "Member ID",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 186.34375,
+        "width": 85.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Name",
+        "Status",
+        "Action"
+      ]
+    },
+    {
+      "markId": 30,
+      "role": "cell",
+      "name": "Name",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Name",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 97.234375,
+        "y": 186.34375,
+        "width": 95.015625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Name",
+        "Status",
+        "Action"
+      ]
+    },
+    {
+      "markId": 31,
+      "role": "cell",
+      "name": "Status",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Name",
+        "Status",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 192.25,
+        "y": 186.34375,
+        "width": 56.5625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Name",
+        "Status",
+        "Action"
+      ]
+    },
+    {
+      "markId": 32,
+      "role": "cell",
+      "name": "Action",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Status",
+        "Action",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 248.8125,
+        "y": 186.34375,
+        "width": 56.171875,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Name",
+        "Status",
+        "Action"
+      ]
+    },
+    {
+      "markId": 33,
+      "role": "link",
+      "name": "Open",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Active",
+        "Action",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 257.3125,
+        "y": 212.84375,
+        "width": 29.03125,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "10001",
+        "Avery Lin",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 34,
+      "role": "link",
+      "name": "Open",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Active",
+        "Action",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 257.3125,
+        "y": 234.84375,
+        "width": 29.03125,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "10002",
+        "Jordan Reyes",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 35,
+      "role": "link",
+      "name": "Open",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Active",
+        "Action",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 257.3125,
+        "y": 256.84375,
+        "width": 29.03125,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "10003",
+        "Casey Morgan",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 36,
+      "role": "link",
+      "name": "Open",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Active",
+        "Action",
+        "Search Results"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 257.3125,
+        "y": 278.84375,
+        "width": 29.03125,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "10004",
+        "Riley Chen",
+        "Active",
+        "Open"
+      ]
+    },
+    {
+      "markId": 37,
+      "role": "textbox",
+      "name": "Member ID",
+      "value": "1000",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Member Search"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$txtMemberId"
+      },
+      "box": {
+        "x": 82.609375,
+        "y": 113.46875,
+        "width": 177,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Search"
+      ]
+    },
+    {
+      "markId": 38,
+      "role": "button",
+      "name": "Search",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Member Search"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$btnSearch"
+      },
+      "box": {
+        "x": 259.609375,
+        "y": 113.46875,
+        "width": 58.25,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "Search"
+      ]
+    }
+  ],
+  "truncation": {
+    "perceived": 38,
+    "kept": 38,
+    "droppedByPriority": []
+  }
+}

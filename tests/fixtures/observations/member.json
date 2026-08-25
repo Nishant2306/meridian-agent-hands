@@ -1,0 +1,1464 @@
+{
+  "observationId": "233c9e6a-1a49-4aff-9ed2-18ab0e124c77",
+  "surfaceId": "playwright-web",
+  "capturedAt": "2026-08-23T23:11:46.055Z",
+  "perceptionPath": "cdp_ax",
+  "screenIdentity": {
+    "title": "MERIDIAN Core Servicing - MERIDIAN Core Servicing",
+    "canonicalScreenName": "Member Record",
+    "contextPaths": [
+      [],
+      [
+        "navFrame"
+      ],
+      [
+        "contentFrame"
+      ]
+    ],
+    "headings": [
+      "Servicing",
+      "Member Record",
+      "Accounts"
+    ],
+    "versionMarker": "MERIDIAN Core v3.2.1",
+    "url": "http://127.0.0.1:64452/app"
+  },
+  "controls": [
+    {
+      "markId": 1,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 1279,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 2,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 1279,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 3,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 689.5,
+        "width": 1279,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 4,
+      "role": "cell",
+      "name": "Navigation",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 53,
+        "width": 194,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 5,
+      "role": "cell",
+      "name": "Content",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 205,
+        "y": 53,
+        "width": 784,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 6,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 189,
+        "height": 31
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 7,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 31.5,
+        "width": 189,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 8,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 155.96875,
+        "width": 189,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 9,
+      "role": "heading",
+      "name": "Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 79.734375,
+        "width": 126.5625,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 10,
+      "role": "link",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 51,
+        "y": 121.46875,
+        "width": 86.5625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "listitem"
+        },
+        {
+          "role": "list"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 11,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 779,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 12,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 779,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 13,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 353.34375,
+        "width": 779,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 14,
+      "role": "heading",
+      "name": "Member Record",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 67.734375,
+        "width": 268.96875,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Member ID 10001 Member Name Avery Lin Status Active Data Class DUMMY DATA - NOT R"
+      ]
+    },
+    {
+      "markId": 15,
+      "role": "heading",
+      "name": "Accounts",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 207.15625,
+        "width": 268.96875,
+        "height": 20
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Member ID 10001 Member Name Avery Lin Status Active Data Class DUMMY DATA - NOT R"
+      ]
+    },
+    {
+      "markId": 16,
+      "role": "link",
+      "name": "New Sub-Account",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 318.84375,
+        "width": 97.625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Member ID 10001 Member Name Avery Lin Status Active Data Class DUMMY DATA - NOT R"
+      ]
+    },
+    {
+      "markId": 17,
+      "role": "cell",
+      "name": "Member ID",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 109.46875,
+        "width": 90.578125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "10001"
+      ]
+    },
+    {
+      "markId": 18,
+      "role": "cell",
+      "name": "10001",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 101.578125,
+        "y": 109.46875,
+        "width": 142.953125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "10001"
+      ]
+    },
+    {
+      "markId": 19,
+      "role": "cell",
+      "name": "Member Name",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 130.46875,
+        "width": 90.578125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "Avery Lin"
+      ]
+    },
+    {
+      "markId": 20,
+      "role": "cell",
+      "name": "Avery Lin",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Name",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 101.578125,
+        "y": 130.46875,
+        "width": 142.953125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "Avery Lin"
+      ]
+    },
+    {
+      "markId": 21,
+      "role": "cell",
+      "name": "Status",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 151.46875,
+        "width": 90.578125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "Active"
+      ]
+    },
+    {
+      "markId": 22,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Status",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 101.578125,
+        "y": 151.46875,
+        "width": 142.953125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "Active"
+      ]
+    },
+    {
+      "markId": 23,
+      "role": "cell",
+      "name": "Data Class",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 172.46875,
+        "width": 90.578125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Data Class",
+        "DUMMY DATA - NOT REAL"
+      ]
+    },
+    {
+      "markId": 24,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Data Class",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 101.578125,
+        "y": 172.46875,
+        "width": 142.953125,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Data Class",
+        "DUMMY DATA - NOT REAL"
+      ]
+    },
+    {
+      "markId": 25,
+      "role": "cell",
+      "name": "10001-01",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 263.34375,
+        "width": 119.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-01",
+        "Checking",
+        "$4,123.55"
+      ]
+    },
+    {
+      "markId": 26,
+      "role": "cell",
+      "name": "Checking",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10001-01",
+        "Type",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 131.234375,
+        "y": 263.34375,
+        "width": 67.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-01",
+        "Checking",
+        "$4,123.55"
+      ]
+    },
+    {
+      "markId": 27,
+      "role": "cell",
+      "name": "$4,123.55",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Checking",
+        "Balance",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 198.515625,
+        "y": 263.34375,
+        "width": 80.953125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-01",
+        "Checking",
+        "$4,123.55"
+      ]
+    },
+    {
+      "markId": 28,
+      "role": "cell",
+      "name": "10001-02",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 285.34375,
+        "width": 119.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-02",
+        "Savings",
+        "$18,750.00"
+      ]
+    },
+    {
+      "markId": 29,
+      "role": "cell",
+      "name": "Savings",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "10001-02",
+        "Type",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 131.234375,
+        "y": 285.34375,
+        "width": 67.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-02",
+        "Savings",
+        "$18,750.00"
+      ]
+    },
+    {
+      "markId": 30,
+      "role": "cell",
+      "name": "$18,750.00",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Savings",
+        "Balance",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 198.515625,
+        "y": 285.34375,
+        "width": 80.953125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "10001-02",
+        "Savings",
+        "$18,750.00"
+      ]
+    },
+    {
+      "markId": 31,
+      "role": "cell",
+      "name": "Account Number",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 241.34375,
+        "width": 119.734375,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    },
+    {
+      "markId": 32,
+      "role": "cell",
+      "name": "Type",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Type",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 131.234375,
+        "y": 241.34375,
+        "width": 67.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    },
+    {
+      "markId": 33,
+      "role": "cell",
+      "name": "Balance",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Type",
+        "Balance",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 198.515625,
+        "y": 241.34375,
+        "width": 80.953125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    }
+  ],
+  "truncation": {
+    "perceived": 33,
+    "kept": 33,
+    "droppedByPriority": []
+  }
+}

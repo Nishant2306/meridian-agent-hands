@@ -1,0 +1,118 @@
+# CONDITION PROFILE - meridian-subaccount 1.0.0
+#
+# ==============================================================================================
+# THIS FILE IS IMMUTABLE.
+# ==============================================================================================
+# It was finalized in PHASE 3. Its SHA-256 is pinned into every artifact distilled against it, and
+# that pin is part of the artifact content hash. Editing this file - including editing a comment -
+# invalidates every pinned hash and every artifact that referenced it, and replay will refuse to
+# run with PROFILE_INTEGRITY_FAILURE. A change means a NEW VERSION FILE, never an edit.
+#
+# ==============================================================================================
+# ORDERING HAZARD - READ THIS BEFORE PHASE 6.
+# ==============================================================================================
+# Most of the screens these detectors match DO NOT EXIST YET. They arrive in PHASE 6, along with
+# fault injection in the fixture. The profile is nevertheless finalized NOW, because its hash has
+# to be pinnable before any artifact is distilled.
+#
+# Therefore: THE PHASE 6 FIXTURE TEXT MUST BE MADE TO MATCH THESE STRINGS. Not the reverse. The
+# exact strings are reproduced in fixtures/legacy-app/README.md under "PHASE 6 FIXTURE CONTRACT".
+# If they drift, the temptation after GATE 1 will be to "just fix the profile", which silently
+# invalidates every hash that was ever pinned to it.
+#
+# Two detectors are already satisfied by the fixture today and are tested as such:
+#   MEMBER_NOT_FOUND                 the search screen already renders "No member found for that ID."
+#   APPLICATION_VALIDATION_REJECTED  the sub-account form already renders a role="alert" region
+
+id: meridian-subaccount
+version: 1.0.0
+description: >-
+  Conditions that any capability operating on MERIDIAN Core Servicing member and sub-account screens
+  must recognise. Declared by a human. A discovery run cannot infer conditions it never encountered,
+  which is exactly why these are not left to the model.
+
+# ------------------------------------------------------------------------------------------------
+# KNOWN OUTCOMES - legitimate domain answers. The automation worked correctly.
+#
+# These are BusinessOutcomeCode values, never ErrorCode values. A run that ends here is a SUCCESSFUL
+# run with a negative answer, and nothing about it should page anybody.
+# ------------------------------------------------------------------------------------------------
+knownOutcomes:
+  - id: member-not-found
+    outcome: MEMBER_NOT_FOUND
+    description: >-
+      The member id supplied by the caller does not exist in this system. The automation searched
+      correctly and the application answered. This is the result, not a failure.
+    detect:
+      kind: text
+      phrase: 'No member found'
+    detail: 'No member exists with the supplied member id.'
+
+# ------------------------------------------------------------------------------------------------
+# RECOVERIES - things that interrupt a run and can be cleared without human judgement.
+#
+# `continuation: recheck_expected_effect` means: after recovering, DO NOT assume the interrupted
+# action succeeded. Re-check the expected effect of the step that was interrupted. A modal that
+# swallowed a click leaves the screen looking exactly as it did before the click.
+# ------------------------------------------------------------------------------------------------
+recoveries:
+  - id: DISMISS_MAINTENANCE_NOTICE
+    description: >-
+      A scheduled-maintenance notice is displayed over the working area. It carries no decision and
+      dismissing it changes no record, so clearing it needs no human.
+    detect:
+      kind: text
+      phrase: 'Scheduled maintenance'
+    action:
+      kind: click
+      target:
+        role: button
+        name: 'Dismiss'
+        nameMatch: exact
+    maxAttempts: 1
+    continuation: recheck_expected_effect
+
+# ------------------------------------------------------------------------------------------------
+# HARD FAILURES - the run stops. These are ErrorCode values.
+#
+# Each is here because it implies a DIFFERENT remediation. If two of them would be handled the same
+# way by both a caller and an operator, they should not be two entries.
+# ------------------------------------------------------------------------------------------------
+hardFailures:
+  - id: permission-denied
+    code: PERMISSION_DENIED
+    description: >-
+      The signed-on operator is not entitled to view this member. Remediation is an entitlement
+      change, not a retry.
+    detect:
+      kind: text
+      phrase: 'You do not have permission'
+
+  - id: session-expired
+    code: SESSION_EXPIRED
+    description: >-
+      The application session is gone. Remediation is to sign on again, which the automation is not
+      permitted to do on its own.
+    detect:
+      kind: text
+      phrase: 'Your session has expired'
+
+  - id: application-validation-rejected
+    code: APPLICATION_VALIDATION_REJECTED
+    description: >-
+      The application refused a UI transition because the submitted form data was invalid. Detected
+      structurally, by the presence of an alert region, rather than by matching the wording of any
+      particular validation message - the messages are the application to change, the alert region
+      is the contract.
+    detect:
+      kind: control
+      role: alert
+
+  - id: application-unavailable
+    code: APPLICATION_UNAVAILABLE
+    description: >-
+      The application answered, and what it said was that it is not currently able to serve the
+      request. Distinct from SURFACE_UNAVAILABLE, which means the browser itself died.
+    detect:
+      kind: text
+      phrase: 'The application is temporarily unavailable'

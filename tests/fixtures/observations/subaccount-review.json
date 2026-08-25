@@ -1,0 +1,1213 @@
+{
+  "observationId": "c0825e25-47ad-455b-a288-a323bdd831a7",
+  "surfaceId": "playwright-web",
+  "capturedAt": "2026-08-23T23:11:47.432Z",
+  "perceptionPath": "cdp_ax",
+  "screenIdentity": {
+    "title": "MERIDIAN Core Servicing - MERIDIAN Core Servicing",
+    "canonicalScreenName": "Review Sub-Account Request",
+    "contextPaths": [
+      [],
+      [
+        "navFrame"
+      ],
+      [
+        "contentFrame"
+      ]
+    ],
+    "headings": [
+      "Servicing",
+      "Review Sub-Account Request"
+    ],
+    "versionMarker": "MERIDIAN Core v3.2.1",
+    "url": "http://127.0.0.1:64452/app"
+  },
+  "controls": [
+    {
+      "markId": 1,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 1279,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 2,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 1279,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 3,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 689.5,
+        "width": 1279,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 4,
+      "role": "cell",
+      "name": "Navigation",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 53,
+        "width": 194,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 5,
+      "role": "cell",
+      "name": "Content",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 205,
+        "y": 53,
+        "width": 784,
+        "height": 626
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 6,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 189,
+        "height": 31
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 7,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 31.5,
+        "width": 189,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 8,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 155.96875,
+        "width": 189,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 9,
+      "role": "heading",
+      "name": "Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 79.734375,
+        "width": 126.5625,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 10,
+      "role": "link",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 51,
+        "y": 121.46875,
+        "width": 86.5625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "listitem"
+        },
+        {
+          "role": "list"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 11,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 0.5,
+        "width": 779,
+        "height": 19
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 12,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 19.5,
+        "width": 779,
+        "height": 23.5
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 13,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.5,
+        "y": 308.96875,
+        "width": 779,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 14,
+      "role": "heading",
+      "name": "Review Sub-Account Request",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 67.734375,
+        "width": 362.078125,
+        "height": 27
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Review Sub-Account Request Member Name Avery Lin Member ID 10001 Account Type Savings Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 15,
+      "role": "link",
+      "name": "Back",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11,
+        "y": 253.46875,
+        "width": 26.390625,
+        "height": 13
+      },
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Review Sub-Account Request Member Name Avery Lin Member ID 10001 Account Type Savings Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 16,
+      "role": "button",
+      "name": "Submit Request",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$btnSubmitRequest"
+      },
+      "box": {
+        "x": 11,
+        "y": 277.46875,
+        "width": 110.84375,
+        "height": 21
+      },
+      "containers": [
+        {
+          "role": "region"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Review Sub-Account Request Member Name Avery Lin Member ID 10001 Account Type Savings Nickname (optional)"
+      ]
+    },
+    {
+      "markId": 17,
+      "role": "cell",
+      "name": "Member Name",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 109.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "Avery Lin"
+      ]
+    },
+    {
+      "markId": 18,
+      "role": "cell",
+      "name": "Avery Lin",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Name",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 109.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "Avery Lin"
+      ]
+    },
+    {
+      "markId": 19,
+      "role": "cell",
+      "name": "Member ID",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 131.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "10001"
+      ]
+    },
+    {
+      "markId": 20,
+      "role": "cell",
+      "name": "10001",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 131.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "10001"
+      ]
+    },
+    {
+      "markId": 21,
+      "role": "cell",
+      "name": "Account Type",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 153.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Type",
+        "Savings"
+      ]
+    },
+    {
+      "markId": 22,
+      "role": "cell",
+      "name": "Savings",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Type",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 153.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Type",
+        "Savings"
+      ]
+    },
+    {
+      "markId": 23,
+      "role": "cell",
+      "name": "Nickname (optional)",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 175.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Nickname (optional)",
+        "Vacation"
+      ]
+    },
+    {
+      "markId": 24,
+      "role": "cell",
+      "name": "Vacation",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Nickname (optional)",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 175.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Nickname (optional)",
+        "Vacation"
+      ]
+    },
+    {
+      "markId": 25,
+      "role": "cell",
+      "name": "Initial Deposit",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 197.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Initial Deposit",
+        "$250.00"
+      ]
+    },
+    {
+      "markId": 26,
+      "role": "cell",
+      "name": "$250.00",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Initial Deposit",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 197.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Initial Deposit",
+        "$250.00"
+      ]
+    },
+    {
+      "markId": 27,
+      "role": "cell",
+      "name": "Status",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.5,
+        "y": 219.96875,
+        "width": 144.28125,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "PENDING REVIEW"
+      ]
+    },
+    {
+      "markId": 28,
+      "role": "cell",
+      "name": "PENDING REVIEW",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Status",
+        "Review Sub-Account Request"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 155.78125,
+        "y": 219.96875,
+        "width": 117.140625,
+        "height": 22
+      },
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "PENDING REVIEW"
+      ]
+    }
+  ],
+  "truncation": {
+    "perceived": 28,
+    "kept": 28,
+    "droppedByPriority": []
+  }
+}

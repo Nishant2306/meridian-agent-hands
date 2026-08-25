@@ -1,0 +1,26 @@
+node_modules
+dist
+.env
+/runs
+/artifacts
+/artifacts-demo
+*.log
+.DS_Store
+traces
+/docs/INTERVIEW_PREP.md
+
+# NOTE: /examples/artifacts IS TRACKED.
+# The /artifacts pattern above is root-anchored (leading slash), so it matches
+# only the top-level /artifacts run-output directory and never /examples/artifacts.
+
+.postman/
+postman/
+
+# Playwright output
+test-results
+playwright-report
+*.zip
+
+# env variants (keep the example)
+.env.*
+!.env.example

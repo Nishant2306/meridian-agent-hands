@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+runs
+artifacts
+evidence
+package-lock.json
+
+# Recorded observations are captured verbatim from a real run by `npm run inventory`. Reformatting
+# them would make them tool output rather than a record of what the accessibility tree said.
+tests/fixtures/observations

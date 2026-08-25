@@ -1,0 +1,43 @@
+{
+  "name": "meridian-agent-hands",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend layer that gives an AI agent hands inside legacy banking software with no API: discovery, artifact distillation, deterministic replay.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:app-a": "tsx fixtures/legacy-app/main.ts",
+    "inventory": "tsx scripts/inventory.ts",
+    "discover": "tsx scripts/not-implemented.ts discover 4",
+    "replay": "tsx scripts/not-implemented.ts replay 5",
+    "operator": "tsx scripts/not-implemented.ts operator 8",
+    "capability:approve": "tsx src/cli/capability-approve.ts",
+    "test": "vitest run",
+    "test:ci": "vitest run --reporter=verbose --bail=1",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "commander": "^14.0.2",
+    "express": "^5.1.0",
+    "pino": "^10.0.0",
+    "playwright": "^1.57.0",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.7",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^3.2.4"
+  }
+}
