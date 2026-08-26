@@ -70,6 +70,8 @@ export const PerceivedControlSchema = z.object({
    */
   stableAttributes: z.record(z.string(), z.string()),
   box: BoxSchema,
+  /** 'page' when the box was offset into top-level page space; 'frame' when it could not be. */
+  boxSpace: z.enum(['page', 'frame']).optional(),
   /**
    * Ancestor chain, outermost last. Required by T2_NORMALIZED_IN_CONTAINER: `containerHints` on a
    * descriptor cannot be evaluated without knowing what a control is inside of. See DECISIONS.md D9.

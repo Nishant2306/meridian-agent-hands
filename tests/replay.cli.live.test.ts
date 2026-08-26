@@ -99,12 +99,12 @@ describe('the replay CLI --json contract', () => {
   };
 
   it('[MUST] writes exactly ONE JSON object to stdout, and no log lines', async () => {
-    const { stdout } = await runCli(
+    const { stdout, stderr } = await runCli(
       JSON.stringify({ memberId: '10001', accountType: 'Savings', initialDeposit: '250.00' }),
     );
 
     const lines = stdout.split(String.fromCharCode(10)).filter((line) => line.trim() !== '');
-    expect(lines).toHaveLength(1);
+    expect(lines, 'stderr was: ' + stderr.slice(-2000)).toHaveLength(1);
 
     const parsed = JSON.parse(lines[0] ?? '') as {
       status?: string;
@@ -112,6 +112,41 @@ describe('the replay CLI --json contract', () => {
     };
     expect(typeof parsed.status).toBe('string');
     expect(parsed.metrics?.llmCalls).toBe(0);
+  }, 180_000);
+
+  it('[MUST] the CALLER channel is not redacted, and the LOG channel is', async () => {
+    // ==========================================================================================
+    // MECHANISM 3, WHICH IS THE ONE PEOPLE GET WRONG BY BEING HELPFUL.
+    // ==========================================================================================
+    //
+    // The brief requires replay to RETURN what it read. A capability that pseudonymizes its own
+    // return value is useless to the agent that called it: it asked what the review status is, and
+    // "[reviewStatus:subject-01]" is not an answer.
+    //
+    // So the three channels differ ON PURPOSE:
+    //   --json on stdout   real typed outputs
+    //   stderr, for a human  pseudonymized
+    //   evidence on disk     pseudonymized
+    //
+    // Asserting both halves in one test is the point: either alone would let the other regress.
+    const { stdout, stderr } = await runCli(
+      JSON.stringify({ memberId: '10001', accountType: 'Savings', initialDeposit: '250.00' }),
+    );
+
+    const line = stdout.split(String.fromCharCode(10)).find((entry) => entry.trim() !== '') ?? '';
+    const parsed = JSON.parse(line) as {
+      status?: string;
+      outputs?: Record<string, unknown>;
+    };
+
+    if (parsed.status === 'success') {
+      // The real values, unredacted, on the machine channel.
+      expect(parsed.outputs?.['memberName']).toBe('Avery Lin');
+      expect(JSON.stringify(parsed.outputs)).not.toContain('subject-');
+    }
+
+    // The human channel does not carry them.
+    expect(stderr).not.toContain('Avery Lin');
   }, 180_000);
 
   it('keeps stdout clean even when the run fails before the browser opens', async () => {

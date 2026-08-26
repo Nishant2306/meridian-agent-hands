@@ -120,6 +120,7 @@ function isSurfaceDeath(error: unknown): boolean {
     message.includes('page closed') ||
     // CDP level: the target we were attached to is gone.
     message.includes('no target with given id found') ||
+    message.includes('no object with guid') ||
     message.includes('target.attachtotarget') ||
     message.includes('target crashed') ||
     message.includes('session with given id not found')
@@ -160,7 +161,10 @@ export class ReplayEngine {
     try {
       return await this.#run(request);
     } catch (error) {
-      if (!isSurfaceDeath(error)) throw error;
+      // The SURFACE is the authority. The message match below is a fast path for the cases where
+      // the page object is still around to be asked; when it is gone, `isClosed()` answers.
+      const dead = request.surface.isClosed?.() === true || isSurfaceDeath(error);
+      if (!dead) throw error;
       const metrics: RunMetrics = {
         steps: 0,
         durationMs: 0,

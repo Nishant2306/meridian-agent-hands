@@ -37,7 +37,7 @@ import { foldCase, normalizeText } from '../types/normalize.js';
  *
  * The consequence is honest and worth stating plainly: sensitive values the model READS off the
  * page (a member's name, a balance) are sent as they appear. Pseudonymizing read-only sensitive
- * nodes is the next step for a real deployment, and it is written up in DATA_HANDLING.md alongside
+ * nodes is the next step for a real deployment, and it is written up in docs/DATA_HANDLING.md alongside
  * the provider data-processing and retention terms that would have to go with it.
  */
 

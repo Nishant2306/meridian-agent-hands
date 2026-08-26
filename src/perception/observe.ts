@@ -164,6 +164,7 @@ export function buildObservation(
           ? {}
           : { name: raw.nameAttribute },
       box: raw.box,
+      ...(raw.boxSpace === undefined ? {} : { boxSpace: raw.boxSpace }),
       containers,
       ...(raw.rowCellTexts === undefined
         ? {}

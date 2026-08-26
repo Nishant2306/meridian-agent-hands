@@ -22,6 +22,8 @@ import { DefaultTargetResolver } from '../../perception/resolver.js';
 import type { EvidenceWriter } from '../../evidence/logger.js';
 import type { LeaseManager } from '../../session/lease.js';
 import type { SessionStateMachine } from '../../session/state.js';
+import type { PolicyEngine } from '../../policy/engine.js';
+import type { RiskClass } from '../../types/risk.js';
 import {
   bootstrapResolvedCheck,
   bootstrapStaticCheck,
@@ -45,6 +47,12 @@ export interface PlaywrightWebSurfaceOptions {
   readonly evidence?: EvidenceWriter;
   readonly values?: ValueSources;
   readonly actionTimeoutMs?: number;
+  /**
+   * The configurable engine (PHASE 7). OPTIONAL, and its absence means only the bootstrap minimum
+   * applies - which is exactly the PHASE 2 behaviour, so the surface has one code path rather than
+   * a special "no policy" mode. Supplying it can only make the decision stricter.
+   */
+  readonly policy?: PolicyEngine;
 }
 
 const DEFAULT_ACTION_TIMEOUT_MS = 5_000;
@@ -77,7 +85,8 @@ function describeAction(action: SurfaceAction): string {
  *   1  validate the lease token: current lease, correct owner, unexpired, and a session state that
  *      admits actions from that owner
  *   2  BOOTSTRAP SAFETY POLICY (clarification 5): hardcoded minimum, active from PHASE 2 onward
- *   3  STATIC policy precheck: origin, route, action type (PHASE 7 engine plugs in here)
+ *   3  STATIC policy precheck: origin, route, action type - the configurable engine, which runs
+ *      ALONGSIDE the minimum above and can only make the decision stricter
  *   4  resolve the target through the ONE TargetResolver
  *   5  RESOLVED-CONTROL policy: control name, effective risk, screen context. This cannot happen
  *      earlier: no policy can classify "click Delete Member" before it knows what resolved.
@@ -105,6 +114,12 @@ export class PlaywrightWebSurface implements Surface {
   readonly #values: ValueResolver;
   readonly #params: Readonly<Record<string, string>>;
   readonly #timeout: number;
+  readonly #policy: PolicyEngine | undefined;
+  /**
+   * The risk the ARTIFACT declared for the step currently executing. One INPUT to the maximum,
+   * never the answer - see PolicyEngine.assessRisk. Set per step by the replay engine.
+   */
+  #declaredRisk: RiskClass | undefined;
 
   #addressing: Map<number, AdapterAddressing> = new Map();
   #lastObservation: Observation | null = null;
@@ -121,6 +136,21 @@ export class PlaywrightWebSurface implements Surface {
     this.#values = new ValueResolver(options.values);
     this.#params = options.values?.params ?? {};
     this.#timeout = options.actionTimeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS;
+    this.#policy = options.policy;
+  }
+
+  /**
+   * Tell the surface what the artifact claims about the step it is about to run.
+   *
+   * It is a claim, not a decision: `PolicyEngine.assessRisk` takes the MAXIMUM of this and what the
+   * pinned safety profile says about the control that actually resolved.
+   */
+  setDeclaredRisk(risk: RiskClass | undefined): void {
+    this.#declaredRisk = risk;
+  }
+
+  isClosed(): boolean {
+    return this.#page.isClosed();
   }
 
   get lastObservation(): Observation | null {
@@ -235,8 +265,14 @@ export class PlaywrightWebSurface implements Surface {
       return blocked({ status: 'blocked', error: minimum.error, reason: minimum.reason });
     }
 
-    // ---- 3. static policy precheck (PHASE 7 engine plugs in here, alongside the minimum) --------
-    const staticPolicy = staticPolicyHook(materialized, this.#allowedOrigin);
+    // ---- 3. the configurable engine, ALONGSIDE the minimum and never instead of it -------------
+    // The minimum above ran first and already refused anything outside it. This can only make the
+    // decision stricter, which is the property that lets PHASE 7 land without anyone having to
+    // trust that the new engine reproduces what PHASE 2 already guaranteed.
+    const staticPolicy =
+      this.#policy === undefined
+        ? staticPolicyHook(materialized, this.#allowedOrigin)
+        : this.#policy.staticCheck(materialized, this.#allowedOrigin);
     if (!staticPolicy.allowed) {
       return blocked({
         status: 'blocked',
@@ -292,7 +328,13 @@ export class PlaywrightWebSurface implements Surface {
       };
     }
 
-    const resolvedPolicy = resolvedPolicyHook(materialized, control);
+    const resolvedPolicy =
+      this.#policy === undefined
+        ? resolvedPolicyHook(materialized, control)
+        : this.#policy.resolvedCheck(materialized, control, {
+            screenName: observation.screenIdentity.canonicalScreenName,
+            ...(this.#declaredRisk === undefined ? {} : { declaredRisk: this.#declaredRisk }),
+          });
     if (!resolvedPolicy.allowed) {
       this.#evidence?.append({
         type: 'action_blocked',
@@ -473,9 +515,18 @@ export class PlaywrightWebSurface implements Surface {
     if (this.#evidence === undefined) return 'evidence-disabled';
 
     if (kind === 'screenshot') {
-      // PHASE 7 masks declared sensitive boxes here, using PerceivedControl.box. Until then the
-      // screenshot is unmasked, and README and REPORT say so rather than implying otherwise.
-      return this.#evidence.writeScreenshot(await this.#page.screenshot({ fullPage: true }));
+      // [MUST] A FRESH observation, not the last one.
+      //
+      // The boxes have to describe the screen being photographed. A stale observation gives boxes
+      // for a screen that has since changed, and the mask lands on whatever now occupies those
+      // coordinates - which is the failure mode where the image looks redacted and is not.
+      const observation = await this.observe();
+
+      // NOT fullPage. A full-page capture is stitched from multiple viewport captures and scrolls
+      // the page to do it, so the coordinates the observation just reported no longer describe the
+      // image. Viewport-only keeps the boxes and the pixels in the same coordinate space.
+      const png = await this.#page.screenshot();
+      return this.#evidence.writeScreenshot(png, observation);
     }
 
     const observation = this.#lastObservation ?? (await this.observe());

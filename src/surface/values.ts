@@ -10,8 +10,10 @@ import type { ValueBinding } from '../types/values.js';
  *
  * That is also why `describeBinding` exists. Everything that writes a log line, an evidence event
  * or a CLI message describes the binding rather than printing the value, so a secret cannot reach
- * persistence through a debug statement. Full persistence pseudonymization for PII is PHASE 7;
- * refusing to write secrets down at all is not deferrable, so it is here.
+ * persistence through a debug statement. Full persistence pseudonymization for PII arrived in
+ * PHASE 7 (`src/redaction/pseudonymize.ts`), but it is a different and weaker guarantee: it
+ * replaces a value that IS present. Refusing to write secrets down at all was never deferrable, so
+ * it has been here since PHASE 2.
  */
 export class MissingBindingError extends Error {
   constructor(message: string) {

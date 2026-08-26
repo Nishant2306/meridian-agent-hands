@@ -11,6 +11,12 @@ import { DefaultTargetResolver } from '../perception/resolver.js';
 import { ReplayEngine } from '../replay/engine.js';
 import { validateInvocationParams } from '../artifact/params.js';
 import { formatResultForHuman } from '../replay/report.js';
+import { allowlistPath, loadAllowlist } from '../policy/allowlist.js';
+import { PolicyEngine } from '../policy/engine.js';
+import { pseudonymizerFromEnv } from '../redaction/pseudonymize.js';
+import type { SensitivityDeclaration } from '../redaction/masking.js';
+import { loadSafetyProfile, safetyProfilePath } from '../artifact/profiles.js';
+import type { CapabilityArtifact } from '../artifact/schema.js';
 import { SessionBroker } from '../replay/session-broker.js';
 import { headlessFromEnv } from '../surface/playwright-web/browser.js';
 import type { RunResult } from '../types/run.js';
@@ -55,6 +61,35 @@ interface ReplayCliOptions {
   artifacts: string;
   config: string;
   origin?: string;
+}
+
+/**
+ * What this run treats as sensitive, read off the capability's own declarations.
+ *
+ * The DECLARED sensitivity is the primary mechanism. The shape detectors in the pseudonymizer are a
+ * net under it, not a substitute: a member's NAME has no recognisable shape, and the only reason we
+ * know to protect it is that a human wrote `sensitivity: pii` beside the field it came from.
+ */
+function sensitivityOf(
+  artifact: CapabilityArtifact,
+  params: Readonly<Record<string, string>>,
+): SensitivityDeclaration {
+  const sensitiveNames = new Set<string>();
+  for (const input of artifact.inputs) {
+    if (input.sensitivity === 'pii' || input.sensitivity === 'secret')
+      sensitiveNames.add(input.name);
+  }
+  for (const output of artifact.outputs) {
+    if (output.sensitivity === 'pii' || output.sensitivity === 'secret') {
+      sensitiveNames.add(output.name);
+    }
+  }
+
+  return {
+    sensitiveNames,
+    values: new Map(Object.entries(params)),
+    recordIdentityParam: artifact.recordIdentity.param,
+  };
 }
 
 async function run(options: ReplayCliOptions): Promise<void> {
@@ -115,7 +150,20 @@ async function run(options: ReplayCliOptions): Promise<void> {
   }
 
   const runId = 'replay-' + Date.now();
-  const evidence = new EvidenceWriter({ runId });
+
+  // ============================================================================================
+  // THE THREE DATA MECHANISMS, SET UP HERE AND KEPT APART.
+  // ============================================================================================
+  //
+  //  (1) PERSISTENCE  the pseudonymizer below. Applied to events, the transcript, screenshots and
+  //                   the human-readable output on stderr.
+  //  (2) ARTIFACTS    scanned and REJECTED at distillation, never rewritten. Nothing here touches
+  //                   the artifact.
+  //  (3) CALLER       the --json result on stdout is NOT redacted. The brief requires replay to
+  //                   RETURN what it read, and a capability that will not tell its caller the
+  //                   answer is useless to it.
+  const evidence = new EvidenceWriter({ runId, pseudonymizer: pseudonymizerFromEnv() });
+  evidence.declareSensitive(sensitivityOf(artifact, validation.params));
   const origin = options.origin ?? new URL(artifact.target.entryPoint).origin;
   const resolver = new DefaultTargetResolver();
 
@@ -145,6 +193,20 @@ async function run(options: ReplayCliOptions): Promise<void> {
     allowedOrigin: origin,
   });
 
+  // The configurable engine, ALONGSIDE the bootstrap minimum that the surface enforces first.
+  // Supplying it also arms the browser-level origin backstop inside the broker.
+  const policy = new PolicyEngine({
+    allowlist: loadAllowlist(allowlistPath(options.config)),
+    safetyProfile: loadSafetyProfile(
+      safetyProfilePath(
+        options.config,
+        artifact.profiles.safety.id,
+        artifact.profiles.safety.version,
+      ),
+    ).profile,
+    runOrigin: origin,
+  });
+
   const brokered = await new SessionBroker().open({
     origin,
     secrets: fixtureCredentials(),
@@ -152,6 +214,7 @@ async function run(options: ReplayCliOptions): Promise<void> {
     resolver,
     headless: headlessFromEnv(),
     evidence,
+    policy,
   });
 
   try {

@@ -197,7 +197,7 @@ the pasted phase is not** (Hard Rule 7).
 | 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete                |
 | 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ✅ Complete, GATE 1 PASSED |
 | 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ✅ Complete                |
-| 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started             |
+| 7     | Safety - the configurable engine runs ALONGSIDE the bootstrap minimum, which stays                                                          | ✅ Complete                |
 | 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started             |
 | 9     | Tests                                                                                                                                       | ⬜ Not started             |
 | 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started             |
@@ -208,7 +208,8 @@ the pasted phase is not** (Hard Rule 7).
 
 - `docs/STATUS.md` - what is built, how it works, and how to verify it. Updated every phase.
 - `docs/SCHEMA.md` - the annotated capability artifact. Hand-written, and machine-checked.
-- `DATA_HANDLING.md` - what leaves this process, what is written down, what is still open.
+- `docs/DATA_HANDLING.md` - what is stored, pseudonymized, masked, never captured, and an
+  explicit LIMITS section for what it does NOT protect.
 - `DECISIONS.md` - the calls that could reasonably have gone the other way. Appended every phase.
 
 ### Deferred work (noted, not built - Hard Rule 7)
@@ -216,12 +217,6 @@ the pasted phase is not** (Hard Rule 7).
 - **GATE 1 PASSED.** Discovery 8 steps / 10 model calls; replay on member 10002 against a freshly
   seeded fixture, 1.8s, `llmCalls: 0`. It also leaked a member id and name into model-authored
   prose, which the parameterization sweep now refuses. See DECISIONS.md D39 and D40.
-- **`staticPolicyHook` / `resolvedPolicyHook`** in `src/surface/bootstrap-policy.ts` are named no-ops.
-  PHASE 7 fills them in ALONGSIDE the bootstrap minimum, never instead of it.
-- **`redactForPersistence`** in `src/evidence/logger.ts` is the identity function and is called on
-  every event. PHASE 7 changes that one function rather than auditing every call site. Secret VALUES
-  already never enter an event; PII pseudonymization is what is deferred.
-- **Screenshot masking** uses `PerceivedControl.box`, which is captured now and unused until PHASE 7.
 - **`exposeForHuman`** returns a handle describing the live headed browser. The pause / cede / resume
   protocol itself is PHASE 8.
 - **`semanticKey`** exists on `TargetDescriptor` but is unused until PHASE 11. It is present now only
@@ -242,7 +237,7 @@ the pasted phase is not** (Hard Rule 7).
 - ~~A step bound to an OPTIONAL parameter needs a replay skip rule~~ - DONE in PHASE 5 as
   `Step.when`, which bumped the artifact to `schemaVersion: 2`. See DECISIONS.md D16 and D28.
 - **A pseudonymizer for read-only sensitive nodes** at the model boundary is written up in
-  `DATA_HANDLING.md` and not built. Rule 3 forbids blind substitution, and doing it properly changes
+  `docs/DATA_HANDLING.md` and not built. Rule 3 forbids blind substitution, and doing it properly changes
   what the model sees on every screen; doing that before GATE 1 would mean the first real discovery
   run was driven against a view nobody had validated.
 - **`read_value` binds an output and emits no step**, so the distiller's read-step exemption is
@@ -368,7 +363,7 @@ the pasted phase is not** (Hard Rule 7).
     system.
   - **Model boundary** (`src/agent/boundary.ts`): secrets never sent, typed values shown as
     `[PARAM:name]`, inventory capped, no screenshots, and NO blind substitution over text the model
-    read off the page. Written up in `DATA_HANDLING.md`.
+    read off the page. Written up in `docs/DATA_HANDLING.md`.
   - **Prompt** (`src/agent/prompts/v1.ts`), versioned, and deliberately silent about error states.
   - **Distiller** (`src/artifact/distill.ts`, `path.ts`, `parameterize.ts`): segment-based path
     reconstruction, the four-class parameterization sweep, states from observed screens, effects
@@ -447,3 +442,53 @@ the pasted phase is not** (Hard Rule 7).
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 341 passing across
     33 files (`npm run test:fast` 266 in ~20s).
   - **Decisions recorded**: `DECISIONS.md` D42-D48.
+
+- **PHASE 7** - Safety, redaction, console security.
+  - **[MUST] The bootstrap minimum was NOT removed** (D49). `config/allowlist.yaml` drives a
+    configurable engine (`src/policy/`) that runs at the same two enforcement points in
+    `resolveAndPerform`, AFTER the minimum, so the effective decision is the strictest of the two.
+    `tests/policy.engine.test.ts` asserts separately that an off-origin navigate and every action
+    type on "Submit Request" - `read` included - are refused by BOTH.
+  - **`--origin` is deployment configuration, not a bypass** (D50). `PolicyEngine.runOrigin` adds
+    the one origin the run is already pinned to by the minimum, which knows about exactly one.
+  - **[MUST] No `--approve-irreversible`, anywhere** (D53). `effectiveRisk` is the MAXIMUM of
+    artifact-declared and control-derived risk, so an artifact labelling "Submit Request" SAFE is
+    not believed. A test greps the CLIs and the engine for an override and finds none. The shape a
+    real action-scoped grant would need is written up rather than half-built.
+  - **The input-path lint test** (`tests/policy.input-path.lint.test.ts`, D51) fails on `page.click`
+    / `page.goto` / `page.fill` / `page.type` outside `src/surface/playwright-web/`, with two
+    negative controls. It found `scripts/inventory.ts` calling `page.goto` directly.
+  - **Browser-level origin backstop** (`src/policy/backstop.ts`): aborts non-allowlisted origins at
+    the transport, which covers what the PAGE does rather than what the automation asks for.
+  - **[MUST] THREE data mechanisms, kept apart** (D52): persistence is pseudonymized at one seam;
+    artifacts are SCANNED and REJECTED, never rewritten; caller results are NOT redacted, because
+    the brief requires replay to return what it read. `tests/replay.cli.live.test.ts` asserts the
+    real value on stdout and its absence from stderr in one test.
+  - **The pseudonym map is per-run and random**, not a truncated hash: 100,000 five-digit member ids
+    are enumerable in under a second. `PSEUDONYM_SECRET` switches to HMAC-SHA-256 at 8 bytes
+    minimum, refused below. Card detection Luhn-validates first so the logs stay readable.
+  - **[MUST] Screenshot masking, checked in PIXELS** (D56). Only the masked image is written; the
+    unmasked bytes never get a filename. Boxes are offset into page space and anything that cannot
+    be offset is REFUSED and recorded rather than drawn in the wrong place. PNG decode/draw/encode
+    is hand-rolled on Node's `zlib` rather than adding a dependency.
+  - **[MUST] Operator console security, built before the console does anything** (D55): loopback
+    only with the host a constant, a per-run token that is NEVER in a URL, exchanged for an
+    HttpOnly SameSite=Strict intervention-scoped cookie, CSRF checks, unguessable ids, and NO
+    list-all endpoint - an unknown id gets the same answer as a bad token.
+  - **`docs/DATA_HANDLING.md`** rewritten and moved into `/docs`, with a LIMITS section: regex PII
+    detection has false negatives, screenshots may capture data outside declared regions and we do
+    not OCR, an allowlist does not prevent a harmful in-app action, a human operator with control is
+    unconstrained, and model-boundary minimization covers values we TYPED and not everything the
+    model reads.
+  - **Two defects found in code this phase was not about**: the session broker discarded the results
+    of its own sign-on actions, turning a precise refusal into "Member Search never appeared" (D57);
+    and `frame.evaluate(string)` needs an EXPRESSION, so the first frame-offset implementation
+    silently left every box in frame coordinates - masks would have landed in the wrong place with
+    nothing failing (D56).
+  - **One requirement that could not be met** (D54): the PINNED `banking-default 1.0.0` irreversible
+    list contains bare words like `transfer`, so "Transfer history" is refused. The contextual
+    requirement is met by the allowlist, which this phase controls; the profile is immutable and the
+    real fix is a new version. The false positive is asserted out loud rather than hidden.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 401 passing across
+    38 files.
+  - **Decisions recorded**: `DECISIONS.md` D49-D57.

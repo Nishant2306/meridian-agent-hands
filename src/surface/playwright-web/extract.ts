@@ -511,6 +511,59 @@ async function ariaSnapshotControls(frame: Frame): Promise<RawControl[]> {
   return controls;
 }
 
+/**
+ * An IIFE EXPRESSION, not a function declaration.
+ *
+ * `frame.evaluate(string)` evaluates the string as an EXPRESSION and returns its value. Handed a
+ * declaration it produces a function object, which is not serializable, so the call throws - and
+ * the throw is caught, the offset is reported unknown, and every box silently stays in frame
+ * coordinates. That failure is invisible until a mask lands in the wrong place.
+ */
+const FRAME_OFFSET_EXPRESSION = `(function () {
+  var x = 0;
+  var y = 0;
+  var win = window;
+  while (win.parent !== win) {
+    var element = win.frameElement;
+    if (element === null) return null;
+    var rect = element.getBoundingClientRect();
+    x += rect.x;
+    y += rect.y;
+    win = win.parent;
+  }
+  return { x: x, y: y };
+})()`;
+
+/**
+ * Where this frame's viewport sits inside the TOP-LEVEL page, in CSS pixels.
+ *
+ * [MUST] Boxes come from `getBoundingClientRect()` INSIDE the frame, so they are relative to that
+ * frame's own document. On this application every control worth masking lives in `contentFrame`,
+ * which is nested inside a layout table - so an unoffset box lands tens of pixels up and to the
+ * left of the thing it was meant to cover, and the screenshot looks masked while the value is still
+ * legible next to a black rectangle. That is the worst possible outcome: a redaction that reads as
+ * one and is not.
+ *
+ * Walks up through `frameElement`, which works for the same-origin frames this application uses.
+ * A cross-origin frame throws on access; the offset is then reported as UNKNOWN rather than zero,
+ * because zero is a coordinate and would silently produce the misplaced-mask failure above.
+ */
+async function frameOffset(frame: Frame): Promise<{ x: number; y: number } | 'unknown'> {
+  if (frame.parentFrame() === null) return { x: 0, y: 0 };
+  try {
+    // Passed as a STRING for the same reason ENRICH_FUNCTION is: this module is compiled without
+    // the DOM lib, deliberately, so that nothing in the perception layer can reach for a browser
+    // global by accident.
+    const offset = (await frame.evaluate(FRAME_OFFSET_EXPRESSION)) as {
+      x: number;
+      y: number;
+    } | null;
+    return offset ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 export async function captureRaw(
   page: Page,
   context: BrowserContext,
@@ -560,13 +613,25 @@ export async function captureRaw(
     }
 
     const summary = await frameSummary(frame);
+    const offset = await frameOffset(frame);
     captures.push({
       contextPath,
       title: await frame.title(),
       url: frame.url(),
       headings: summary.headings,
       bodyText: summary.bodyText,
-      controls,
+      controls:
+        offset === 'unknown'
+          ? controls.map((control) => ({ ...control, boxSpace: 'frame' as const }))
+          : controls.map((control) => ({
+              ...control,
+              box: {
+                ...control.box,
+                x: control.box.x + offset.x,
+                y: control.box.y + offset.y,
+              },
+              boxSpace: 'page' as const,
+            })),
     });
   }
 

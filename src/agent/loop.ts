@@ -226,7 +226,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
 
   const say = (content: string): void => {
     turns.push({ role: 'user', content });
-    options.evidence?.transcript({
+    options.evidence?.transcriptRedacted({
       at: new Date().toISOString(),
       role: 'system-to-model',
       content,
@@ -406,7 +406,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     metrics.llmCalls += 1;
     const response = await options.client.complete({ system, turns });
     turns.push({ role: 'assistant', content: response.text, toolCalls: response.toolCalls });
-    options.evidence?.transcript({
+    options.evidence?.transcriptRedacted({
       at: new Date().toISOString(),
       role: 'model',
       content: response.text,
@@ -496,7 +496,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
           resolver: options.resolver,
         });
 
-        options.evidence?.transcript({
+        options.evidence?.transcriptRedacted({
           at: new Date().toISOString(),
           role: 'completion-check',
           observationId: fresh.observationId,

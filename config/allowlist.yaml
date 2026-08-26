@@ -1,0 +1,109 @@
+# ================================================================================================
+# RUNTIME ALLOWLIST - the configurable half of the guardrail.
+# ================================================================================================
+#
+# This file is CONFIGURATION. Unlike the condition and safety profiles it is NOT pinned by hash into
+# any artifact, because it describes the DEPLOYMENT rather than the capability: which origin this
+# installation talks to, which routes are in scope, how long a run may take. Two deployments of the
+# same capability legitimately differ here, and neither should invalidate the other's artifacts.
+#
+# ------------------------------------------------------------------------------------------------
+# IT DOES NOT REPLACE THE BOOTSTRAP MINIMUM. IT SITS ALONGSIDE IT.
+# ------------------------------------------------------------------------------------------------
+# src/surface/bootstrap-policy.ts hardcodes a minimum that has been active since PHASE 2 and that
+# stood behind two real model runs at GATE 1. The engine driven by this file runs at the same two
+# enforcement points, IN ADDITION to that minimum, and the effective decision is the strictest of
+# the two. A configuration that would switch the minimum off is not expressible, because the minimum
+# is not configuration.
+#
+# ------------------------------------------------------------------------------------------------
+# EVERY DENY PATTERN IS CONTEXTUAL AND WORD-BOUNDED.
+# ------------------------------------------------------------------------------------------------
+# Not /close|delete|transfer/. A bare `close` blocks "Close notice"; a bare `transfer` blocks
+# "Transfer history". A guardrail that fires on obviously harmless controls does not read as
+# careful, it reads as unconsidered - and the first thing anyone does with a guardrail like that is
+# find a way around it.
+
+version: 1
+
+# ------------------------------------------------------------------------------------------------
+# ORIGINS. An exact origin match; no wildcards, no suffix matching.
+# `*.example.com` style matching is how an attacker-controlled `evilexample.com` gets allowed.
+# ------------------------------------------------------------------------------------------------
+allowedOrigins:
+  - 'http://localhost:4180'
+  - 'http://127.0.0.1:4180'
+
+# ------------------------------------------------------------------------------------------------
+# ROUTES. Matched against the URL PATH, as phrases with word boundaries.
+# Deny wins over allow: a path matching both is denied.
+# ------------------------------------------------------------------------------------------------
+allowedRoutePatterns:
+  - '^/$'
+  - '^/app$'
+  - '^/nav$'
+  - '^/search$'
+  - '^/member/[0-9]+$'
+  - '^/member/[0-9]+/subaccount/(new|review)$'
+
+deniedRoutePatterns:
+  # The route that really does mutate state. Nothing this system does needs it, and the automation
+  # reaching it at all would mean something upstream is already wrong.
+  - '^/member/[0-9]+/subaccount/submit$'
+  # Test hooks are for tests. An automated run that pokes them is not exercising the application.
+  - '^/__test__/'
+  - '^/__fixture__/'
+
+# ------------------------------------------------------------------------------------------------
+# ACTION TYPES. `coordinateActionsAllowed: false` is separate on purpose: a click at (x, y) is not
+# a click on a CONTROL, so nothing above can classify its risk. It is unaddressable by policy, and
+# therefore not allowed at all.
+# ------------------------------------------------------------------------------------------------
+allowedActionTypes:
+  - navigate
+  - click
+  - type
+  - select
+  - read
+
+coordinateActionsAllowed: false
+
+# ------------------------------------------------------------------------------------------------
+# CONTROL DENY PATTERNS.
+#
+# `controlPhrase` is required. `screenPhrase` narrows it to one kind of screen, which is the whole
+# point of the contextual form: "Continue" on a form advances, "Continue" on a confirmation screen
+# commits, and the control name is identical.
+# ------------------------------------------------------------------------------------------------
+deniedControlPatterns:
+  - controlPhrase: 'submit request'
+    why: 'Commits the prepared request. Cannot be undone from inside the application.'
+  - controlPhrase: 'close account'
+    why: 'Terminates an account. Reopening is a different, manual process.'
+  - controlPhrase: 'delete member'
+    why: 'Destroys a record.'
+  - controlPhrase: 'confirm transfer'
+    why: 'Moves money.'
+  - controlPhrase: 'send wire'
+    why: 'Moves money, usually irrevocably once released.'
+  - controlPhrase: 'export'
+    screenPhrase: 'member'
+    why: >-
+      Exporting from a screen showing member data moves PII out of the application, where none of
+      this system redaction applies to it any more.
+
+# ------------------------------------------------------------------------------------------------
+# RISK. The ceiling the effective risk of any single action is compared against.
+#
+# effectiveRisk = max(artifact-declared, policy-derived, resolved-control-derived). Taking the
+# maximum is what stops an artifact from labelling a control SAFE that the policy calls otherwise.
+# ------------------------------------------------------------------------------------------------
+riskRules:
+  maxRiskAllowed: RISKY_REVERSIBLE
+
+# ------------------------------------------------------------------------------------------------
+# RUN BUDGET. Bounded, and lower than the global ceiling in the pinned safety profile, because this
+# deployment drives one small application. The strictest layer wins, so this one does.
+# ------------------------------------------------------------------------------------------------
+maxSteps: 40
+maxRunDurationMs: 180000

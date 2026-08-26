@@ -205,7 +205,22 @@ async function main(): Promise<void> {
     await surface.waitFor({ kind: 'text_present', text: 'Member Search' }, 5000);
 
     if (urlArg !== undefined) {
-      await browser.page.goto(urlArg, { waitUntil: 'domcontentloaded' });
+      // Through the INPUT PATH, like everything else. This used to call `page.goto` directly, and
+      // `tests/policy.input-path.lint.test.ts` found it the moment that test was written: a dev
+      // script is exactly where a shortcut past the lease, the allowlist and the policy engine
+      // gets taken, because it does not feel like automation.
+      await act(
+        surface,
+        token,
+        {
+          type: 'navigate',
+          pathSegments: new URL(urlArg).pathname
+            .split('/')
+            .filter((segment) => segment !== '')
+            .map((value) => ({ kind: 'literal' as const, value })),
+        },
+        'navigate to ' + urlArg,
+      );
       await snapshot(surface, 'requested-screen', false);
       return;
     }

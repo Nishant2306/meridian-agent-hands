@@ -8,6 +8,11 @@ import { distill } from '../artifact/distill.js';
 import { conditionProfilePath, loadConditionProfile } from '../artifact/profiles.js';
 import { FileCapabilityStore } from '../artifact/store.js';
 import { loadEnvFile, MissingEnvError, requireEnv } from '../config/env.js';
+import { allowlistPath, loadAllowlist } from '../policy/allowlist.js';
+import { PolicyEngine } from '../policy/engine.js';
+import { installOriginBackstop } from '../policy/backstop.js';
+import { pseudonymizerFromEnv } from '../redaction/pseudonymize.js';
+import { loadSafetyProfile, safetyProfilePath } from '../artifact/profiles.js';
 import { validateInvocationParams } from '../artifact/params.js';
 import { fixtureCredentials, MERIDIAN_SIGN_ON } from '../config/sign-on.js';
 import { loadDiscoverySpec } from '../config/spec.js';
@@ -97,7 +102,20 @@ async function run(options: DiscoverOptions): Promise<void> {
   }
   const goal = options.goal ?? loaded.spec.goalTemplate;
   const runId = 'discover-' + Date.now() + '-' + randomUUID().slice(0, 8);
-  const evidence = new EvidenceWriter({ runId });
+  // The model transcript is the file most likely to contain a member's name in prose, because it
+  // is the one place a model writes sentences about what it is looking at. It is pseudonymized on
+  // the way to disk like every other written artefact. The ARTIFACT is not rewritten - it is
+  // scanned and rejected - and the caller's result is not redacted at all. Three mechanisms.
+  const evidence = new EvidenceWriter({ runId, pseudonymizer: pseudonymizerFromEnv() });
+  evidence.declareSensitive({
+    sensitiveNames: new Set(
+      loaded.spec.inputs
+        .filter((input) => input.sensitivity === 'pii' || input.sensitivity === 'secret')
+        .map((input) => input.name),
+    ),
+    values: new Map(Object.entries(runtimeInputs)),
+    recordIdentityParam: loaded.spec.recordIdentity.param,
+  });
 
   const conditionProfile = loadConditionProfile(
     conditionProfilePath(
@@ -113,6 +131,22 @@ async function run(options: DiscoverOptions): Promise<void> {
   const session = new SessionStateMachine();
   const resolver = new DefaultTargetResolver();
 
+  // A real model drives this browser. The bootstrap minimum has stood behind it since PHASE 2 and
+  // still runs first; the configurable engine now runs alongside it, and the browser-level backstop
+  // catches what the PAGE does rather than what the model asks for.
+  const policy = new PolicyEngine({
+    allowlist: loadAllowlist(allowlistPath(options.config)),
+    safetyProfile: loadSafetyProfile(
+      safetyProfilePath(
+        options.config,
+        loaded.spec.safetyProfile.id,
+        loaded.spec.safetyProfile.version,
+      ),
+    ).profile,
+    runOrigin: origin,
+  });
+  await installOriginBackstop(browser.context, policy.allowlist.allowedOrigins);
+
   const surface = new PlaywrightWebSurface({
     page: browser.page,
     context: browser.context,
@@ -121,6 +155,7 @@ async function run(options: DiscoverOptions): Promise<void> {
     session,
     resolver,
     evidence,
+    policy,
     values: {
       params: runtimeInputs,
       secrets: fixtureCredentials(),

@@ -8,10 +8,10 @@ import type { TextMatcher } from '../types/values.js';
  * [MUST] CLARIFICATION 5. THE BOOTSTRAP SAFETY MINIMUM.
  * ==============================================================================================
  *
- * GATE 1 runs a real model against a live UI at the end of PHASE 5. The configurable policy engine
- * is PHASE 7. Between those two points there is a window in which a real model drives a real
- * browser with no policy engine in existence, and the ONLY thing standing between it and the
- * "Submit Request" button would be the wording of a prompt.
+ * GATE 1 ran a real model against a live UI at the end of PHASE 5. The configurable policy engine
+ * did not arrive until PHASE 7. Between those two points there was a window in which a real model
+ * drove a real browser with no policy engine in existence, and the ONLY thing standing between it
+ * and the "Submit Request" button would otherwise have been the wording of a prompt.
  *
  * A prompt is not a control. So from PHASE 2 onward the input path enforces a hardcoded minimum
  * that cannot be configured off:
@@ -21,9 +21,11 @@ import type { TextMatcher } from '../types/values.js';
  *   always blocked   navigation off-origin, and any action on a resolved control whose accessible
  *                    name matches the irreversible patterns
  *
- * PHASE 7 replaces this with the configurable engine. It does not remove it: the minimum is never
- * absent, and a configuration that would disable it is not expressible, because the minimum is not
- * configuration.
+ * PHASE 7 added the configurable engine ALONGSIDE this, not in place of it. This runs FIRST on
+ * every action and the engine runs second, so the effective decision is the strictest of the two.
+ * The minimum is never absent, and a configuration that would disable it is not expressible,
+ * because the minimum is not configuration. `tests/policy.engine.test.ts` asserts that both still
+ * refuse an off-origin navigate and every action type on "Submit Request".
  */
 
 /**
@@ -157,11 +159,12 @@ export function bootstrapResolvedCheck(
 }
 
 /**
- * PHASE 7 HOOK POINTS.
+ * The no-policy fallback, used when a surface is constructed without a `PolicyEngine`.
  *
- * The configurable engine slots in at exactly these two places, alongside the minimum and never
- * instead of it. They are no-ops now, and they exist as named functions so that the eight-step
- * sequence in the input path does not have to change shape when PHASE 7 arrives.
+ * These were the PHASE 7 hook points, and PHASE 7 filled that slot with `PolicyEngine`. They remain
+ * as the permissive default so the input path has ONE shape whether or not an engine is configured -
+ * a surface with no engine behaves exactly as it did in PHASE 2, which is to say the bootstrap
+ * minimum and nothing else. Every browser-free test relies on that.
  */
 export function staticPolicyHook(_action: SurfaceAction, _allowedOrigin: string): PolicyDecision {
   return ALLOW;

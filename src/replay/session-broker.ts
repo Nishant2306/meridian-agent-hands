@@ -1,9 +1,12 @@
 import { MERIDIAN_SIGN_ON, type SignOnConfig } from '../config/sign-on.js';
+import type { SurfaceAction } from '../types/action.js';
 import type { EvidenceWriter } from '../evidence/logger.js';
 import { DefaultTargetResolver } from '../perception/resolver.js';
 import { LeaseManager } from '../session/lease.js';
 import { SessionStateMachine } from '../session/state.js';
 import { launchDeterministicBrowser } from '../surface/playwright-web/browser.js';
+import { installOriginBackstop } from '../policy/backstop.js';
+import type { PolicyEngine } from '../policy/engine.js';
 import { PlaywrightWebSurface } from '../surface/playwright-web/surface.js';
 import type { ValueSources } from '../surface/values.js';
 import type { LeaseToken } from '../types/session.js';
@@ -55,6 +58,12 @@ export interface SessionBrokerOptions {
   resolver?: TargetResolver;
   leaseTtlMs?: number;
   timeoutMs?: number;
+  /**
+   * The configurable policy engine. When supplied it also arms the BROWSER-LEVEL backstop, so an
+   * origin the policy would refuse is also refused at the transport - which covers what the PAGE
+   * does (a redirect, a meta refresh, a subresource) and not just what the automation asks for.
+   */
+  policy?: PolicyEngine;
 }
 
 export class AuthenticationFailedError extends Error {
@@ -77,6 +86,10 @@ export class SessionBroker {
       secrets: options.secrets,
     };
 
+    if (options.policy !== undefined) {
+      await installOriginBackstop(browser.context, options.policy.allowedOrigins);
+    }
+
     const surface = new PlaywrightWebSurface({
       page: browser.page,
       context: browser.context,
@@ -85,6 +98,7 @@ export class SessionBroker {
       session,
       resolver,
       ...(options.evidence === undefined ? {} : { evidence: options.evidence }),
+      ...(options.policy === undefined ? {} : { policy: options.policy }),
       values,
     });
 
@@ -93,25 +107,42 @@ export class SessionBroker {
       await browser.close();
     };
 
+    /**
+     * Every sign-on step is CHECKED.
+     *
+     * This used to fire and forget. When a step was blocked or failed, the run carried on to the
+     * authenticated-text wait, that wait timed out, and the error said "signed on, but Member
+     * Search never appeared" - which is a description of the symptom that actively points away from
+     * the cause. Found when the PHASE 7 policy engine started refusing something during sign-on.
+     */
+    const mustPerform = async (action: SurfaceAction, what: string): Promise<void> => {
+      const { result } = await surface.resolveAndPerform(action, token);
+      if (result.status !== 'performed') {
+        throw new AuthenticationFailedError(
+          'sign-on could not ' + what + ': ' + result.error + ' - ' + result.reason,
+        );
+      }
+    };
+
     try {
-      await surface.resolveAndPerform({ type: 'navigate', pathSegments: [] }, token);
-      await surface.resolveAndPerform(
+      await mustPerform({ type: 'navigate', pathSegments: [] }, 'open the sign-on screen');
+      await mustPerform(
         {
           type: 'type',
           target: signOn.operator,
           value: { kind: 'secretRef', name: signOn.operatorSecretRef },
         },
-        token,
+        'enter the operator id',
       );
-      await surface.resolveAndPerform(
+      await mustPerform(
         {
           type: 'type',
           target: signOn.passcode,
           value: { kind: 'secretRef', name: signOn.passcodeSecretRef },
         },
-        token,
+        'enter the passcode',
       );
-      await surface.resolveAndPerform({ type: 'click', target: signOn.submit }, token);
+      await mustPerform({ type: 'click', target: signOn.submit }, 'submit the sign-on form');
 
       // Verify the precondition rather than assuming it. A broker that hands over an
       // unauthenticated session makes every downstream failure look like a capability defect.

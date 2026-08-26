@@ -19,14 +19,24 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, **341 tests passing across 33 files**, in about 2 minutes.
+Expect: no type errors, no lint errors, and **401 tests passing across 38 files in about 2 minutes**.
 
 ### Two test commands
 
 | Command             | What it runs                                               | Time  |
 | ------------------- | ---------------------------------------------------------- | ----- |
-| `npm run test:fast` | everything except the browser-driven files                 | ~20s  |
-| `npm test`          | all of it, including four files that drive a real Chromium | ~215s |
+| `npm run test:fast` | everything except the browser-driven files                 | ~8s   |
+| `npm test`          | all of it, including NINE files that drive a real Chromium | ~125s |
+
+**How those numbers were measured**, because they are easy to get wrong: two consecutive runs on an
+otherwise idle machine, taking vitest's own reported `Duration`. `npm test` came back at 124.3s and
+124.5s; `test:fast` at 8.15s and 8.10s. Earlier versions of this file quoted 215s and 295s, both of
+which were measured while browsers from other work were running alongside - a full suite that is
+almost entirely CPU-bound on Chromium roughly doubles under that. If your number is much larger,
+check what else is using the machine before believing it.
+
+Files run SERIALLY (`fileParallelism: false` in `vitest.config.ts`). Parallelism was measured at
+about 17% faster and is not enabled by default; the reasoning is in that file.
 
 `test:fast` excludes `**/*.live.test.ts` and nothing else. **No test is weakened or skipped to
 achieve it** - the same assertions run, in fewer files. Use the fast one while working inside a
@@ -177,7 +187,7 @@ directly: two boots produce **disjoint** class-token and id sets and **identical
 
 1. validate the lease token: current lease, correct owner, unexpired, session state admits it
 2. **bootstrap safety minimum**, static half (allowed action types, allowed origin)
-3. static policy precheck - the PHASE 7 engine plugs in here, alongside the minimum
+3. static policy precheck - the configurable engine, ALONGSIDE the minimum (added in PHASE 7)
 4. resolve, through the one resolver
 5. **resolved-control policy** - cannot run earlier: no policy can classify "click Delete Member"
    before it knows what resolved
@@ -204,7 +214,8 @@ which a human declares success.
 - Chrome own accessibility tree over CDP gives role, accessible name and value.
 - Each control is then enriched from the DOM for the three things the AX tree does not carry:
   `nearbyText` (the cell to the LEFT and the heading ABOVE), the legacy `name=` attribute, and the
-  bounding box. The box is for PHASE 7 screenshot masking and is never used to locate anything.
+  bounding box. The box is what screenshot masking draws (PHASE 7) and is never used to locate
+  anything.
 - Nothing mutates the page. No injected attributes, no markers, no test hooks.
 - `aria_snapshot` is a documented DEGRADED fallback, and every observation records which path
   produced it, so a thin inventory is never mistaken for a thin screen.
@@ -220,12 +231,16 @@ downgrade is recorded.
 
 **The bootstrap safety minimum** (`src/surface/bootstrap-policy.ts`). Active from this phase onward
 and not configurable off. One allowed origin, five allowed action types, and any action on a control
-whose name matches the irreversible patterns is refused. GATE 1 runs a real model against a live UI
-at the end of PHASE 5 and the full policy engine is PHASE 7; this is what stands in the gap.
+whose name matches the irreversible patterns is refused. It was written to stand in the gap before
+the configurable engine existed, and it is what actually stood behind both real model runs at
+GATE 1. PHASE 7 added the engine ALONGSIDE it rather than in place of it, and it is still enforced
+first on every action - see [Phase 7](#phase-7---safety-redaction-console-security-complete).
 
 **Evidence** (`src/evidence/logger.ts`). Typed JSONL events plus screenshots under `/runs/<runId>/`.
-Secret VALUES never enter an event: bindings are described by name. PII pseudonymization and
-screenshot masking are PHASE 7, behind a single `redactForPersistence` hook.
+Secret VALUES never enter an event: bindings are described by name - a stronger property than
+redaction, because there is nothing present to redact. PII pseudonymization and screenshot masking
+were deferred to PHASE 7 behind a single `redactForPersistence` seam, and PHASE 7 filled both in at
+that seam rather than auditing every call site.
 
 **The desktop stub** (`src/surface/desktop-stub.ts`). Compiles, throws, and documents the real UI
 Automation implementation for every method. It exists to make one claim checkable rather than
@@ -417,15 +432,18 @@ npm test -- tests/artifact.store.test.ts tests/artifact.docs.test.ts
 
 ### The profile-to-fixture contract
 
-The profiles are immutable from now on, but most of the screens their detectors match arrive in
-PHASE 6. The ordering only goes one way, and it is recorded in
+The profiles became immutable at the end of this phase, and most of the screens their detectors
+match did not exist yet. The ordering only ever went one way, and it is recorded in
 [`fixtures/legacy-app/README.md`](../fixtures/legacy-app/README.md) under **PHASE 6 FIXTURE
 CONTRACT**:
 
 > PHASE 6 must make the fixture match these strings verbatim. Not the reverse.
 
-Two detectors are **already satisfied today** and are tested against real captures, so part of the
-contract is proven honoured before the hashes were pinned into anything:
+**PHASE 6 honoured it**: the fixture was changed to match the profile twice, and the profile was not
+touched. See [Phase 6](#phase-6---runtime-outcomes-complete) and DECISIONS.md D43.
+
+Two detectors were **already satisfied at the time this phase closed** and are tested against real
+captures, so part of the contract was proven honoured before the hashes were pinned into anything:
 
 | Condition                         | Detector                  | What the fixture really renders                      |
 | --------------------------------- | ------------------------- | ---------------------------------------------------- |
@@ -476,7 +494,7 @@ unambiguous now and wrong on the next invocation that returns four. There is no 
 The system captures a FRESH observation, extracts every declared output from its bound source,
 validates each against its DECLARED type, and re-checks the record identity itself.
 
-**The model boundary** (`src/agent/boundary.ts`, and `DATA_HANDLING.md`).
+**The model boundary** (`src/agent/boundary.ts`, and [`DATA_HANDLING.md`](DATA_HANDLING.md)).
 
 **The system prompt** (`src/agent/prompts/v1.ts`), versioned, with `promptVersion` recorded in every
 artifact. It does NOT tell the model to go looking for error states: known error semantics come from
@@ -658,10 +676,11 @@ capability that submits anything, re-observing first is the difference between o
 
 ### Recoveries when nothing matches
 
-The recovery detectors reference screens that arrive in PHASE 6, so nothing matches them today. A
-step declaring `try_recoveries_then_fail` therefore takes the real no-match path: detectors were
-consulted on every pass of the observation loop, nothing applied, and the step falls through to
-failure saying so. The path is not stubbed away.
+At the time this phase closed, the recovery detectors referenced screens the fixture did not yet
+render, so nothing matched them. A step declaring `try_recoveries_then_fail` therefore took the real
+no-match path: detectors were consulted on every pass of the observation loop, nothing applied, and
+the step fell through to failure saying so. The path was never stubbed away, which is why PHASE 6
+could add a matching screen and exercise the other branch without touching this code.
 
 ### How to check it
 
@@ -789,8 +808,8 @@ of a modal belongs to the application, and a role does not.
 
 ```bash
 npx vitest run tests/fixture.faults.test.ts          # no browser, ~1s
-npx vitest run tests/replay.outcomes.live.test.ts    # real Chromium, ~80s
-npx vitest run tests/replay.downgrade.live.test.ts   # real Chromium, ~45s
+npx vitest run tests/replay.outcomes.live.test.ts    # real Chromium, ~35s
+npx vitest run tests/replay.downgrade.live.test.ts   # real Chromium, ~22s
 ```
 
 | Claim                                                            | Test                                             |
@@ -853,6 +872,121 @@ opening the artifact, the evidence bundle, or the code. See DECISIONS.md D48.
    dialog, and latently wrong for the `alert` region the validation detector depends on. D44.
 3. **A recovery on a step with `retries.max: 0` never rechecked anything.** The recheck was reached
    only by continuing into the next retry iteration. D45.
+
+---
+
+## Phase 7 - safety, redaction, console security (COMPLETE)
+
+### The policy engine sits ALONGSIDE the bootstrap minimum
+
+`config/allowlist.yaml` is deployment configuration - origins, routes, action types, deny patterns,
+a risk ceiling and a run budget. It is NOT pinned by hash into artifacts, because it describes the
+deployment rather than the capability, and two deployments legitimately differ here.
+
+**The PHASE 2 minimum was not removed.** It runs first at both enforcement points inside
+`resolveAndPerform`; the engine runs second. The effective decision is the strictest of the two, and
+a configuration that switches the minimum off is not expressible because the minimum is not
+configuration.
+
+```bash
+npx vitest run tests/policy.engine.test.ts
+```
+
+| Claim                                                       | Asserted                                                   |
+| ----------------------------------------------------------- | ---------------------------------------------------------- |
+| an off-origin navigate is refused                           | by the minimum AND by the engine, separately               |
+| every action type on "Submit Request" is refused            | by the minimum AND by the engine, `read` included          |
+| the engine can only tighten                                 | `/subaccount/submit` passes the minimum, engine refuses it |
+| an artifact declaring "Submit Request" SAFE is not believed | `effectiveRisk` takes the MAXIMUM                          |
+| there is no override flag anywhere                          | greps the CLIs and the engine for one                      |
+
+### One input path, enforced mechanically
+
+```bash
+npx vitest run tests/policy.input-path.lint.test.ts
+```
+
+Fails if `page.click`, `page.goto`, `page.fill`, `page.type` or their relatives appear outside
+`src/surface/playwright-web/`. One such call bypasses the lease, the minimum, the engine, the single
+resolver and the revalidation step - and in a diff it looks like a shortcut in a test helper.
+
+It found one the day it was written: `scripts/inventory.ts` called `page.goto` directly. See
+DECISIONS.md D51.
+
+### THREE data mechanisms, and they are not the same thing
+
+|                | Where                                        | What happens                              |
+| -------------- | -------------------------------------------- | ----------------------------------------- |
+| Persistence    | logs, transcript, evidence, human CLI output | pseudonymized in place                    |
+| Artifacts      | distillation                                 | **scanned and REJECTED**, never rewritten |
+| Caller results | `replay --json` on stdout                    | **not redacted**                          |
+
+The third is the one that gets "helpfully" broken. The brief requires replay to RETURN what it read;
+an agent that asked for the review status and got `[reviewStatus:subject-01]` has been given
+nothing. `tests/replay.cli.live.test.ts` asserts both halves in one test: the real value on stdout,
+absent from stderr.
+
+**The pseudonym map is per-run and random.** A truncated hash of a five-digit member id is
+enumerable in under a second. `PSEUDONYM_SECRET` switches to HMAC-SHA-256 at 8 bytes minimum,
+refused below that. Card detection Luhn-validates first, so account numbers and references survive
+and the logs stay readable.
+
+### Screenshot masking, checked in pixels
+
+```bash
+npx vitest run tests/redaction.test.ts              # no browser
+npx vitest run tests/redaction.masking.live.test.ts # real Chromium, real boxes
+```
+
+Only the masked image is written; the unmasked bytes never get a filename. Regions come from
+`PerceivedControl.box`, captured since PHASE 2 and unused until now, offset into page space and
+recorded in a `.mask.json` manifest beside the image.
+
+The live test decodes the written PNG, samples the centre of a masked region and requires the mask
+colour, then requires that less than a quarter of the image is mask-coloured - otherwise "we painted
+the whole screenshot" would pass. PNG decode/draw/encode is hand-rolled on Node's `zlib` rather than
+adding a dependency. See DECISIONS.md D56.
+
+**Honest limitation, stated here and in `DATA_HANDLING.md`:** we mask DECLARED regions. We do not
+OCR and we do not claim the value is absent from the pixels.
+
+### Operator console security, before the console does anything
+
+`src/escalation/console-security.ts`. The handoff protocol is PHASE 8; this is the shell it runs
+inside, built first because access control retrofitted onto a working console is access control that
+ships without any.
+
+Loopback-only (the host is a constant, not a parameter) · 32-byte per-run token · **the token is
+never in a URL** - the CLI prints them on separate lines · token exchanged for an HttpOnly,
+SameSite=Strict, short-lived, intervention-scoped cookie · CSRF checks on every state-changing
+request · unguessable intervention ids · **no list-all endpoint**, and an unknown id gets the same
+answer as a bad token so it is not an oracle.
+
+```bash
+npx vitest run tests/escalation.console.test.ts
+```
+
+**Not implemented, and REPORT.md will say so:** enterprise identity, RBAC, per-operator accounts,
+remote operator auth. What it must not say is that the console has no access protection.
+
+### Two defects this phase found in code it was not about
+
+1. **The session broker ignored whether sign-on worked.** It fired four actions and discarded every
+   result, so a blocked step surfaced as "signed on, but Member Search never appeared" - a
+   description of the symptom that points away from the cause. D57.
+2. **`frame.evaluate(string)` evaluates an EXPRESSION.** Handed a function declaration it returned a
+   function object, the call threw, the throw was caught, and every box silently stayed in frame
+   coordinates - so masks would have landed in the wrong place with nothing failing. Only the live
+   test could catch it. D56.
+
+### One requirement that could not be met, and why
+
+`banking-default 1.0.0` - PINNED, hashed into the GATE 1 artifact - contains bare words like
+`transfer` in its irreversible list, so "Transfer history" is refused. The PHASE 7 requirement that
+deny patterns be contextual is met by the allowlist, which this phase controls; it cannot be met by
+the profile, which is immutable. The false positive is asserted out loud in
+`tests/policy.engine.test.ts` rather than hidden, and the real fix is a `2.0.0` profile. See
+DECISIONS.md D54.
 
 ---
 
@@ -973,17 +1107,24 @@ capability in a given checkout is whatever that checkout's most recent approved 
 
 Not oversights. Each belongs to a later phase, and building it now would be building ahead.
 
-| Absent                                                                             | Phase |
-| ---------------------------------------------------------------------------------- | ----- |
-| The configurable policy engine, PII pseudonymization, screenshot masking           | 7     |
-| The human handoff protocol (pause / cede / resume)                                 | 8     |
-| `README.md`, `REPORT.md`, `/evidence/README.md`                                    | 10    |
-| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then | 11    |
+| Absent                                                                               | Phase |
+| ------------------------------------------------------------------------------------ | ----- |
+| The human handoff PROTOCOL (pause / cede / resume). Its secured console shell exists | 8     |
+| `README.md`, `REPORT.md`, `/evidence/README.md`                                      | 10    |
+| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then   | 11    |
 
-`npm run operator` currently exits 2 and names the phase that builds it.
-`capability:approve`, `discover` and `replay` are real as of PHASES 3, 4 and 5. That is deliberate:
-a script that fails loudly beats one that is missing.
+`npm run operator` currently exits 2 and names the phase that builds it. That is deliberate: a
+script that fails loudly beats one that is missing. `capability:approve`, `discover` and `replay`
+are real as of PHASES 3, 4 and 5.
 
-**Also disclosed:** screenshots captured today are UNMASKED. Without OCR it is not possible to prove
-a sensitive value is absent from screenshot pixels. PHASE 7 masks declared boxes, and the claim will
-be scoped to exactly that.
+The console's SECURITY layer is built and tested (`src/escalation/console-security.ts`, PHASE 7) -
+loopback binding, per-run token, scoped cookies, no enumeration endpoint. What PHASE 8 adds is what
+the console DOES: pausing the run, ceding the lease, and taking it back on the same live session.
+
+**Also disclosed - what screenshot masking does and does not claim.** Declared-sensitive regions and
+the record identity ARE masked: only the masked image is written, and a `.mask.json` manifest beside
+it names every region covered and every region that could not be. That is a claim about DECLARED
+regions and nothing more. There is no OCR, so a sensitive value rendered somewhere nobody declared -
+a summary line, a tooltip, a page title, a neighbouring row - is still in the pixels. "These declared
+regions are covered" and "the screenshot is redacted" are different promises and only the first one
+is made here. `docs/DATA_HANDLING.md` says the same in its LIMITS section.

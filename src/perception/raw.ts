@@ -20,6 +20,15 @@ export interface RawControl {
   /** The element's own trimmed text. Used only to build an adapter addressing recipe. */
   ownText: string;
   box: Box;
+  /**
+   * Whether `box` has been offset into TOP-LEVEL PAGE space.
+   *
+   * `frame` means it could NOT be - a cross-origin frame, where `frameElement` is inaccessible -
+   * and masking must then refuse to draw rather than draw at the wrong coordinates. An unoffset
+   * box produces a screenshot that looks redacted while the value sits legible beside the black
+   * rectangle, which is worse than no mask at all.
+   */
+  boxSpace?: 'page' | 'frame';
   nearbyText: string[];
   containers: { axRole: string; name: string }[];
   rowCellTexts?: string[];

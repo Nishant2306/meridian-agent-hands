@@ -1056,3 +1056,217 @@ which is why a hard failure now carries `expected` as well as `observed` - it ca
 **Session liveness decides the next move.** A failure on a dead session means sign on again; on a
 live one it means go and look at the screen we left behind. A successful run gets the short form,
 because nobody needs a diagnosis of something that worked.
+
+---
+
+## D49 - The bootstrap minimum stays, and a test proves it rather than a comment
+
+**Decision.** The PHASE 2 minimum runs FIRST at both enforcement points and the configurable engine
+runs SECOND. Neither is removed. `tests/policy.engine.test.ts` asserts both independently: an
+off-origin navigate and every action type on "Submit Request" are refused by the minimum AND by the
+engine.
+
+**Why not just delete it once the engine works.** The minimum is what actually stood between a real
+model and the "Submit Request" button across both GATE 1 runs. Replacing a control that has been
+load-bearing in production with an untested one, in the same commit, on the strength of "the new
+one does the same thing", is how guardrails quietly stop working. Two independent refusals means a
+mistake in one is not a hole.
+
+**The engine can only tighten.** The minimum returns on refusal before the engine is consulted, so
+nothing the engine ALLOWS can re-open something the minimum refused. That is asserted too: the
+`/subaccount/submit` route passes the minimum, which knows nothing about routes, and is refused by
+the engine.
+
+---
+
+## D50 - `--origin` is deployment configuration, not a policy bypass
+
+**The problem.** `allowlist.yaml` names concrete origins, and a deployment's real origin is
+whatever it is - a fixture on an ephemeral port in a test, a different host in staging. A run whose
+origin is not in the file cannot sign on.
+
+**Decision.** `PolicyEngine` takes an optional `runOrigin`, and the CLIs pass the origin the run was
+configured with. The permitted set is the allowlist file plus that one origin.
+
+**Why this is not a hole.** The bootstrap minimum pins the ENTIRE run to a single origin and refuses
+everything else before the engine is consulted at all. `runOrigin` can therefore only ever agree
+with a decision the minimum has already made; it cannot widen a run to a second origin, because the
+minimum only knows about one. The browser-level backstop is armed from the same set.
+
+---
+
+## D51 - The input-path lint test is itself the deliverable
+
+**Decision.** `tests/policy.input-path.lint.test.ts` walks `src`, `tests`, `scripts` and `fixtures`
+and fails if `page.click`, `page.fill`, `page.goto`, `page.type` or their relatives appear outside
+`src/surface/playwright-web/`.
+
+**Why mechanically rather than by review.** One `page.click` somewhere else bypasses the lease, the
+bootstrap minimum, the policy engine, the single resolver and the revalidation step. In a diff it
+looks like a shortcut in a test helper. Nothing else in the suite fails.
+
+**It found one immediately.** `scripts/inventory.ts` called `page.goto` directly. A dev script is
+exactly where this happens, because it does not feel like automation. It now goes through the input
+path like everything else.
+
+**It carries two negative controls**: the walker must find files, and the matcher must find the
+forbidden calls where they ARE allowed. Without the second, a typo in the pattern list would make
+every assertion pass while checking nothing.
+
+---
+
+## D52 - Three data mechanisms, kept apart on purpose
+
+**(1) Persistence is pseudonymized.** One seam - `redactForPersistence` - which every event passes
+through, plus the transcript and the human CLI output.
+
+**(2) Artifacts are SCANNED and REJECTED, never rewritten.** Rewriting corrupts input examples,
+typed literals, descriptors, expected values and URL templates, and it hides the fact that the
+distiller has a bug. A scrubbed artifact also LOOKS reviewed, which is what makes it dangerous.
+
+**(3) Caller results are not redacted at all.** The brief requires replay to RETURN what it read. An
+agent that asked for the review status and got `[reviewStatus:subject-01]` has been given nothing.
+`replay --json` writes real typed outputs to stdout; stderr and `/runs` are pseudonymized.
+`tests/replay.cli.live.test.ts` asserts both halves in one test, because either alone would let the
+other regress.
+
+**[MUST] The pseudonym map is per-run and random.** A truncated hash of a five-digit member id is
+enumerable in under a second - 100,000 candidates. A short digest of a low-entropy value is not
+pseudonymization, it is an index into the plaintext, and it looks careful, which makes it worse than
+doing nothing. `PSEUDONYM_SECRET` switches to HMAC-SHA-256 at 8 bytes minimum, refused below that,
+and the trade is stated rather than sold: stable labels across runs, correlation for anyone holding
+the secret.
+
+**Luhn before card detection.** Without it, every account number and reference of the right length
+is replaced, the logs become unreadable, and the next person turns redaction off.
+
+---
+
+## D53 - There is no --approve-irreversible flag, and this is the shape one would need
+
+**Decision.** IRREVERSIBLE is blocked outright in discovery and replay. No flag, no environment
+variable, no artifact field. `effectiveRisk` is the MAXIMUM of the artifact-declared risk and the
+risk derived from the control that actually resolved, so an artifact claiming "Submit Request" is
+`SAFE_REVERSIBLE` is not believed - otherwise editing one field of a JSON file would be enough.
+
+**Why a run-wide boolean is the wrong shape.** It binds approval to NOTHING: not one action, not one
+control, not one screen state, not one time window. Somebody approves "this run may submit", and
+what they have actually authorised is every irreversible control the run happens to encounter,
+including ones nobody was looking at when they approved.
+
+**The capability never needs it.** It prepares a request and stops at review. Blocking outright is
+both safer and simpler than any grant mechanism, and a half-built approval mechanism is worse than
+none.
+
+**What a real grant would have to carry**, written down so that building it later is a design task
+rather than a guess:
+
+```
+{ runId, stepId, actionDigest, screenIdentityDigest, approvedBy, approvedAt, expiresAt,
+  oneTimeUse: true }
+```
+
+Every field is load-bearing. `actionDigest` and `screenIdentityDigest` bind the approval to THIS
+action on THIS screen, so a grant cannot drift onto a different control after a re-render.
+`expiresAt` and `oneTimeUse` stop it from becoming a standing permission. `approvedBy` is who
+answers for it afterwards.
+
+---
+
+## D54 - The pinned safety profile is blunter than the allowlist, and cannot be fixed here
+
+**The finding, from a test written this phase.** The PHASE 7 requirement is that deny patterns be
+CONTEXTUAL and word-bounded - `confirm transfer`, not a bare `transfer` that also blocks "Transfer
+history". The allowlist written this phase satisfies that.
+
+The PINNED SAFETY PROFILE does not. Its irreversible list contains the bare words `transfer`,
+`delete`, `remove` and `approve`, chosen in PHASE 3 on the reasoning that a minimum which only
+blocks the exact button in the demo is a demo rather than a minimum. So "Transfer history" - a
+read-only link - is refused.
+
+**It cannot be fixed by editing the profile.** That file is hashed into every artifact, including
+the one approved at GATE 1, and editing a comment in it would invalidate every pinned hash and make
+replay refuse to run with PROFILE_INTEGRITY_FAILURE.
+
+**Decision: leave it, document it, and record the fix as a new profile VERSION.** Nothing in this
+capability touches such a control, so nothing is broken today. `tests/policy.engine.test.ts` asserts
+the false positive OUT LOUD rather than hiding it, and separately asserts that the layer this phase
+does control is contextual. A `banking-default 2.0.0` with phrase-level rules is the real fix, and
+it belongs with the artifact migration story rather than smuggled in here.
+
+---
+
+## D55 - Operator console security is built before the console does anything
+
+**Decision.** Loopback-only binding with the host as a CONSTANT rather than a parameter; a 32-byte
+per-run token; token-for-cookie exchange with HttpOnly, SameSite=Strict, short-lived,
+intervention-scoped cookies; CSRF checks on every state-changing request; unguessable intervention
+ids; and NO endpoint that lists interventions.
+
+**Why now rather than with PHASE 8.** Access control retrofitted onto a working console is access
+control that ships "for now" without any. The console's job is to hand a human control of a browser
+signed into a banking application, which is the most dangerous surface in the project.
+
+**[MUST] The token is never in a URL.** The CLI prints the URL and the token on separate lines. A
+URL carrying a token leaks through the Referer header, browser history, shell history, proxy logs,
+and the screenshot somebody takes of their terminal to ask a colleague for help.
+
+**[MUST] No list-all endpoint.** Enumeration is the whole attack: with one, a single leaked token
+becomes a directory of every run in flight, each with a live authenticated session behind it. A
+cookie is scoped to ONE intervention, so it is worth exactly one handoff. An unknown intervention id
+gets the SAME answer as a bad token, so the endpoint is not an oracle for which ids exist.
+
+**What REPORT.md must say**: no enterprise identity, no RBAC, no per-operator accounts, no remote
+operator auth. What it must NOT say is that the console has no access protection.
+
+---
+
+## D56 - Masking is hand-rolled PNG work, and the test reads pixels
+
+**Decision.** `src/redaction/png.ts` decodes, draws and re-encodes 8-bit non-interlaced PNG on
+Node's own `zlib`. `sharp`, `pngjs` and `jimp` would each do it in three lines and each is a
+dependency the phase prompt did not name.
+
+**Flat opaque rectangles, not blur or pixelation.** Both of those are reversible to a useful degree
+and both LOOK like redaction to a reviewer, which is exactly what makes them dangerous.
+
+**[MUST] The test compares pixels, not manifest entries.** Asserting that a manifest lists a region
+proves only that a manifest was written. The claim is about the image, so the test decodes the
+written PNG, samples the centre of a masked region, requires the mask colour, and separately
+requires that less than a quarter of the screenshot is mask-coloured - otherwise "we painted the
+whole thing" would pass.
+
+**A box in the wrong coordinate space is worse than no box.** Boxes come from
+`getBoundingClientRect()` inside their own frame and this application renders everything inside
+`contentFrame`. Extraction now offsets them into page space; anything it cannot offset is REFUSED
+and recorded rather than drawn.
+
+**The offset was broken on the first attempt, in a way only a live test could catch.**
+`frame.evaluate(string)` evaluates the string as an EXPRESSION. Handed a function DECLARATION it
+produces a function object, which is not serializable, so the call threw, the throw was caught, the
+offset was reported unknown, and every box silently stayed in frame coordinates. Nothing failed
+loudly. The live test failed on `boxSpace` and named it immediately.
+
+**Viewport screenshots, not `fullPage`.** A full-page capture is stitched from multiple viewport
+captures and scrolls the page to take them, so the coordinates the observation just reported no
+longer describe the image.
+
+---
+
+## D57 - The session broker checks that sign-on actually happened
+
+**The bug, surfaced by the policy engine.** The broker fired its four sign-on actions and ignored
+every result. When the policy engine started refusing one, the run carried on to the
+authenticated-text wait, timed out, and reported
+
+> signed on, but "Member Search" never appeared, so the session is not on the entry screen
+
+which describes the symptom and points away from the cause. The actual message is now
+
+> sign-on could not open the sign-on screen: ALLOWLIST_VIOLATION - origin ... is not in
+> allowedOrigins
+
+**Decision.** Every sign-on step is checked and a non-performed result throws immediately, naming
+the step and the reason. The general rule: a helper that performs a sequence of actions and discards
+their results converts a precise failure into a vague one, at exactly the moment somebody needs the
+precise one.

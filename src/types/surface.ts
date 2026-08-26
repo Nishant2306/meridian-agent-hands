@@ -123,5 +123,16 @@ export interface Surface {
    */
   exposeForHuman(): Promise<HumanSessionHandle>;
 
+  /**
+   * Is the driven process gone?
+   *
+   * OPTIONAL, and the AUTHORITY on whether an error is surface death. Matching Playwright's error
+   * strings was the first approach and it missed twice in two phases - a browser can die inside
+   * CDP attach, inside a page call, or between them, and each produces different wording. Asking
+   * the surface is a fact rather than a guess. A surface that cannot answer says nothing and the
+   * message match is used instead.
+   */
+  isClosed?(): boolean;
+
   close(): Promise<void>;
 }
