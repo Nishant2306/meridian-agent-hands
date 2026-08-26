@@ -299,11 +299,37 @@ const INTERACTIVE_AX_ROLES: ReadonlySet<string> = new Set([
   'radio',
 ]);
 
+/**
+ * Roles whose PRESENCE is the information, whatever they happen to contain.
+ *
+ * The `containsInteractive` rule below is right for a generic wrapper - it adds a line and no
+ * information, because the control inside it is already listed. It is WRONG for these three: a
+ * dialog is not a wrapper around its OK button, it is the fact that the screen is blocked, and an
+ * alert region is not a wrapper around its Retry link, it is the fact that something was rejected.
+ *
+ * Found in PHASE 6. The unrecognised-modal fixture rendered a real `<dialog open>`, Chrome's
+ * accessibility tree reported it as `dialog`, and the inventory dropped it - because it contained
+ * a button. The needs_human rung depends on seeing a blocking dialog, so it could never fire.
+ *
+ * `alert` was the same latent bug: `APPLICATION_VALIDATION_REJECTED` is detected STRUCTURALLY by
+ * the alert region, and today's validation banner is text-only, so it survives. An alert carrying
+ * a "Retry" button would have vanished, and the detector would have silently stopped working on
+ * exactly the screens where it mattered most.
+ */
+const PRESENCE_IS_SIGNAL_AX_ROLES: ReadonlySet<string> = new Set([
+  'dialog',
+  'alertdialog',
+  'alert',
+]);
+
 function isNoiseStructure(axRole: string, node: AxNode, enrichment: EnrichResult): boolean {
   const role = axRole.toLowerCase();
 
   // Anything the model can act on is never dropped, whatever it looks like structurally.
   if (INTERACTIVE_AX_ROLES.has(role)) return false;
+
+  // See above: these say something no child of theirs can say.
+  if (PRESENCE_IS_SIGNAL_AX_ROLES.has(role)) return false;
 
   // A wrapper around a control adds a line and no information: the control is already listed.
   if (enrichment.containsInteractive) return true;

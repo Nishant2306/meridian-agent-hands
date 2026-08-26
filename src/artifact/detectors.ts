@@ -193,6 +193,27 @@ export function detectCondition(
   }
 
   // 5. Nothing above explains where we are.
+  //
+  // A BLOCKING overlay nobody described is the sharpest form of this. The modal sits over a screen
+  // that is otherwise perfectly recognisable, so "the screen matches no known state" would not
+  // fire - and yet nothing can proceed, because a modal that demands an attestation code is not
+  // something an automation may guess its way past.
+  //
+  // Detected STRUCTURALLY, by role, for the same reason APPLICATION_VALIDATION_REJECTED is: the
+  // wording of a modal belongs to the application and it may reword it at any time. What we can
+  // rely on is that a blocking dialog is marked as one.
+  const blocking = observation.controls.find((control) => control.role === 'dialog');
+  if (blocking !== undefined) {
+    return {
+      kind: 'needs_human',
+      reason:
+        'a blocking dialog' +
+        (blocking.name === '' ? '' : ' ("' + blocking.name + '")') +
+        ' is displayed, and no condition in the profile describes it. An unrecognised blocking ' +
+        'state is a human decision, not something to guess past.',
+    };
+  }
+
   if (context.screenRecognised === false) {
     return {
       kind: 'needs_human',

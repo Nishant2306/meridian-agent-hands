@@ -19,7 +19,7 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, **308 tests passing across 30 files**, in about 90 seconds.
+Expect: no type errors, no lint errors, **341 tests passing across 33 files**, in about 2 minutes.
 
 ### Two test commands
 
@@ -445,7 +445,8 @@ distilled artifact would. See `examples/artifacts/README.md`.
 ## Phase 4 - discovery and the distiller (COMPLETE)
 
 **No real model call was made in this phase.** Every behaviour below is exercised with a scripted
-fake client and no API key. The first genuine discovery run is GATE 1, at the end of PHASE 5.
+fake client and no API key. The first genuine discovery run was GATE 1, at the end of PHASE 5; see
+[GATE 1](#gate-1---the-first-real-model-against-a-live-ui) for what it found.
 
 ### What exists
 
@@ -554,15 +555,17 @@ npm run discover -- --spec config/specs/prepare_subaccount_review.yaml --goal "F
 ```
 
 It writes `/runs/<runId>/` with `events.jsonl`, `transcript.jsonl`, screenshots,
-`proposed-conditions.json`, `result.json` and `metrics.json`, and puts a **draft** artifact in the
-store. **That call is yours to make at GATE 1.** The fixture must be running (`npm run dev:app-a`).
+`proposed-conditions.json`, `result.json`, `metrics.json` and `run.json` - the full run record, so a
+distillation can be re-done without paying for another run - and puts a **draft** artifact in the
+store. It is the only command in this repository that spends money, and the fixture must be running
+(`npm run dev:app-a`). It was first run at GATE 1.
 
 Sign-on is a PRECONDITION, not part of the capability: the CLI authenticates and then hands over. A
 capability that carried a credential would be a capability that could be replayed into an account.
 
 ---
 
-## Phase 5 - replay (COMPLETE, GATE 1 NOT YET RUN)
+## Phase 5 - replay (COMPLETE)
 
 The end-to-end slice works: **the model discovers, the artifact becomes a capability, replay
 invokes it** - with no model anywhere in the replay loop. Happy path only, as scoped.
@@ -736,13 +739,183 @@ Worth recording, because all three distilled and validated cleanly first:
 
 ---
 
-## GATE 1: PASSED, and what it leaked
+## Phase 6 - runtime outcomes (COMPLETE)
 
-Run 2 passed. Discovery took 8 steps and 10 model calls; replay ran the distilled capability on
-member 10002 against a freshly seeded fixture with no nickname, in 1.8s, with `llmCalls: 0` and
-correct typed outputs.
+What happens when the application does not cooperate. Every condition here is described by the
+condition profile that was PINNED IN PHASE 3 and is never edited: the fixture was made to match it.
 
-**The artifact it produced leaked, and reached the store approved.**
+### Fault injection is per SESSION, never a server-wide flag
+
+```bash
+curl -X POST http://localhost:4180/__test__/faults \
+  -H 'content-type: application/json' -H 'cookie: MERIDIAN_SESSIONID=...' \
+  -d '{"showKnownNotice":true}'
+```
+
+| Flag                        | What it does                                                    |
+| --------------------------- | --------------------------------------------------------------- |
+| `slowLoadMs`                | delays every servicing response. A BOUNDED wait, not a failure. |
+| `showKnownNotice`           | the scheduled-maintenance notice - a RECOVERY                   |
+| `showUnknownModal`          | a blocking modal the profile deliberately does not describe     |
+| `expireSession`             | every screen answers with the session-expired page              |
+| `validationErrorOnContinue` | the application refuses the form -> review transition           |
+| `http500OnRoute`            | one route answers 500 with a readable page                      |
+| `denyPermission`            | member screens answer with the permission-denied panel          |
+| `relabelContinueButton`     | DRIFT: the label changes, the legacy-stable `name=` does not    |
+
+Keyed by the `MERIDIAN_SESSIONID` cookie, or `X-Fault-Session` for a caller that has not signed on
+yet - which `expireSession` needs, since it must be armed before the session it affects is used.
+
+A server-wide flag would let the vitest file testing SESSION_EXPIRED break the file testing a slow
+load, intermittently, and the failure would move when tests were reordered. See DECISIONS.md D42.
+
+**Two members carry their behaviour in the seed data, with nothing armed**: 10003 is `restricted`
+and answers PERMISSION_DENIED; 10004 is `knownNotice` and shows the maintenance notice.
+
+### The detector ladder, unchanged since PHASE 3 and now exercised
+
+1. global safety -> failed
+2. hard failures -> failed
+3. known business outcomes -> **business_outcome, not failed**
+4. recoveries - the first rung that TAKES AN ACTION
+5. unrecognised blocking state -> needs_human
+6. continue
+
+Rung 5 had no way to fire before this phase. It now detects a blocking dialog STRUCTURALLY, by role,
+for the same reason `APPLICATION_VALIDATION_REJECTED` is detected by the alert region: the wording
+of a modal belongs to the application, and a role does not.
+
+### How to check it
+
+```bash
+npx vitest run tests/fixture.faults.test.ts          # no browser, ~1s
+npx vitest run tests/replay.outcomes.live.test.ts    # real Chromium, ~80s
+npx vitest run tests/replay.downgrade.live.test.ts   # real Chromium, ~45s
+```
+
+| Claim                                                            | Test                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------ |
+| a fault in one session is invisible to another                   | two sessions, one app instance                   |
+| every fault screen matches the PINNED detector                   | reads the real profile, not a copy               |
+| 99999 -> `MEMBER_NOT_FOUND`, and NOT `failed`                    | `replay.outcomes.live`                           |
+| **99999 detected BEFORE the timeout**                            | asserts elapsed < the step's own timeout         |
+| 10004 recovers once, `recoveriesUsed === 1`                      | `replay.outcomes.live`                           |
+| **the interrupted click is NOT repeated**                        | asserts `attempts === 1`                         |
+| 10003 -> `PERMISSION_DENIED` with expected AND observed          | `replay.outcomes.live`                           |
+| `validationErrorOnContinue` -> `APPLICATION_VALIDATION_REJECTED` | `replay.outcomes.live`                           |
+| `expireSession` -> `SESSION_EXPIRED`, session reported gone      | `replay.outcomes.live`                           |
+| `http500OnRoute` -> `APPLICATION_UNAVAILABLE`, not `UNKNOWN`     | `replay.outcomes.live`                           |
+| a killed browser -> `SURFACE_UNAVAILABLE`, not an exception      | closes a REAL Chromium mid-run                   |
+| `showUnknownModal` -> `needs_human`                              | `replay.outcomes.live`                           |
+| a tier downgrade reaches step, evidence AND metrics              | `replay.downgrade.live`, with a negative control |
+
+### The timing assertion is the load-bearing one
+
+```
+99999 -> {"status":"business_outcome","outcome":"MEMBER_NOT_FOUND"}   in ~2.5s
+```
+
+If detectors ran AFTER the wait rather than inside it, this would still report `MEMBER_NOT_FOUND`
+eventually. The code would look correct and a status-only test would pass. What would differ is the
+clock: every "no such member" would cost a full timeout. So the assertion is on ELAPSED TIME against
+the step's own timeout, which is the only way to tell "detected" from "gave up and then noticed".
+
+### The failure report
+
+`formatResultForHuman` is what `npm run replay` prints on stderr when a run does not succeed:
+
+```
+prepare_subaccount_review@1.0.0 FAILED: PERMISSION_DENIED
+
+capability:         prepare_subaccount_review@1.0.0
+step:               step-3-open
+  intent:           Click Open in the row identified by memberId ...
+
+expected:           the Member Record screen is shown
+observed:           The signed-on operator is not entitled to view this member ...
+
+tiers attempted:    step-1-search -> T1_EXACT_ROLE_NAME
+                    step-3-open -> T5_STRUCTURAL_ROW
+recoveries:         none
+session:            still alive
+evidence:           runs/replay-...
+```
+
+The test of it is whether somebody who did not watch the run can decide what to do next without
+opening the artifact, the evidence bundle, or the code. See DECISIONS.md D48.
+
+### Three defects this phase found, none of them in the code it was about
+
+1. **A detector phrase in a bare `<div>` is invisible to its own detector.** The inventory drops
+   StaticText deliberately; the phrase has to be in a `<p>`. Found by observing the screen.
+2. **A container whose PRESENCE is the signal was dropped as noise.** `isNoiseStructure` drops a
+   non-interactive node that contains an interactive one - correct for a wrapper, wrong for a
+   dialog, and latently wrong for the `alert` region the validation detector depends on. D44.
+3. **A recovery on a step with `retries.max: 0` never rechecked anything.** The recheck was reached
+   only by continuing into the next retry iteration. D45.
+
+---
+
+## GATE 1 - the first real model against a live UI
+
+Two runs against a real model. Both found something; the second passed. Every model call in
+this project is made by a person, never by the build.
+
+### Run 1 - failed, and found an addressing defect
+
+`MAX_STEPS_EXCEEDED` after 8 model calls and 40 seconds.
+
+**What worked, six steps deep on a real model.** The `Open` link resolved at `T5_STRUCTURAL_ROW`,
+`New Sub-Account` at `T1_EXACT_ROLE_NAME`, and the unnamed combobox and deposit field at
+`T3_EXTERNAL_LABEL_OR_NEARBY`. `cdp_ax` throughout, zero tier downgrades, zero locator conflicts.
+The stopping condition fired correctly.
+
+**The defect: a control that was perceived, described, resolved, and could not be addressed.**
+`<p>Member Name: Avery Lin (10001)</p>` is ARIA role `paragraph`. Chrome's accessibility tree gives
+that node a name; ARIA does not give `paragraph` a name from its content; so a role-plus-name
+locator matched nothing while the control sat plainly on the screen. The model was told the control
+was "no longer present", re-proposed the same read four times, and the run stopped.
+
+```
+getByRole('paragraph')                                     -> 1
+getByRole('paragraph', { name: <the text>, exact: true })  -> 0     <- the bug
+getByText(<the text>, { exact: true })                     -> 1
+```
+
+The same bug also affected `No member found for that ID.`, which is the screen the
+`MEMBER_NOT_FOUND` business outcome is read from. That second instance was found by the new test,
+not by another paid run. See DECISIONS.md D36.
+
+**Two invariants came out of it, at two layers, because one of them could not have caught this.**
+
+```bash
+npx vitest run tests/agent.descriptors.invariant.test.ts   # no browser, milliseconds
+npx vitest run tests/perception.addressing.live.test.ts    # real Chromium
+```
+
+| Invariant                                                         | Layer      | Would it have caught GATE 1? |
+| ----------------------------------------------------------------- | ---------- | ---------------------------- |
+| A synthesized descriptor resolves back to its own control         | resolver   | **No.** It did resolve.      |
+| Every perceived control can be `read` through the real input path | addressing | **Yes.**                     |
+
+The first is exhaustive over every recorded observation and every control on it, and it is enforced
+inside `buildDescriptor` as a throw rather than merely observed by a test. The second needs a browser
+because a Playwright locator is only real against a live page. Reverting the D36 fix makes it fail
+with the exact GATE 1 message, which is how that test is known to test what it claims. D37.
+
+**Rejections now say what to do.** `src/agent/guidance.ts` turns each failure code into a next move,
+and the loop counts failures per (code, mark) so a repeat says it is a repeat. Four identical
+proposals was not the model being stubborn: every rejection described the SCREEN, on a screen that
+had not changed, so there was nothing to act on. The repeated-action rule was the only signal, and
+it is meant to be the backstop. D38.
+
+### Run 2 - passed, and leaked
+
+Discovery took 8 steps and 10 model calls. Replay then ran the distilled capability on member
+**10002**, whom discovery never saw, against a freshly seeded fixture with no nickname: 1.8s,
+`llmCalls: 0`, correct typed outputs.
+
+**The artifact it produced reached the store approved carrying a member id and a member's name.**
 
 ```
 steps[2](step-3-open).intent
@@ -751,17 +924,18 @@ steps[2](step-3-open).expectedEffects[1].description
   "Navigated from Member Search to Member Record screen for member 10001 (Avery Lin), ..."
 ```
 
-`grep -rn "10001" artifacts/` catches it. That grep is on the GATE 1 checklist, and the artifact
-had already passed distillation, validation and approval.
+`grep -rn "10001" artifacts/` catches it. That grep is on the GATE 1 checklist, and the artifact had
+already passed distillation, validation and approval.
 
-**The sweep did not miss a site it knew about.** It covers every place a value can be BOUND, and the
-guarantee held at all of them. The model writes PROSE, and a model narrates what it sees. The value
-was never bound. It was described.
+**The sweep did not miss a site it knew about.** It covers every place a value can be BOUND - action
+values, navigate segments, row keys, expected values, locator hints, output patterns, provenance -
+and the guarantee held at every one of them. The gap was conceptual: the model writes PROSE, and a
+model narrates what it sees. The value was never bound anywhere. It was described.
 
 The sweep now covers model-authored free text - `step.intent`, `step.notes`, every
 `assertion.description`, `state.description` - and REFUSES rather than rewriting, because an edited
 intent is a step whose recorded reasoning no longer says what the model meant. `PROMPT_VERSION` is
-`v2` and tells the model its words are stored. See DECISIONS.md D39 and D40.
+`v2` and tells the model that its own words are stored in a reusable capability. D39, D40.
 
 ```bash
 npx vitest run tests/artifact.gate1-leak.test.ts
@@ -775,50 +949,23 @@ That test runs against the real GATE 1 artifact, kept verbatim at
 run**: the tracked example artifact and the embedded artifact in `docs/SCHEMA.md` both illustrated
 currency comparison with the literal `"250.00"`. Both rewritten.
 
----
+**One thing the leak exposed that was not about the leak.** The discovery run record was never
+written to disk, so the distillation could not be re-run against a fixed distiller without paying
+for another discovery. `src/cli/discover.ts` now writes `run.json`. D41.
 
-## GATE 1, run 1: what it proved and what it found
+### Where it stands
 
-The first real model call was made by the user. It failed with `MAX_STEPS_EXCEEDED` after 8 calls
-and 40 seconds, and it was worth the two cents.
+|                                        |                                                       |
+| -------------------------------------- | ----------------------------------------------------- |
+| Discovery against a real model         | passes: 8 steps, 10 calls                             |
+| Replay of the distilled capability     | passes: 1.8s, `llmCalls: 0`, typed outputs            |
+| Replay on a member discovery never saw | passes (10002)                                        |
+| The contaminated artifact              | removed from the store; kept as a test fixture        |
+| The prose leak                         | refused by the sweep, and the prompt was bumped to v2 |
 
-**What worked, on a real model against a live UI.** Six steps deep: the `Open` link resolved at
-`T5_STRUCTURAL_ROW`, `New Sub-Account` at `T1_EXACT_ROLE_NAME`, and the unnamed combobox and deposit
-field at `T3_EXTERNAL_LABEL_OR_NEARBY`. `cdp_ax` throughout, zero tier downgrades, zero locator
-conflicts. The stopping condition fired correctly.
-
-**The defect: a control that was perceived, described, resolved, and could not be addressed.**
-`<p>Member Name: Avery Lin (10001)</p>` is ARIA role `paragraph`. Chrome's accessibility tree gives
-it a name; ARIA does not give `paragraph` a name from its content; so a role-plus-name locator
-matched nothing while the control sat plainly on screen. See DECISIONS.md D36.
-
-The same bug also affected `No member found for that ID.`, which is the screen the
-`MEMBER_NOT_FOUND` business outcome is read from. Found by the new test, not by a second run.
-
-### The two invariants, and why one of them is not enough
-
-```bash
-npx vitest run tests/agent.descriptors.invariant.test.ts   # no browser, milliseconds
-npx vitest run tests/perception.addressing.live.test.ts    # real Chromium
-```
-
-| Invariant                                                         | Layer      | Would it have caught GATE 1? |
-| ----------------------------------------------------------------- | ---------- | ---------------------------- |
-| A synthesized descriptor resolves back to its own control         | resolver   | **No.** It did resolve.      |
-| Every perceived control can be `read` through the real input path | addressing | **Yes.**                     |
-
-The first is exhaustive over every recorded observation and every control on it, and it is enforced
-inside `buildDescriptor` as a throw, not just observed by a test. The second needs a browser because
-a Playwright locator is only real against a live page. Reverting the D36 fix makes it fail with the
-exact GATE 1 message, which is how the test is known to test what it claims. See DECISIONS.md D37.
-
-### Rejections now say what to do
-
-`src/agent/guidance.ts` turns each failure code into a next move, and the loop counts failures per
-(code, mark) so a repeat says it is a repeat. At GATE 1 the model was told four times that a control
-was "no longer present on the screen" - on an unchanged screen - which is why it proposed the same
-thing four times. The repeated-action rule was the only signal; it is meant to be the backstop.
-See DECISIONS.md D38.
+Everything the two runs found is fixed and has a test behind it. `/artifacts` is gitignored, so the
+capability in a given checkout is whatever that checkout's most recent approved discovery produced;
+`examples/artifacts/` holds the tracked, reviewable example.
 
 ---
 
@@ -828,7 +975,6 @@ Not oversights. Each belongs to a later phase, and building it now would be buil
 
 | Absent                                                                             | Phase |
 | ---------------------------------------------------------------------------------- | ----- |
-| Business outcomes at runtime, known conditions, fault injection in the fixture     | 6     |
 | The configurable policy engine, PII pseudonymization, screenshot masking           | 7     |
 | The human handoff protocol (pause / cede / resume)                                 | 8     |
 | `README.md`, `REPORT.md`, `/evidence/README.md`                                    | 10    |

@@ -43,11 +43,32 @@ export const KnownOutcomeSchema = z.object({
 export type KnownOutcome = z.infer<typeof KnownOutcomeSchema>;
 
 /**
- * `recheck_expected_effect` is the only continuation in v1, and it is the conservative one: after
- * clearing an interruption, do NOT assume the interrupted action landed. A modal that swallowed a
- * click leaves the screen looking exactly as it did before the click.
+ * ==============================================================================================
+ * WHAT HAPPENS AFTER A RECOVERY CLEARS THE WAY.
+ * ==============================================================================================
+ *
+ *   recheck_expected_effect  Re-observe and check the interrupted step's expected effect. If it
+ *                            holds, the step is COMPLETE and the action is NOT repeated. The
+ *                            conservative default, and the one the pinned profile uses.
+ *   retry_action             The action was genuinely swallowed. Perform it again.
+ *   continue_next_step       The interruption was purely cosmetic; this step is done.
+ *   { gotoStep }             The remediation moved us somewhere else in the flow.
+ *
+ * WHY THE DEFAULT IS NOT `retry_action`. The maintenance notice in this application appears AFTER
+ * the "New Sub-Account" click, on the screen that click navigated TO. The click worked. Repeating
+ * it would navigate a second time from a page whose link is no longer on it, or restart a form
+ * that had already been filled. "The overlay swallowed my click" and "the overlay appeared because
+ * my click worked" look identical from the screen, and only one of them is safe to retry.
+ *
+ * WIDENING THIS ENUM DOES NOT TOUCH THE PINNED PROFILE. The YAML file is unchanged, so its SHA-256
+ * is unchanged, so every artifact pinned to it still verifies. A profile that USED a new
+ * continuation would be a new version file.
  */
-export const ContinuationSchema = z.enum(['recheck_expected_effect']);
+export const ContinuationSchema = z.union([
+  z.enum(['recheck_expected_effect', 'retry_action', 'continue_next_step']),
+  z.object({ gotoStep: z.string().min(1) }),
+]);
+export type RecoveryContinuation = z.infer<typeof ContinuationSchema>;
 
 export const RecoverySchema = z.object({
   id: z.string().min(1),

@@ -1,5 +1,6 @@
 import { formatMoney } from '../../src/types/money.js';
 import type { Obfuscation } from './obfuscation.js';
+import { FAULT_TEXT } from './faults.js';
 import type { SeedMember } from './seed-data.js';
 import { DUMMY_DATA_NOTICE } from './seed-data.js';
 import type { SubAccountField, TenantConfig } from './tenants/types.js';
@@ -67,6 +68,10 @@ function styles(obf: Obfuscation): string {
     .${obf.cls('errorBox')} { border:1px solid #a94442; background:#f7e2e2; padding:6px 8px; margin-bottom:8px; }
     .${obf.cls('footer')} { padding:4px 8px; border-top:1px solid #9aa7b4; color:#4a5560; font-size:10px; }
     .${obf.cls('frameCell')} { padding:0; vertical-align:top; }
+    .${obf.cls('noticeBox')} { border:1px solid #d8c86a; background:#fff9dd; padding:6px 8px; margin-bottom:8px; }
+    .${obf.cls('denyBox')} { border:1px solid #9aa7b4; background:#f2f4f7; padding:8px 10px; }
+    .${obf.cls('modalMask')} { position:fixed; inset:0; background:rgba(20,28,38,0.45); }
+    .${obf.cls('modalBox')} { position:fixed; top:80px; left:50%; margin-left:-190px; width:380px; background:#ffffff; border:2px solid #1f3a5f; padding:12px; }
   `;
 }
 
@@ -238,7 +243,11 @@ export function renderSearch(
   });
 }
 
-export function renderMember(ctx: RenderContext, member: SeedMember): string {
+export function renderMember(
+  ctx: RenderContext,
+  member: SeedMember,
+  opts: { overlay?: string } = {},
+): string {
   const { obf, tenant } = ctx;
 
   const accountRows = member.accounts
@@ -252,6 +261,7 @@ export function renderMember(ctx: RenderContext, member: SeedMember): string {
     .join('\n');
 
   const body = `
+    ${opts.overlay ?? ''}
     <table class="${obf.cls('formTable')}" cellpadding="0" cellspacing="0">
       ${labelledRow(ctx, tenant.labels.memberIdLabel, escapeHtml(member.id))}
       ${labelledRow(ctx, tenant.labels.memberNameLabel, escapeHtml(member.name))}
@@ -316,7 +326,13 @@ function subAccountFieldHtml(
 export function renderSubAccountForm(
   ctx: RenderContext,
   member: SeedMember,
-  opts: { values: SubAccountFormValues; error?: string },
+  opts: {
+    values: SubAccountFormValues;
+    error?: string;
+    overlay?: string;
+    /** Drift: the visible label changes, the legacy-stable `name=` does not. */
+    continueLabel?: string;
+  },
 ): string {
   const { obf, tenant } = ctx;
 
@@ -325,6 +341,7 @@ export function renderSubAccountForm(
     .join('\n');
 
   const body = `
+    ${opts.overlay ?? ''}
     ${errorBox(ctx, opts.error)}
     <p>${escapeHtml(tenant.labels.memberNameLabel)}: ${escapeHtml(member.name)} (${escapeHtml(member.id)})</p>
     <form method="post" action="/member/${encodeURIComponent(member.id)}/subaccount/new">
@@ -332,7 +349,7 @@ export function renderSubAccountForm(
         ${rows}
         <tr><td class="${obf.cls('labelCell')}"></td>
             <td class="${obf.cls('fieldCell')}">
-              <button type="submit" name="ctl00$Main$btnContinue">${escapeHtml(tenant.labels.continueButton)}</button>
+              <button type="submit" name="ctl00$Main$btnContinue">${escapeHtml(opts.continueLabel ?? tenant.labels.continueButton)}</button>
             </td></tr>
       </table>
     </form>`;
@@ -403,4 +420,84 @@ export function renderSubmitted(ctx: RenderContext, member: SeedMember): string 
 
 export function renderMessage(ctx: RenderContext, heading: string, message: string): string {
   return layout(ctx, { title: heading, heading, body: `<p>${escapeHtml(message)}</p>` });
+}
+
+/**
+ * ================================================================================================
+ * PHASE 6 FAULT SCREENS.
+ * ================================================================================================
+ *
+ * Every string here comes from `FAULT_TEXT`, which exists so that the fixture and the contract test
+ * read the same constant. The condition profile that matches these is IMMUTABLE and was pinned in
+ * PHASE 3, so these strings are fixed points: if a detector does not match, this file is wrong.
+ */
+
+/** A recovery, not a failure: it carries no decision and dismissing it changes no record. */
+export function maintenanceNoticeHtml(ctx: RenderContext, returnTo: string): string {
+  const { obf } = ctx;
+  // The text lives in a <p>, not loose in the div. Loose text is a StaticText node, and the
+  // inventory drops StaticText deliberately - so a detector phrase sitting in a bare div is
+  // invisible to the very thing it exists to trigger. Found by observing the screen, not by
+  // reading the markup.
+  return `<div class="${obf.cls('noticeBox')}">
+      <p>${escapeHtml(FAULT_TEXT.maintenanceNotice)}</p>
+      <form method="post" action="/__fixture__/dismiss-notice" style="display:inline">
+        <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}">
+        <button type="submit" name="ctl00$Main$btnDismiss">${escapeHtml(FAULT_TEXT.dismissButton)}</button>
+      </form>
+    </div>`;
+}
+
+/**
+ * A blocking modal the condition profile deliberately does NOT describe.
+ *
+ * It carries `role="dialog"` and `aria-modal`, so perception sees a blocking state even though no
+ * detector names it. That combination - blocking, and unrecognised - is what must reach a human
+ * instead of being guessed past, and it is the PHASE 8 trigger.
+ */
+export function unknownModalHtml(ctx: RenderContext): string {
+  const { obf } = ctx;
+  // A REAL <dialog open>, not a div wearing role="dialog". Chrome's accessibility tree does not
+  // expose the div form as a dialog, so perception saw the heading and the button and nothing that
+  // said "blocking" - which is the one property the needs_human rung depends on.
+  return `<div class="${obf.cls('modalMask')}"></div>
+    <dialog open class="${obf.cls('modalBox')}" aria-modal="true" aria-label="${escapeHtml(FAULT_TEXT.unknownModal)}">
+      <h2>${escapeHtml(FAULT_TEXT.unknownModal)}</h2>
+      <p>${escapeHtml(FAULT_TEXT.unknownModalBody)}</p>
+      <button type="button" name="ctl00$Main$btnAttest">Enter attestation code</button>
+    </dialog>`;
+}
+
+/**
+ * HTTP 200, not an error page.
+ *
+ * The application answered, and the answer was no. Serving a 4xx here would let a transport-level
+ * check stand in for reading the screen, and the whole point is that the automation must read.
+ */
+export function renderPermissionDenied(ctx: RenderContext): string {
+  const { obf, tenant } = ctx;
+  return layout(ctx, {
+    title: tenant.labels.memberHeading,
+    heading: tenant.labels.memberHeading,
+    body: `<div class="${obf.cls('denyBox')}"><p>${escapeHtml(FAULT_TEXT.permissionDenied)}</p></div>`,
+  });
+}
+
+export function renderSessionExpired(ctx: RenderContext): string {
+  const { obf } = ctx;
+  return layout(ctx, {
+    title: 'Session Ended',
+    heading: 'Session Ended',
+    body: `<div class="${obf.cls('denyBox')}"><p>${escapeHtml(FAULT_TEXT.sessionExpired)}</p></div>
+      <p><a href="/">Sign on</a></p>`,
+  });
+}
+
+export function renderApplicationUnavailable(ctx: RenderContext): string {
+  const { obf } = ctx;
+  return layout(ctx, {
+    title: 'Service Notice',
+    heading: 'Service Notice',
+    body: `<div class="${obf.cls('denyBox')}"><p>${escapeHtml(FAULT_TEXT.applicationUnavailable)}</p></div>`,
+  });
 }

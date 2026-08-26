@@ -900,3 +900,159 @@ re-driving its input, and from the next run onward it will not have to be.
 **Disclosure.** The record contains observations, so it contains screen text, which can contain PII.
 It is written under `/runs`, which is gitignored, alongside screenshots that already have that
 property. PHASE 7 pseudonymizes persisted evidence and this file is in that scope.
+
+---
+
+## D42 - Fault injection is keyed by session, and the seeded members carry their own
+
+**Decision.** `POST /__test__/faults` stores flags against the `MERIDIAN_SESSIONID` cookie, or an
+`X-Fault-Session` header for a caller that has not signed on yet. There is no server-wide switch.
+
+**Why the header exists at all.** `expireSession` has to be armable BEFORE the session it affects is
+used. Without the header that fault cannot be tested, and the temptation would be a global flag.
+
+**Why not a global flag, concretely.** The suite runs vitest files in parallel against one fixture
+module. A global flag lets the file testing SESSION_EXPIRED break the file testing a slow load,
+intermittently, and the failure moves when tests are reordered - so it reads as flaky
+infrastructure rather than a design mistake. `tests/fixture.faults.test.ts` pins the isolation with
+two sessions against one app instance.
+
+**Seeded members are the more honest subject.** 10003 (`restricted`) returns PERMISSION_DENIED and
+10004 (`knownNotice`) shows the maintenance notice with NOTHING armed, which is how the real system
+would behave: the caller asks about a member and the application answers. The flags exist for the
+conditions that are not a property of one record.
+
+**The fault screens answer HTTP 200 wherever the application would.** A 403 would let a
+transport-level check stand in for reading the screen, and reading the screen is the whole thesis.
+`http500OnRoute` is the exception, and it still renders a readable page, because that is what these
+applications actually do.
+
+---
+
+## D43 - The fixture was changed to match the profile, twice, and the profile was not touched
+
+**The rule from PHASE 3, applied.** Every detector phrase is rendered by the fixture verbatim, and
+`tests/fixture.faults.test.ts` reads the REAL profile and checks its detectors against the REAL
+HTML. It never hard-codes a phrase: a test comparing two copies of a string would pass while the
+page said something else.
+
+**Two fixture changes were needed, and both were perception problems rather than wording problems.**
+
+1. **Detector text in a bare `<div>` is invisible.** The inventory drops StaticText deliberately -
+   it would triple the size of a legacy screen and add nothing actionable - so the maintenance
+   notice and the session-expired panel rendered their phrases into a node the detectors could
+   never see. The text now sits in a `<p>`, which is a `paragraph` and reaches both. Found by
+   observing the screen, not by reading the markup.
+
+2. **A `<div role="dialog">` is not a dialog.** Chrome's accessibility tree does not expose it as
+   one. The fixture renders a real `<dialog open>`, which it does.
+
+**Neither was fixed by editing the profile**, which would have invalidated every pinned hash.
+
+---
+
+## D44 - A container whose PRESENCE is the signal is never dropped as noise
+
+**The bug, found by PHASE 6.** `isNoiseStructure` drops any non-interactive node that CONTAINS an
+interactive one, on the sound reasoning that a wrapper around a button adds a line and no
+information. The unrecognised-modal fixture rendered a real `<dialog open>`, Chrome reported it as
+`dialog`, and the inventory dropped it - because it contained a button. The needs_human rung
+depends on seeing a blocking dialog, so it could never have fired.
+
+**`alert` was the same latent bug, and worse.** `APPLICATION_VALIDATION_REJECTED` is detected
+STRUCTURALLY by the alert region. Today's validation banner is text-only so it survives; an alert
+carrying a "Retry" link would have vanished, and the detector would have silently stopped working
+on exactly the screens where it mattered.
+
+**Decision.** `PRESENCE_IS_SIGNAL_AX_ROLES` = dialog, alertdialog, alert. A dialog is not a wrapper
+around its OK button; it is the fact that the screen is blocked. That is something no child of it
+can say.
+
+---
+
+## D45 - Recovery continuation: recheck regardless of the retry budget, detectors before the recheck
+
+**Decision.** `#recover` applies the remediation, RE-OBSERVES, runs the TERMINAL detectors on what
+is now visible, and only then rechecks the interrupted step's expected effect. If it holds, the
+step is complete and the action is NOT repeated.
+
+**Rung 3 is the one that would have been left out.** Clearing an overlay is exactly how a permission
+denial or a business outcome underneath it becomes readable. Without the detector pass, dismissing a
+maintenance notice sitting on top of "You do not have permission" would recheck the effect, fail,
+and report EFFECT_NOT_OBSERVED - a diagnosis of the automation for what is an entitlement problem.
+
+**It runs regardless of the retry budget.** The old code reached the recheck only by continuing into
+the next retry iteration, so a step with `retries.max: 0` would have applied the remediation and
+then fallen straight through to failure without ever looking. `retries.max: 0` means "do not perform
+this action twice"; it must not also mean "do not look at whether the recovery worked".
+
+**Only `retry_action` repeats the action.** The maintenance notice appears AFTER the "New
+Sub-Account" click, on the screen that click navigated TO - the click worked. "The overlay swallowed
+my click" and "the overlay appeared because my click worked" look identical from the screen, and
+only one of them is safe to retry. `tests/replay.outcomes.live.test.ts` asserts `attempts === 1`.
+
+**The continuation type was widened; the profile file was not touched.** Adding `retry_action`,
+`continue_next_step` and `{ gotoStep }` to the zod union leaves the YAML bytes unchanged, so every
+pinned hash still verifies. A profile that USED a new continuation would be a new version file.
+
+---
+
+## D46 - A dead browser is a result, not an exception
+
+**Decision.** `ReplayEngine.run` catches surface death and returns `SURFACE_UNAVAILABLE`. Nothing
+mapped it before: a dead Chromium threw a raw Playwright error out of `run()`, so the one failure
+mode that is not the application's fault was the only one a caller could not handle uniformly.
+
+**Anything not recognisable as surface death is RETHROWN.** A blanket catch would turn every genuine
+defect in the engine into a tidy "the browser died", which is the kind of helpful error handling
+that costs a day. The match is a small explicit list of the phrases Playwright uses.
+
+**The test kills a real browser.** `killBrowserAfterMs` closes an actual Chromium mid-run rather
+than stubbing a throw, so the engine sees what it would see in production.
+
+**Amended after PHASE 6, by running the suite on a loaded machine.** The first version of the phrase
+list covered the page-level messages only. Under file parallelism the browser died a few
+milliseconds earlier - inside `newCDPSession` rather than inside a page operation - and Playwright
+said `Protocol error (Target.attachToTarget): No target with given id found`, which matched nothing
+and was rethrown. The CDP-level phrases are now in the list. This is not an exotic case: a browser
+that dies during OBSERVATION dies inside CDP, which is where this system spends most of its time.
+
+---
+
+## D47 - The tier-downgrade claim now has a test behind it, with a negative control
+
+**The gap, flagged after PHASE 5 and closed here.** Detection worked at the resolver and one PHASE 2
+test pinned it. Above that line nothing was asserted: the engine carried `downgraded`, the evidence
+logger wrote it, the loop counted `locatorTierDowngrades`, and no test drove a real replay against a
+drifted screen to see whether any of it arrived. PHASE 10 quotes that number.
+
+**The drift is realistic.** `relabelContinueButton` rewords the button and leaves its legacy-stable
+`name=` attribute alone, because the server's form handling depends on that attribute. The recorded
+descriptor resolves at `T4_STABLE_ATTRIBUTE` instead of `T1_EXACT_ROLE_NAME` - one tier weaker, the
+run still succeeds, and the drift is recorded. That is the moment worth noticing, well before it
+breaks outright.
+
+**Determinism across fresh boots is a DIFFERENT claim** and always was: it shows the tier does not
+move when the page is unchanged. It says nothing about whether a move is caught when it happens.
+
+**The negative control.** An unchanged screen must report `locatorTierDowngrades: 0` and no
+downgraded step. Without it, an implementation that marked every step downgraded would pass
+everything else in the file.
+
+---
+
+## D48 - The failure report is a checklist, not a dump
+
+**Decision.** `formatResultForHuman` renders capability id AND version, the step id AND its recorded
+intent, expected beside observed, tiers attempted with any downgrade marked, recoveries attempted,
+whether the session is still alive, and the evidence path.
+
+**The test of the function is whether a person who did not watch the run can decide what to do next
+without opening the artifact, the evidence bundle, or the code.** Each field earns its place against
+that: an id without a version is not actionable when two versions are deployed; a step id without
+its intent sends the reader to the artifact; and one half of a disagreement is not a diagnosis,
+which is why a hard failure now carries `expected` as well as `observed` - it carried `null` before.
+
+**Session liveness decides the next move.** A failure on a dead session means sign on again; on a
+live one it means go and look at the screen we left behind. A successful run gets the short form,
+because nobody needs a diagnosis of something that worked.

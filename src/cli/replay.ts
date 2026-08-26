@@ -10,6 +10,7 @@ import { EvidenceWriter } from '../evidence/logger.js';
 import { DefaultTargetResolver } from '../perception/resolver.js';
 import { ReplayEngine } from '../replay/engine.js';
 import { validateInvocationParams } from '../artifact/params.js';
+import { formatResultForHuman } from '../replay/report.js';
 import { SessionBroker } from '../replay/session-broker.js';
 import { headlessFromEnv } from '../surface/playwright-web/browser.js';
 import type { RunResult } from '../types/run.js';
@@ -183,9 +184,13 @@ async function run(options: ReplayCliOptions): Promise<void> {
       );
     }
     log('');
-    log('status:    ' + outcome.result.status);
     log('llm calls: ' + outcome.result.metrics.llmCalls);
-    log('evidence:  ' + evidence.runDir);
+    log('');
+    // Everything a person needs to decide the next move, without opening the artifact or the
+    // evidence bundle. Still on stderr: stdout has exactly one writer.
+    for (const line of formatResultForHuman({ artifact, outcome }).split(String.fromCharCode(10))) {
+      log(line);
+    }
 
     if (options.json === true) {
       // THE ONLY WRITE TO STDOUT IN THIS FILE.

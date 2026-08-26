@@ -188,21 +188,21 @@ tracked - the `/artifacts` ignore pattern is root-anchored and does not reach it
 The real phase map, supplied by the user after PHASE 0. **Knowing the map is fine; building ahead of
 the pasted phase is not** (Hard Rule 7).
 
-| Phase | Scope                                                                                                                                       | Status                   |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| 0     | Constitution, directory scaffold, `CLAUDE.md`, `.gitignore`, `git init`                                                                     | ✅ Complete              |
-| 1     | Scaffold + types + DiscoverySpec + target app                                                                                               | ✅ Complete              |
-| 2     | Surface / perception / lease - `resolveAndPerform` exists and enforces the **bootstrap safety minimum** from here onward                    | ✅ Complete              |
-| 3     | Artifact schema + profiles + store - the **final versioned condition + safety profile YAML** is written here and does not change afterwards | ✅ Complete              |
-| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete              |
-| 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ✅ Built, GATE 1 pending |
-| 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ⬜ Not started           |
-| 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started           |
-| 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started           |
-| 9     | Tests                                                                                                                                       | ⬜ Not started           |
-| 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started           |
-| 11    | Cross-tenant                                                                                                                                | ⬜ Not started           |
-| 12    | Polish                                                                                                                                      | ⬜ Not started           |
+| Phase | Scope                                                                                                                                       | Status                     |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| 0     | Constitution, directory scaffold, `CLAUDE.md`, `.gitignore`, `git init`                                                                     | ✅ Complete                |
+| 1     | Scaffold + types + DiscoverySpec + target app                                                                                               | ✅ Complete                |
+| 2     | Surface / perception / lease - `resolveAndPerform` exists and enforces the **bootstrap safety minimum** from here onward                    | ✅ Complete                |
+| 3     | Artifact schema + profiles + store - the **final versioned condition + safety profile YAML** is written here and does not change afterwards | ✅ Complete                |
+| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete                |
+| 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ✅ Complete, GATE 1 PASSED |
+| 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ✅ Complete                |
+| 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started             |
+| 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started             |
+| 9     | Tests                                                                                                                                       | ⬜ Not started             |
+| 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started             |
+| 11    | Cross-tenant                                                                                                                                | ⬜ Not started             |
+| 12    | Polish                                                                                                                                      | ⬜ Not started             |
 
 ### Companion documents
 
@@ -213,8 +213,9 @@ the pasted phase is not** (Hard Rule 7).
 
 ### Deferred work (noted, not built - Hard Rule 7)
 
-- **GATE 1 HAS NOT BEEN RUN.** Everything in PHASE 5 is exercised with a scripted fake client. The
-  first real model call is the user's to make: `npm run discover` with a key in `.env`.
+- **GATE 1 PASSED.** Discovery 8 steps / 10 model calls; replay on member 10002 against a freshly
+  seeded fixture, 1.8s, `llmCalls: 0`. It also leaked a member id and name into model-authored
+  prose, which the parameterization sweep now refuses. See DECISIONS.md D39 and D40.
 - **`staticPolicyHook` / `resolvedPolicyHook`** in `src/surface/bootstrap-policy.ts` are named no-ops.
   PHASE 7 fills them in ALONGSIDE the bootstrap minimum, never instead of it.
 - **`redactForPersistence`** in `src/evidence/logger.ts` is the identity function and is called on
@@ -226,8 +227,6 @@ the pasted phase is not** (Hard Rule 7).
 - **`semanticKey`** exists on `TargetDescriptor` but is unused until PHASE 11. It is present now only
   so that cross-tenant support is not a schema retrofit against artifacts that already exist and are
   already content-hashed.
-- **Seed-data flags** (`restricted`, `knownNotice` on members 10003 / 10004) are carried as DATA with
-  no behaviour attached. Fault injection and known conditions are PHASE 6.
 - **`tenants/tenant-b.ts`** is a documented TODO for PHASE 11.
 - **[MUST] ORDERING HAZARD - THE PROFILES ARE NOW IMMUTABLE.** `config/condition-profiles/` and
   `config/safety-profiles/` were finalized in PHASE 3. Their SHA-256 is pinned into every artifact
@@ -250,16 +249,10 @@ the pasted phase is not** (Hard Rule 7).
   tested directly rather than by the happy path. See DECISIONS.md D19.
 - **Materializing the effective detector set and the global policy hash into run evidence** has its
   helpers; a runner wires them in from PHASE 4 onward.
-- **NOTED FOR PHASE 6, NOT BUILT - a tier downgrade is computed and propagated, but never asserted
-  end to end.** `resolver.ts` sets `trace.downgraded` and one PHASE 2 test pins that behaviour at the
-  resolver level. Above that line nothing is asserted: the replay engine carries `tierUsed` and
-  `downgraded` per step, the evidence logger writes both, and the discovery loop counts
-  `locatorTierDowngrades` - and no test drives a real replay against a drifted screen and checks that
-  the downgrade actually lands in the step result and the evidence. Determinism across fresh boots is
-  covered and is a DIFFERENT claim: it shows the tier does not move when the page is unchanged, not
-  that a move is caught when it is. "Replay resolved at a weaker tier than recorded" is a PHASE 10
-  evidence claim with no test behind it, and PHASE 10 must not be where that is discovered. The
-  fixture work in PHASE 6 is the natural place to produce a screen that resolves one tier weaker.
+- ~~A tier downgrade is computed and propagated but never asserted end to end~~ - DONE in PHASE 6.
+  `tests/replay.downgrade.live.test.ts` drives a real replay against a drifted screen and asserts the
+  downgrade lands in the step result, the evidence file and `metrics.locatorTierDowngrades`, with a
+  negative control. See DECISIONS.md D47.
 - **The async status API** for `needs_human` is deliberately not built - see the note at the bottom
   of `src/types/run.ts`.
 - **`README.md` / `REPORT.md` / `/evidence/README.md`** are PHASE 10.
@@ -410,3 +403,47 @@ the pasted phase is not** (Hard Rule 7).
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 231 passing
     (`npm run test:fast` 205 in ~5s).
   - **Decisions recorded**: `DECISIONS.md` D28-D32.
+
+- **PHASE 6** - Runtime outcomes. Business outcomes, known conditions, recoveries, fault injection.
+  - **[MUST] The PINNED profile was not touched.** Every detector phrase in
+    `config/condition-profiles/meridian-subaccount/1.0.0.yaml` is now rendered by the fixture
+    verbatim. `tests/fixture.faults.test.ts` reads the REAL profile and checks its detectors against
+    the REAL HTML, never against a copied string. Two fixture changes were needed and both were
+    PERCEPTION problems rather than wording ones (D43): a detector phrase in a bare `<div>` is
+    StaticText and invisible to its own detector, and a `<div role="dialog">` is not exposed as a
+    dialog by Chrome. Neither was fixed by editing the profile.
+  - **Fault injection, per SESSION** (`fixtures/legacy-app/faults.ts`): keyed by the
+    `MERIDIAN_SESSIONID` cookie or an `X-Fault-Session` header, never a server-wide flag, because a
+    global flag makes parallel vitest files interfere intermittently. Members 10003 (`restricted`)
+    and 10004 (`knownNotice`) carry their behaviour in the SEED DATA with nothing armed. D42.
+  - **Detector ladder rung 5 can now fire.** An unrecognised BLOCKING dialog returns `needs_human`,
+    detected structurally by role for the same reason the validation detector matches an alert
+    region rather than a wording.
+  - **Recovery continuation** (D45): apply remediation, RE-OBSERVE, run TERMINAL detectors on what
+    the recovery revealed, and only then recheck the interrupted step's effect. Runs regardless of
+    the retry budget. Only `retry_action` repeats the action, so the maintenance notice - which
+    appears AFTER the click that worked - never causes a second navigation. The continuation type
+    was widened; the YAML was not touched, so every pinned hash still verifies.
+  - **`SURFACE_UNAVAILABLE`** (D46): a dead browser is a result, not an exception. Anything not
+    recognisable as surface death is RETHROWN, so a real defect stays loud. The test closes a real
+    Chromium mid-run.
+  - **`formatResultForHuman`** (`src/replay/report.ts`, D48): capability id and version, step id and
+    recorded intent, expected beside observed, tiers attempted with downgrades marked, recoveries
+    attempted, session liveness, evidence path. A hard failure now carries `expected`; it was
+    `null`.
+  - **[ADDENDUM C] The tier-downgrade gap is closed** (D47). `relabelContinueButton` rewords a
+    button and leaves its legacy-stable `name=` alone, so a recorded T1 descriptor resolves at T4 -
+    one tier weaker, run still succeeds, drift recorded. Asserted in the step result, the evidence
+    file AND `metrics.locatorTierDowngrades`, with a negative control proving an unchanged screen
+    reports zero.
+  - **[ADDENDUM D] The timing assertion is kept and is the load-bearing test of the phase.** 99999
+    returns `MEMBER_NOT_FOUND` in about 2.5s, asserted as elapsed < the step's own timeout. A
+    status-only assertion would pass even if detectors ran after the wait.
+  - **A perception bug found here, not in Phase 6 code** (D44): `isNoiseStructure` dropped any
+    non-interactive node containing an interactive one. Correct for a wrapper, wrong for a dialog,
+    and LATENTLY wrong for the `alert` region `APPLICATION_VALIDATION_REJECTED` depends on - an
+    alert carrying a button would have vanished and the detector would have silently stopped
+    working.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 341 passing across
+    33 files (`npm run test:fast` 266 in ~20s).
+  - **Decisions recorded**: `DECISIONS.md` D42-D48.

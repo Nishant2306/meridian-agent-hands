@@ -32,6 +32,15 @@ export interface BrokeredSession {
   session: SessionStateMachine;
   resolver: TargetResolver;
   origin: string;
+  /**
+   * The application's own session identifier, read back from the browser after sign-on.
+   *
+   * Exposed so a TEST can address the session it just created - PHASE 6 fault injection is keyed
+   * by session, deliberately, and without this a test would have to fall back to a server-wide
+   * flag and reintroduce exactly the cross-test interference that keying by session avoids.
+   * Nothing in `src/` reads it.
+   */
+  applicationSessionId(): Promise<string | undefined>;
   close(): Promise<void>;
 }
 
@@ -123,6 +132,20 @@ export class SessionBroker {
       throw error;
     }
 
-    return { surface, token, lease, session, resolver, origin: options.origin, close };
+    const applicationSessionId = async (): Promise<string | undefined> => {
+      const cookies = await browser.context.cookies(options.origin);
+      return cookies.find((cookie) => cookie.name === 'MERIDIAN_SESSIONID')?.value;
+    };
+
+    return {
+      surface,
+      token,
+      lease,
+      session,
+      resolver,
+      origin: options.origin,
+      applicationSessionId,
+      close,
+    };
   }
 }

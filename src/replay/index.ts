@@ -6,6 +6,7 @@
  */
 export * from './engine.js';
 export * from './observation-loop.js';
+export * from './report.js';
 // The parameter validator lives in /artifact: it validates against DECLARED INPUTS, which are
 // shared vocabulary, and both discovery and replay call it as their first step.
 export * from '../artifact/params.js';

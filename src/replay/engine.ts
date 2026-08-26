@@ -1,9 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { verifyProfilePins } from '../artifact/approve.js';
-import { AssertionEvaluator } from '../artifact/assertions.js';
-import { effectiveDetectors, type EffectiveDetectors } from '../artifact/detectors.js';
+import { AssertionEvaluator, type AssertionContext } from '../artifact/assertions.js';
+import {
+  detectCondition,
+  effectiveDetectors,
+  type EffectiveDetectors,
+} from '../artifact/detectors.js';
 import { extractDeclaredOutput } from '../artifact/outputs.js';
-import type { ConditionProfile } from '../artifact/profiles.js';
+import type { ConditionProfile, Recovery } from '../artifact/profiles.js';
 import { stepApplies, type CapabilityArtifact, type Step } from '../artifact/schema.js';
 import { matchState } from '../artifact/validate.js';
 import type { EvidenceWriter } from '../evidence/logger.js';
@@ -61,14 +65,66 @@ export interface StepOutcome {
   downgraded: boolean;
   attempts: number;
   ms: number;
+  /** Recovery ids applied during this step, in order. Empty on a clean pass. */
+  recoveriesAttempted?: string[];
 }
 
 export interface ReplayOutcome {
   result: RunResult;
   steps: StepOutcome[];
+  /**
+   * Whether the live session was still usable when the run ended. A failure on a dead session and
+   * a failure on a live one need different things from whoever picks it up: one is "sign on again",
+   * the other is "look at the screen we left behind".
+   */
+  sessionAlive: boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
+
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? (error.message.split(String.fromCharCode(10))[0] ?? '')
+    : String(error);
+}
+
+/**
+ * Is this the browser dying, rather than a bug in here?
+ *
+ * Matched on the phrases Playwright and CDP use when the target is gone. Deliberately an explicit
+ * list: an over-broad test would classify our own defects as infrastructure failure.
+ *
+ * THE CDP PHRASES WERE MISSING, AND A LOADED MACHINE FOUND IT. The first version of this list
+ * covered the page-level messages only. Running the suite with file parallelism put enough load on
+ * the machine that the browser died a few milliseconds earlier - during `newCDPSession` rather than
+ * during a page operation - and Playwright said
+ *
+ *     browserContext.newCDPSession: Protocol error (Target.attachToTarget):
+ *     No target with given id found
+ *
+ * which matched nothing, so the error was rethrown instead of becoming SURFACE_UNAVAILABLE. The
+ * test caught it; the parallel run is what made it happen. In production this is the ordinary case:
+ * a browser that dies during OBSERVATION dies inside CDP, not inside a click.
+ */
+function isSurfaceDeath(error: unknown): boolean {
+  const message = describeError(error).toLowerCase();
+  return (
+    // Page and context level.
+    message.includes('target page, context or browser has been closed') ||
+    message.includes('target closed') ||
+    message.includes('browser has been closed') ||
+    message.includes('browser closed') ||
+    message.includes('session closed') ||
+    message.includes('websocket') ||
+    message.includes('page has been closed') ||
+    message.includes('page closed') ||
+    // CDP level: the target we were attached to is gone.
+    message.includes('no target with given id found') ||
+    message.includes('target.attachtotarget') ||
+    message.includes('target crashed') ||
+    message.includes('session with given id not found')
+  );
+}
 
 export class ReplayEngine {
   readonly #deps: ReplayDeps;
@@ -85,7 +141,51 @@ export class ReplayEngine {
       deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
+  /**
+   * ==============================================================================================
+   * A DEAD BROWSER IS A RESULT, NOT AN EXCEPTION.
+   * ==============================================================================================
+   *
+   * When the driven process dies, Playwright throws from wherever we happened to be. Letting that
+   * escape `run()` would make the one failure mode that is NOT the application's fault the only
+   * one a caller cannot handle uniformly - and SURFACE_UNAVAILABLE exists precisely to be told
+   * apart from APPLICATION_UNAVAILABLE, because one restarts a browser and the other waits for a
+   * vendor.
+   *
+   * ANYTHING NOT RECOGNISABLE AS SURFACE DEATH IS RETHROWN. A blanket catch here would turn every
+   * genuine defect in this engine into a tidy "the browser died", which is the kind of helpful
+   * error handling that costs a day of debugging.
+   */
   async run(request: ReplayRequest): Promise<ReplayOutcome> {
+    try {
+      return await this.#run(request);
+    } catch (error) {
+      if (!isSurfaceDeath(error)) throw error;
+      const metrics: RunMetrics = {
+        steps: 0,
+        durationMs: 0,
+        llmCalls: 0,
+        recoveriesUsed: 0,
+        locatorTierDowngrades: 0,
+        humanInterventions: 0,
+      };
+      return {
+        result: {
+          status: 'failed',
+          error: 'SURFACE_UNAVAILABLE',
+          expected: null,
+          observed: 'the browser or driven process died mid-run: ' + describeError(error),
+          attempts: 0,
+          evidenceRef: this.#deps.evidence?.runDir ?? 'runs/replay-unavailable',
+          metrics,
+        },
+        steps: [],
+        sessionAlive: false,
+      };
+    }
+  }
+
+  async #run(request: ReplayRequest): Promise<ReplayOutcome> {
     const providerCallsBefore = providerCallCount();
     const startedAt = this.#now();
     const { artifact, surface, token } = request;
@@ -119,7 +219,14 @@ export class ReplayEngine {
         );
       }
 
-      return { result: { ...result, metrics }, steps };
+      // A SESSION_EXPIRED or SURFACE_UNAVAILABLE run ends with nothing left to look at; anything
+      // else leaves the browser sitting on the screen that stopped us. Whoever picks this up needs
+      // to know which, because it decides whether the next move is "sign on again" or "look".
+      const sessionAlive = !(
+        result.status === 'failed' &&
+        (result.error === 'SESSION_EXPIRED' || result.error === 'SURFACE_UNAVAILABLE')
+      );
+      return { result: { ...result, metrics }, steps, sessionAlive };
     };
 
     const failed = (error: ErrorCode, reason: string, stepId?: string): ReplayOutcome =>
@@ -355,6 +462,146 @@ export class ReplayEngine {
    * a capability that submits anything, re-observing first is the difference between one request
    * and two.
    */
+  /**
+   * ==============================================================================================
+   * [MUST] 6C. APPLY REMEDIATION -> RE-OBSERVE -> TERMINAL DETECTORS -> RECHECK THE EFFECT.
+   * ==============================================================================================
+   *
+   * The order is the design, and each rung earns its place:
+   *
+   *   1  Apply the remediation.
+   *   2  RE-OBSERVE. Nothing about the pre-recovery observation is still trustworthy.
+   *   3  Run the TERMINAL detectors on what is now visible. Clearing an overlay is exactly how a
+   *      permission denial or a business outcome underneath it becomes readable, and acting on a
+   *      run that is already decided is the thing the ladder exists to prevent.
+   *   4  Only then check whether the interrupted step's expected effect NOW holds.
+   *
+   * Rung 3 is the one that would be easy to leave out. Without it, dismissing a maintenance notice
+   * that was sitting on top of "You do not have permission to view this member" would recheck the
+   * effect, fail, and report EFFECT_NOT_OBSERVED - a diagnosis of the automation for what is
+   * actually an entitlement problem.
+   *
+   * This runs REGARDLESS of the retry budget. The recheck is not a retry: `retries.max: 0` means
+   * "do not perform this action twice", and it must not also mean "do not look at whether the
+   * recovery worked".
+   */
+  async #recover(input: {
+    ctx: {
+      surface: Surface;
+      token: LeaseToken;
+      detectors: EffectiveDetectors;
+      params: Readonly<Record<string, string>>;
+      artifact: CapabilityArtifact;
+      before: Observation;
+      metrics: RunMetrics;
+      evidence: EvidenceWriter | undefined;
+    };
+    step: Step;
+    recovery: Recovery;
+    assertionContext: (observation: Observation) => AssertionContext;
+    tierUsed: string | null;
+    downgraded: boolean;
+    attempts: number;
+  }): Promise<
+    | { kind: 'settled'; observation: Observation }
+    | { kind: 'unsettled'; observation: Observation }
+    | {
+        kind: 'terminal';
+        result: {
+          outcome: Omit<StepOutcome, 'ms'>;
+          observation: Observation;
+          terminal: ((evidenceRef: string, metrics: RunMetrics) => RunResult) | null;
+        };
+      }
+  > {
+    const { ctx, step, recovery } = input;
+
+    // 1. Apply the remediation.
+    await ctx.surface.resolveAndPerform(
+      {
+        type: 'click',
+        target: { semantic: recovery.action.target, recordedTier: 'T1_EXACT_ROLE_NAME' },
+      },
+      ctx.token,
+    );
+    ctx.evidence?.append({
+      type: 'recovery_applied',
+      at: new Date().toISOString(),
+      recoveryId: recovery.id,
+      continuation: typeof recovery.continuation === 'string' ? recovery.continuation : 'gotoStep',
+    });
+
+    // 2. Re-observe.
+    const after = await ctx.surface.observe();
+
+    // 3. Terminal detectors on what the recovery revealed.
+    const revealed = detectCondition(after, ctx.detectors);
+    if (
+      revealed !== null &&
+      (revealed.kind === 'hard_failure' || revealed.kind === 'known_outcome')
+    ) {
+      const terminal =
+        revealed.kind === 'hard_failure'
+          ? {
+              detail: revealed.failure.description,
+              build: (evidenceRef: string, metrics: RunMetrics): RunResult => ({
+                status: 'failed',
+                error: revealed.failure.code,
+                stepId: step.id,
+                expected: step.expectedEffects.map((effect) => effect.description).join('; '),
+                observed: revealed.failure.description,
+                attempts: input.attempts,
+                evidenceRef,
+                metrics,
+              }),
+            }
+          : {
+              detail: 'business outcome: ' + revealed.outcome.outcome,
+              build: (evidenceRef: string, metrics: RunMetrics): RunResult => ({
+                status: 'business_outcome',
+                outcome: revealed.outcome.outcome,
+                detail: revealed.outcome.detail,
+                evidenceRef,
+                metrics,
+              }),
+            };
+
+      return {
+        kind: 'terminal',
+        result: {
+          outcome: {
+            stepId: step.id,
+            status: revealed.kind === 'hard_failure' ? 'failed' : 'performed',
+            detail: 'after recovery ' + recovery.id + ': ' + terminal.detail,
+            tierUsed: input.tierUsed,
+            downgraded: input.downgraded,
+            attempts: input.attempts,
+          },
+          observation: after,
+          terminal: terminal.build,
+        },
+      };
+    }
+
+    // 4. Did the interrupted step's expected effect land after all?
+    const held = this.#evaluator.evaluateAll(
+      step.expectedEffects,
+      input.assertionContext(after),
+    ).passed;
+
+    ctx.evidence?.append({
+      type: 'wait',
+      at: new Date().toISOString(),
+      condition: 'post-recovery-recheck:' + step.id,
+      satisfied: held,
+      ms: 0,
+    });
+
+    return held
+      ? { kind: 'settled', observation: after }
+      : { kind: 'unsettled', observation: after };
+  }
+
   async #runStep(
     step: Step,
     ctx: {
@@ -385,6 +632,7 @@ export class ReplayEngine {
     let lastDetail = '';
     let attempts = 0;
     let recoveriesTried = 0;
+    const recoveriesAttempted: string[] = [];
 
     for (let attempt = 0; attempt <= step.retries.max; attempt += 1) {
       if (attempt > 0) {
@@ -499,7 +747,9 @@ export class ReplayEngine {
               status: 'failed',
               error: code,
               stepId: step.id,
-              expected: null,
+              // A failure is a DISAGREEMENT. Reporting only what we saw leaves the reader to guess
+              // what we wanted, which is the half that says whether the automation is wrong.
+              expected: step.expectedEffects.map((effect) => effect.description).join('; '),
               observed: detail,
               attempts,
               evidenceRef,
@@ -545,22 +795,85 @@ export class ReplayEngine {
           }
           recoveriesTried += 1;
           ctx.metrics.recoveriesUsed += 1;
+          recoveriesAttempted.push(recovery.id);
 
-          // continuation: recheck_expected_effect. After clearing an interruption we do NOT assume
-          // the interrupted action landed - a modal that swallowed a click leaves the screen
-          // looking exactly as it did before the click.
-          await ctx.surface.resolveAndPerform(
-            {
-              type: 'click',
-              target: { semantic: recovery.action.target, recordedTier: 'T1_EXACT_ROLE_NAME' },
-            },
-            ctx.token,
-          );
-          continue;
+          const continued = await this.#recover({
+            ctx,
+            step,
+            recovery,
+            assertionContext,
+            tierUsed,
+            downgraded,
+            attempts,
+          });
+
+          if (continued.kind === 'terminal') return continued.result;
+          if (continued.kind === 'settled') {
+            current = continued.observation;
+            return {
+              outcome: {
+                stepId: step.id,
+                status: 'performed',
+                detail:
+                  'recovery ' +
+                  recovery.id +
+                  ' cleared the way and the expected effect then held; the action was NOT repeated',
+                tierUsed,
+                downgraded,
+                attempts,
+                recoveriesAttempted,
+              },
+              observation: current,
+              terminal: null,
+            };
+          }
+
+          current = continued.observation;
+          if (recovery.continuation === 'retry_action') continue;
+
+          // continuation: recheck_expected_effect, and the recheck did not hold.
+          //
+          // [MUST] We do NOT fall through to repeating the action. The maintenance notice appears
+          // AFTER the "New Sub-Account" click, on the screen that click navigated to - the click
+          // WORKED. Repeating it would navigate a second time from a page whose link is no longer
+          // on it, or restart a form that was already filled. Only `retry_action` may repeat.
+          lastDetail =
+            'recovery ' +
+            recovery.id +
+            ' was applied and the expected effect still did not hold. Its continuation is ' +
+            recovery.continuation +
+            ', so the action was deliberately not repeated.';
+          break;
         }
 
-        // needs_human / system conditions reach here only if a detector is added that raises one.
-        lastDetail = 'an unrecognised condition was detected';
+        if (condition.kind === 'needs_human') {
+          // Rung 5. Something is in the way that nobody described, and guessing past an
+          // unrecognised BLOCKING state is precisely the thing this system must not do.
+          const reason = condition.reason;
+          return {
+            outcome: {
+              stepId: step.id,
+              status: 'failed',
+              detail: reason,
+              tierUsed,
+              downgraded,
+              attempts,
+              recoveriesAttempted,
+            },
+            observation: current,
+            terminal: (evidenceRef, metrics) => ({
+              status: 'needs_human',
+              interventionId: 'intervention-' + step.id + '-' + String(this.#now()),
+              reason,
+              stepId: step.id,
+              evidenceRef,
+              metrics,
+            }),
+          };
+        }
+
+        // A global-safety condition raised by the runtime.
+        lastDetail = 'a global safety condition stopped the run: ' + condition.reason;
         continue;
       }
 
@@ -590,7 +903,15 @@ export class ReplayEngine {
 
     const detail = lastDetail === '' ? 'the step did not complete' : lastDetail;
     return {
-      outcome: { stepId: step.id, status: 'failed', detail, tierUsed, downgraded, attempts },
+      outcome: {
+        stepId: step.id,
+        status: 'failed',
+        detail,
+        tierUsed,
+        downgraded,
+        attempts,
+        recoveriesAttempted,
+      },
       observation: current,
       terminal: (evidenceRef, metrics) => ({
         status: 'failed',

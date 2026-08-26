@@ -59,7 +59,13 @@ export type EvidenceEvent =
     }
   | { type: 'wait'; at: string; condition: string; satisfied: boolean; ms: number }
   | { type: 'bounded_backoff'; at: string; ms: number; reason: string }
-  | { type: 'evidence_captured'; at: string; kind: string; ref: string };
+  | { type: 'evidence_captured'; at: string; kind: string; ref: string }
+  /**
+   * A recovery from the pinned condition profile was applied. PHASE 10 quotes recoveriesUsed as
+   * evidence, and a count with no record of WHICH recovery and what was supposed to happen next is
+   * a number nobody can check.
+   */
+  | { type: 'recovery_applied'; at: string; recoveryId: string; continuation: string };
 
 /** PHASE 7 hook. Identity today, called on every event so there is exactly one place to change. */
 export function redactForPersistence(event: EvidenceEvent): EvidenceEvent {

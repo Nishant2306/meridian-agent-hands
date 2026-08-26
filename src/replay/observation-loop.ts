@@ -1,6 +1,7 @@
 import type { AssertionEvaluator } from '../artifact/assertions.js';
 import {
   detectCondition,
+  type DetectContext,
   type EffectiveDetectors,
   type ScreenCondition,
 } from '../artifact/detectors.js';
@@ -60,6 +61,8 @@ export interface SettleOptions {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   onPoll?: (observation: Observation) => void;
+  /** Global-safety conditions the runtime raised, plus screen recognition. Rungs 1 and 5. */
+  detectContext?: DetectContext;
 }
 
 export async function settle(options: SettleOptions): Promise<SettleOutcome> {
@@ -75,7 +78,7 @@ export async function settle(options: SettleOptions): Promise<SettleOutcome> {
     options.onPoll?.(latest);
 
     // Detectors FIRST, every pass. See the banner above.
-    const condition = detectCondition(latest, options.detectors);
+    const condition = detectCondition(latest, options.detectors, options.detectContext ?? {});
     if (condition !== null) {
       return { kind: 'condition', condition, observation: latest, ms: now() - started };
     }
