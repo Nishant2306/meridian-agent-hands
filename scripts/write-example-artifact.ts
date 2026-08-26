@@ -338,11 +338,11 @@ steps.push(
     risk: 'SAFE_REVERSIBLE',
     onFailure: 'fail',
     retries,
+    // [MUST] The step-level guard. Without it the step is ATTEMPTED with nothing to type.
+    when: { paramPresent: 'nickname' },
     notes:
-      'nickname is OPTIONAL. The effect is guarded with when.paramPresent so that an invocation ' +
-      'which omits it does not fail an assertion about it. The step itself still needs a skip ' +
-      'rule at replay time, since its value binding has nothing to resolve to; that rule is ' +
-      'PHASE 5 and is recorded in DECISIONS.md D16.',
+      'nickname is OPTIONAL, so both the step and its expected effect are guarded. Replay SKIPS ' +
+      'this step when no nickname was supplied, and records the skip.',
   },
   {
     id: 'step-7-enter-deposit',
@@ -360,8 +360,8 @@ steps.push(
         target: T.depositField,
         expected: param('initialDeposit'),
         description:
-          'the deposit field holds the requested amount. Compared as CURRENCY: the caller passes ' +
-          '"250.00" and the field holds "250".',
+          'the deposit field holds the requested amount. Compared as CURRENCY rather than as ' +
+          'text, so caller formatting and field formatting do not have to match.',
       },
     ],
     invariants: [identityInText('step-7.still-the-same-member')],
@@ -437,7 +437,7 @@ function build(): CapabilityArtifact {
   const spec = loaded.spec;
 
   const artifact: CapabilityArtifact = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     capabilityId: spec.capabilityId,
     name: spec.name,
     description: spec.description,

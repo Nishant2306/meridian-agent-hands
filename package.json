@@ -12,7 +12,7 @@
     "inventory": "tsx scripts/inventory.ts",
     "discover": "tsx src/cli/discover.ts",
     "distill:demo": "tsx scripts/distill-demo.ts",
-    "replay": "tsx scripts/not-implemented.ts replay 5",
+    "replay": "tsx src/cli/replay.ts",
     "operator": "tsx scripts/not-implemented.ts operator 8",
     "capability:approve": "tsx src/cli/capability-approve.ts",
     "test": "vitest run",

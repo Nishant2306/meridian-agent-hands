@@ -43,8 +43,8 @@ your convenience" and "every caller of this capability needs looking at".
 
 ```jsonc
 {
-  // What shape this file is. Owned by us.
-  "schemaVersion": 1,
+  // What shape this file is. Owned by us. Version 2 added the step-level `when` guard below.
+  "schemaVersion": 2,
 
   // Stable identity. The store is /artifacts/<capabilityId>/<capabilityVersion>.json
   "capabilityId": "prepare_subaccount_review",
@@ -248,7 +248,7 @@ did it during a handoff, or a recovery re-entered it from the side.
         { "id": "...deposit", "kind": "value_matches_param",
           "target": { /* the deposit box */ },
           "expected": { "kind": "param", "name": "initialDeposit" },
-          "description": "compared as CURRENCY: the caller passes \"250.00\", the field holds \"250\"" }
+          "description": "compared as CURRENCY rather than as text, so formatting need not match" }
       ],
       "invariants": [ /* the member id is still on screen */ ],
       "resumeEligible": true
@@ -328,7 +328,17 @@ That last row is load-bearing. On one run the caller passes `"250.00"`, the inpu
       // Every wait is declared explicitly. A step may not allow more retries than it has backoffs.
       "retries": { "max": 1, "backoffMs": [250] },
 
-      "notes": "This effect is discriminating ONLY because the form starts on a placeholder. If the form pre-selected Savings, selecting Savings would change nothing and this step could not be told apart from a click that was swallowed."
+      // `intent` is the MODEL's account of why this control is right. `notes` is the SYSTEM's
+      // account of how it was identified and at which tier. Omitted when it would only restate
+      // the intent - a field that always echoes its neighbour is noise in the first document a
+      // reviewer reads.
+      "notes": "Identified by nearby label \"Account Type\", recorded at T3_EXTERNAL_LABEL_OR_NEARBY."
+
+      // [MUST] A step bound to an OPTIONAL parameter also carries a guard:
+      //   "when": { "paramPresent": "nickname" }
+      // Replay SKIPS such a step when the parameter was not supplied, and RECORDS the skip. The
+      // guard lives in the artifact rather than inside the replay engine, so a reader can see the
+      // step is conditional without knowing how replay works.
     }
   ],
 ```
@@ -444,7 +454,7 @@ files on disk. If this block and the code ever disagree, the test fails.
 ```jsonc
 {
   // ---- identity ------------------------------------------------------------------------------
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "capabilityId": "example_minimal",
   "name": "Read the review status",
   "description": "The smallest artifact that is still a capability: one state, one step, one output.",

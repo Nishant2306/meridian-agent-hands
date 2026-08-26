@@ -4,7 +4,12 @@ import type { ControlRole } from '../types/control.js';
 import type { InventoryTruncation, Observation, PerceivedControl } from '../types/perception.js';
 import type { AdapterAddressing, AddressingRecipe } from './addressing.js';
 import type { RawCapture, RawControl } from './raw.js';
-import { ADDRESSABLE_ARIA_ROLES, mapAxRole, rolePriority } from './roles.js';
+import {
+  ADDRESSABLE_ARIA_ROLES,
+  mapAxRole,
+  rolePriority,
+  ROLES_NAMED_FROM_CONTENT,
+} from './roles.js';
 import { buildScreenIdentity } from './screen-identity.js';
 
 /**
@@ -37,9 +42,21 @@ function recipeFor(candidate: Candidate): AddressingRecipe {
 
   const ariaRole = raw.axRole.toLowerCase();
   if (ADDRESSABLE_ARIA_ROLES.has(ariaRole)) {
-    return raw.name === ''
-      ? { kind: 'role', ariaRole, index: candidate.roleIndex }
-      : { kind: 'role', ariaRole, name: raw.name, index: candidate.nameIndex };
+    // A name only goes into the recipe if `getByRole` will compute the same one. For a role that
+    // is not named from its content, a "name" equal to the node's own text came from Chrome's AX
+    // tree, not from ARIA, and filtering by it matches nothing. See ROLES_NAMED_FROM_CONTENT.
+    const nameIsJustItsOwnText = normalizeText(raw.name) === normalizeText(raw.ownText);
+    const nameIsAddressable =
+      raw.name !== '' && (ROLES_NAMED_FROM_CONTENT.has(ariaRole) || !nameIsJustItsOwnText);
+
+    if (nameIsAddressable) {
+      return { kind: 'role', ariaRole, name: raw.name, index: candidate.nameIndex };
+    }
+    // Its own text still addresses it, and on this fixture it is the recipe that works.
+    if (raw.ownText !== '') {
+      return { kind: 'text', text: raw.ownText, index: candidate.textIndex };
+    }
+    return { kind: 'role', ariaRole, index: candidate.roleIndex };
   }
 
   if (raw.ownText !== '') {

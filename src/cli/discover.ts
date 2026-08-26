@@ -7,6 +7,9 @@ import { AnthropicLlmClient } from '../agent/anthropic-client.js';
 import { distill } from '../artifact/distill.js';
 import { conditionProfilePath, loadConditionProfile } from '../artifact/profiles.js';
 import { FileCapabilityStore } from '../artifact/store.js';
+import { loadEnvFile, MissingEnvError, requireEnv } from '../config/env.js';
+import { validateInvocationParams } from '../artifact/params.js';
+import { fixtureCredentials, MERIDIAN_SIGN_ON } from '../config/sign-on.js';
 import { loadDiscoverySpec } from '../config/spec.js';
 import { EvidenceWriter } from '../evidence/logger.js';
 import { DefaultTargetResolver } from '../perception/resolver.js';
@@ -14,7 +17,6 @@ import { LeaseManager } from '../session/lease.js';
 import { SessionStateMachine } from '../session/state.js';
 import { headlessFromEnv, launchDeterministicBrowser } from '../surface/playwright-web/browser.js';
 import { PlaywrightWebSurface } from '../surface/playwright-web/surface.js';
-import type { TargetDescriptor } from '../types/control.js';
 
 /**
  * `npm run discover`
@@ -28,22 +30,7 @@ import type { TargetDescriptor } from '../types/control.js';
  * A capability that carried a credential would be a capability that could be replayed into an
  * account, which is a different and much worse thing than one that prepares a form.
  */
-const descriptor = (
-  semantic: TargetDescriptor['semantic'],
-  recordedTier: TargetDescriptor['recordedTier'],
-): TargetDescriptor => ({ semantic, recordedTier });
-
-const SIGN_ON = {
-  operator: descriptor(
-    { role: 'textbox', nameMatch: 'normalized', nearbyText: ['Operator ID'] },
-    'T3_EXTERNAL_LABEL_OR_NEARBY',
-  ),
-  passcode: descriptor(
-    { role: 'textbox', nameMatch: 'normalized', nearbyText: ['Passcode'] },
-    'T3_EXTERNAL_LABEL_OR_NEARBY',
-  ),
-  logIn: descriptor({ role: 'button', name: 'Log In', nameMatch: 'exact' }, 'T1_EXACT_ROLE_NAME'),
-};
+loadEnvFile();
 
 interface DiscoverOptions {
   spec: string;
@@ -55,16 +42,59 @@ interface DiscoverOptions {
 }
 
 async function run(options: DiscoverOptions): Promise<void> {
-  const apiKey = process.env['ANTHROPIC_API_KEY'];
-  const model = process.env['LLM_MODEL'];
-  if (apiKey === undefined || apiKey === '' || model === undefined || model === '') {
-    console.error('ANTHROPIC_API_KEY and LLM_MODEL must be set. Copy .env.example to .env.');
+  // Reads .env first, then reports each variable's own state. See src/config/env.ts for why the
+  // loading happens here rather than as an --env-file flag on the npm script.
+  let apiKey: string;
+  let model: string;
+  try {
+    const env = requireEnv(['ANTHROPIC_API_KEY', 'LLM_MODEL']);
+    apiKey = env.ANTHROPIC_API_KEY;
+    model = env.LLM_MODEL;
+  } catch (error) {
+    if (!(error instanceof MissingEnvError)) throw error;
+    console.error(error.message);
     process.exitCode = 2;
     return;
   }
 
   const loaded = loadDiscoverySpec(options.spec);
-  const runtimeInputs = JSON.parse(options.inputs) as Record<string, string>;
+
+  // ==============================================================================================
+  // [MUST] ARGUMENTS ARE CHECKED BEFORE THE CLIENT IS CONSTRUCTED AND BEFORE THE BROWSER OPENS.
+  // ==============================================================================================
+  //
+  // `runDiscovery` validates too, and that is where the property is tested. This check exists so
+  // the CLI never gets as far as launching Chromium and signing on to report something it could
+  // read off argv. Replay has had this ordering since PHASE 5; discovery did not, and the gap was
+  // billed in real model calls.
+  let runtimeInputs: Record<string, string>;
+  try {
+    runtimeInputs = JSON.parse(options.inputs) as Record<string, string>;
+  } catch (error) {
+    console.error('--inputs is not valid JSON: ' + (error as Error).message);
+    process.exitCode = 2;
+    return;
+  }
+
+  const validation = validateInvocationParams(loaded.spec.inputs, runtimeInputs);
+  if (!validation.ok) {
+    console.error(
+      'INPUT_VALIDATION_FAILED' +
+        String.fromCharCode(10) +
+        String.fromCharCode(10) +
+        validation.issues.map((issue) => '  ' + issue).join(String.fromCharCode(10)) +
+        String.fromCharCode(10) +
+        String.fromCharCode(10) +
+        'Declared inputs for ' +
+        loaded.spec.capabilityId +
+        ': ' +
+        loaded.spec.inputs
+          .map((input) => input.name + (input.required ? '' : ' (optional)'))
+          .join(', '),
+    );
+    process.exitCode = 2;
+    return;
+  }
   const goal = options.goal ?? loaded.spec.goalTemplate;
   const runId = 'discover-' + Date.now() + '-' + randomUUID().slice(0, 8);
   const evidence = new EvidenceWriter({ runId });
@@ -93,10 +123,7 @@ async function run(options: DiscoverOptions): Promise<void> {
     evidence,
     values: {
       params: runtimeInputs,
-      secrets: {
-        operatorId: process.env['OPERATOR_ID'] ?? 'fixture-operator',
-        operatorPasscode: process.env['OPERATOR_PASSCODE'] ?? 'fixture-passcode',
-      },
+      secrets: fixtureCredentials(),
     },
   });
 
@@ -111,20 +138,31 @@ async function run(options: DiscoverOptions): Promise<void> {
 
   try {
     await surface.resolveAndPerform({ type: 'navigate', pathSegments: [] }, token);
+    // ONE sign-on definition, shared with the replay SessionBroker. Discovery and replay must
+    // authenticate by the same path: if they diverge, a capability is recorded against a screen
+    // state that its own replay never reaches, and the mismatch surfaces as a locator failure
+    // somewhere downstream rather than as the configuration drift it actually is.
     await surface.resolveAndPerform(
-      { type: 'type', target: SIGN_ON.operator, value: { kind: 'secretRef', name: 'operatorId' } },
+      {
+        type: 'type',
+        target: MERIDIAN_SIGN_ON.operator,
+        value: { kind: 'secretRef', name: MERIDIAN_SIGN_ON.operatorSecretRef },
+      },
       token,
     );
     await surface.resolveAndPerform(
       {
         type: 'type',
-        target: SIGN_ON.passcode,
-        value: { kind: 'secretRef', name: 'operatorPasscode' },
+        target: MERIDIAN_SIGN_ON.passcode,
+        value: { kind: 'secretRef', name: MERIDIAN_SIGN_ON.passcodeSecretRef },
       },
       token,
     );
-    await surface.resolveAndPerform({ type: 'click', target: SIGN_ON.logIn }, token);
-    await surface.waitFor({ kind: 'text_present', text: 'Member Search' }, 15_000);
+    await surface.resolveAndPerform({ type: 'click', target: MERIDIAN_SIGN_ON.submit }, token);
+    await surface.waitFor(
+      { kind: 'text_present', text: MERIDIAN_SIGN_ON.authenticatedText },
+      15_000,
+    );
 
     const { record, result } = await runDiscovery({
       spec: loaded.spec,
@@ -149,6 +187,20 @@ async function run(options: DiscoverOptions): Promise<void> {
       JSON.stringify(record.metrics, null, 2),
       'utf8',
     );
+    // ============================================================================================
+    // THE FULL RUN RECORD, so a distillation can be RE-DONE without paying for another run.
+    // ============================================================================================
+    //
+    // Absent until after GATE 1, and its absence was felt immediately: the first run produced an
+    // artifact with a member id in a step intent, and there was no way to re-distill the same run
+    // against a fixed distiller to prove the fix. Evidence answered "what happened"; nothing
+    // answered "what would this same run produce now".
+    //
+    // It contains observations, so it contains screen text, which can contain PII. It is written
+    // under /runs, which is gitignored, alongside the screenshots that already have the same
+    // property. PHASE 7 pseudonymizes persisted evidence and this file is part of that scope.
+    writeFileSync(join(evidence.runDir, 'run.json'), JSON.stringify(record, null, 2), 'utf8');
+
     // Conditions the run ENCOUNTERED live here and ONLY here. They never enter the artifact.
     writeFileSync(
       join(evidence.runDir, 'proposed-conditions.json'),

@@ -5,6 +5,7 @@ export * from './distill.js';
 export * from './parameterize.js';
 export * from './path.js';
 export * from './hash.js';
+export * from './outputs.js';
 export * from './phrases.js';
 export * from './policy.js';
 export * from './profiles.js';

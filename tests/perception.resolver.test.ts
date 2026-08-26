@@ -82,6 +82,97 @@ describe('the resolver cascade', () => {
     expect(result.control.rowCellTexts).toContain('Casey Morgan');
   });
 
+  it('[MUST] a row key constrains EVERY tier: it never resolves to the wrong row', () => {
+    const observation = loadObservation('search-results');
+
+    // Four rows, and the key names the third. Any tier that located a candidate must still be
+    // filtered by the row it is in.
+    const keyed = resolver.resolve(
+      observation,
+      descriptor(
+        {
+          role: 'link',
+          name: 'Open',
+          nameMatch: 'exact',
+          rowKey: { cellText: { kind: 'literal', value: '10003' } },
+        },
+        'T5_STRUCTURAL_ROW',
+      ),
+    );
+
+    expect(keyed.ok).toBe(true);
+    if (!keyed.ok) return;
+    expect(keyed.control.rowCellTexts).toContain('Casey Morgan');
+    expect(keyed.trace.tierUsed).toBe('T5_STRUCTURAL_ROW');
+  });
+
+  it('[MUST] fails rather than resolving to the ONLY row when that row is not the keyed one', () => {
+    // The case a row-key-as-a-tier design gets wrong. Narrow the capture to a single result row,
+    // so role-plus-name alone resolves uniquely at T1 - then ask for a DIFFERENT member. Before
+    // the row key became a constraint on every tier, T1 would win and the click would land on the
+    // wrong record, with nothing at this step to notice.
+    const fourRows = loadObservation('search-results');
+    const others = new Set(['10002', '10003', '10004']);
+    const oneRow = {
+      ...fourRows,
+      observationId: 'derived-single-row',
+      controls: fourRows.controls.filter(
+        (control) => !(control.rowCellTexts ?? []).some((cell) => others.has(cell)),
+      ),
+    };
+
+    expect(
+      oneRow.controls.filter((control) => control.role === 'link' && control.name === 'Open'),
+    ).toHaveLength(1);
+
+    const wrongRow = resolver.resolve(
+      oneRow,
+      descriptor(
+        {
+          role: 'link',
+          name: 'Open',
+          nameMatch: 'exact',
+          rowKey: { cellText: { kind: 'literal', value: '10003' } },
+        },
+        'T5_STRUCTURAL_ROW',
+      ),
+    );
+
+    expect(wrongRow.ok).toBe(false);
+    if (wrongRow.ok) return;
+    expect(wrongRow.error).toBe('CONTROL_NOT_FOUND');
+  });
+
+  it('reports the STRUCTURAL tier whenever a row key is in play', () => {
+    // Even on a screen where role-plus-name alone would have been unique.
+    const fourRows = loadObservation('search-results');
+    const others = new Set(['10002', '10003', '10004']);
+    const oneRow = {
+      ...fourRows,
+      observationId: 'derived-single-row',
+      controls: fourRows.controls.filter(
+        (control) => !(control.rowCellTexts ?? []).some((cell) => others.has(cell)),
+      ),
+    };
+
+    const result = resolver.resolve(
+      oneRow,
+      descriptor(
+        {
+          role: 'link',
+          name: 'Open',
+          nameMatch: 'exact',
+          rowKey: { cellText: { kind: 'literal', value: '10001' } },
+        },
+        'T5_STRUCTURAL_ROW',
+      ),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.trace.tierUsed).toBe('T5_STRUCTURAL_ROW');
+    expect(result.trace.downgraded).toBe(false);
+  });
+
   it('refuses to guess when several controls match and nothing separates them', () => {
     const result = resolver.resolve(
       loadObservation('search-results'),

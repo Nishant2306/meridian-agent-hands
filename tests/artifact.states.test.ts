@@ -44,7 +44,7 @@ const ALL_SCREENS: SavedScreen[] = [
 describe('the example artifact', () => {
   it('validates against the schema and the structural rules', () => {
     expect(validateArtifactStructure(artifact)).toEqual([]);
-    expect(artifact.schemaVersion).toBe(1);
+    expect(artifact.schemaVersion).toBe(2);
     expect(artifact.capabilityVersion).toBe('1.0.0');
     expect(artifact.status).toBe('draft');
   });

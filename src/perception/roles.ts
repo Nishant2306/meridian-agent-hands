@@ -96,6 +96,46 @@ export const ADDRESSABLE_ARIA_ROLES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * ================================================================================================
+ * ROLES WHOSE ACCESSIBLE NAME COMES FROM THEIR OWN CONTENT (ARIA "name from content").
+ * ================================================================================================
+ *
+ * This set exists because of a real GATE 1 failure, and the failure is worth stating precisely
+ * because it is the kind that hides between two layers that are each behaving correctly.
+ *
+ * A `<p>Member Name: Avery Lin (10001)</p>` maps to `paragraph`, which IS addressable by
+ * `getByRole`. Chrome's full accessibility tree reports a NAME for that node - its text - so
+ * perception saw `role=paragraph name="Member Name: Avery Lin (10001)"` and the addressing recipe
+ * asked for role plus name. But ARIA does not give `paragraph` a name from its content, so
+ * Playwright computes its accessible name as EMPTY, and the recipe matched nothing:
+ *
+ *     getByRole('paragraph')                                  -> 1
+ *     getByRole('paragraph', { name: <the text>, exact: true }) -> 0     <- the bug
+ *     getByText(<the text>, { exact: true })                  -> 1
+ *
+ * The control was perceived, the descriptor resolved, and the transport could not point at it. The
+ * model was told "the control is no longer present on the screen", which sent it looking for a
+ * screen problem that did not exist, and it retried the same thing until the loop stopped it.
+ *
+ * So a name only goes into a role recipe when the name is one `getByRole` will also compute:
+ * either the role takes its name from content, or the name demonstrably came from somewhere else
+ * (a label or aria-label), which shows up as a name that is not simply the node's own text.
+ */
+export const ROLES_NAMED_FROM_CONTENT: ReadonlySet<string> = new Set([
+  'button',
+  'cell',
+  'checkbox',
+  'columnheader',
+  'gridcell',
+  'heading',
+  'link',
+  'listitem',
+  'radio',
+  'row',
+  'rowheader',
+]);
+
+/**
  * Truncation priority. Lower survives.
  *
  * 0 interactive  the things an action can address. Never dropped while anything else remains.

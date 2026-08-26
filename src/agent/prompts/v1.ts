@@ -16,7 +16,17 @@ import type { DiscoverySpec } from '../../types/spec.js';
  * gets you a model that reports permission errors, including on screens that have none - and those
  * reports would then be indistinguishable from the real thing.
  */
-export const PROMPT_VERSION = 'v1';
+/**
+ * BUMPED TO v2 AFTER GATE 1. v1 said nothing about the model's own prose being stored, and the
+ * first real run wrote "member 10001 (Avery Lin)" into a step intent and an effect description -
+ * a member id and a member's name, in an approved capability. The parameterization sweep now
+ * refuses that (see src/artifact/parameterize.ts, class (e)); this is the half that tells the model
+ * the rule so a run does not have to be thrown away to discover it.
+ *
+ * The version is recorded in provenance and is part of the artifact content hash, so an artifact
+ * built under v1 is distinguishable from one built under v2 forever.
+ */
+export const PROMPT_VERSION = 'v2';
 
 const PROMPT = [
   'You are operating a legacy banking application through a numbered inventory of on-screen',
@@ -47,6 +57,24 @@ const PROMPT = [
   '  RECOGNISABLE - its accessible name, the label to its left, the row it is in. That sentence is',
   '  kept as the recorded step notes, and it is what a reviewer reads later to decide whether the',
   '  capability is doing the right thing.',
+  '',
+  'WRITE FOR THE NEXT INVOCATION, NOT THIS ONE',
+  '- Your `intent` text, and the `description` on any effect you propose, are STORED IN A REUSABLE',
+  '  CAPABILITY. That capability will run again tomorrow with DIFFERENT values, and the words you',
+  '  write now will still be there describing it.',
+  '- So describe every step in terms of the PARAMETER NAMES you were given, never the values of',
+  '  this run. The parameter names are listed above.',
+  '- Write:     "click Open in the row identified by memberId"',
+  '  Not:       "click Open in the row for member 10001 (Avery Lin)"',
+  '- Write:     "the deposit field now holds initialDeposit"',
+  '  Not:       "the deposit field now shows 250.00"',
+  '- This applies to values you READ off the screen as well as values you were given. A name, an',
+  '  account number or a balance you saw belongs to one record; writing it into the capability',
+  '  makes a permanent record of that person inside a reusable tool.',
+  '- The system CHECKS this and REFUSES the whole capability if a value appears in your text. It',
+  '  does not edit your words, because edited reasoning is no longer your reasoning - it throws the',
+  '  run away. Getting it right the first time is the difference between a capability and a wasted',
+  '  run.',
   '',
   'HARD LIMITS',
   '- STAY IN THE APPLICATION. Do not attempt to navigate anywhere outside it.',

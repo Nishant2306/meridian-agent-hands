@@ -73,6 +73,33 @@ function matchesRowKey(control: PerceivedControl, expectedCellText: string): boo
 }
 
 /**
+ * ==============================================================================================
+ * [MUST] A ROW KEY IS A CONSTRAINT ON EVERY TIER, NOT A TIER OF ITS OWN.
+ * ==============================================================================================
+ *
+ * A descriptor that says "the Open link in the row keyed by memberId" must NEVER be satisfiable by
+ * an Open link in a different row, whichever tier located the candidate.
+ *
+ * The failure this prevents is quiet and specific. A search for one member returns one row, so
+ * role-plus-name resolves the link uniquely at T1 - and if the application returned a DIFFERENT
+ * member than the one requested, T1 would happily resolve to it, because the row key was never
+ * consulted. The click lands on the wrong record.
+ *
+ * It is not enough to rely on a later invariant to catch that. Whether any such invariant fires
+ * depends on the shape of the next step and on execution order; correctness here must not be
+ * contingent on either.
+ *
+ * An UNBOUND row key (still `{kind:'param'}`) satisfies nothing. The resolver refuses to guess
+ * which row was meant rather than falling back to a descriptor that ignores the row entirely.
+ */
+function satisfiesRowKey(control: PerceivedControl, descriptor: TargetDescriptor): boolean {
+  const key = descriptor.semantic.rowKey?.cellText;
+  if (key === undefined) return true;
+  if (key.kind !== 'literal') return false;
+  return matchesRowKey(control, key.value);
+}
+
+/**
  * Narrow a multi-candidate tier result using the descriptor REMAINING evidence.
  *
  * Deliberately excludes rowKey: that is T5 own primary evidence, and folding it in here would
@@ -261,7 +288,11 @@ export class DefaultTargetResolver implements TargetResolver {
       if (!definition.applicable(descriptor)) continue;
 
       const started = this.#now();
-      let candidates = definition.candidates(controls, descriptor);
+      // The row key filters EVERY tier's candidates, before disambiguation and before any tier
+      // gets to claim a unique hit. See satisfiesRowKey above.
+      let candidates: readonly PerceivedControl[] = definition
+        .candidates(controls, descriptor)
+        .filter((control) => satisfiesRowKey(control, descriptor));
       if (candidates.length > 1) candidates = disambiguate(candidates, descriptor);
       const elapsed = this.#now() - started;
 
@@ -272,7 +303,19 @@ export class DefaultTargetResolver implements TargetResolver {
       });
 
       const only = candidates.length === 1 ? candidates[0] : undefined;
-      if (only !== undefined) return { ok: true, control: only, trace: finish(definition.tier) };
+      if (only !== undefined) {
+        // When a row key is in play it is PART of what identified the control, whichever predicate
+        // located the candidate. Reporting T1 because role-plus-name happened to be unique on a
+        // one-row screen would misdescribe what the descriptor depends on - and `recordedTier` is
+        // what replay compares against to raise a drift signal, so getting it wrong makes a real
+        // downgrade read as normal operation. See DECISIONS.md D26.
+        const structural = descriptor.semantic.rowKey !== undefined;
+        return {
+          ok: true,
+          control: only,
+          trace: finish(structural ? 'T5_STRUCTURAL_ROW' : definition.tier),
+        };
+      }
       if (candidates.length > 1) sawAmbiguity = true;
     }
 

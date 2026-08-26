@@ -28,7 +28,20 @@ import { PolicyLimitsSchema } from './profiles.js';
  * common mistake is folding compatibility into capabilityVersion, which then forces a capability
  * bump every time the vendor patches something that did not affect us.
  */
-export const SCHEMA_VERSION = 1;
+/**
+ * VERSION 2 added `Step.when`, the step-level guard for an OPTIONAL parameter.
+ *
+ * This is a bump rather than a quietly additive field, and the reason is the failure mode of NOT
+ * bumping. `z.object` strips unknown keys, so a reader built for version 1 would silently discard
+ * the guard and EXECUTE a step that was supposed to be skipped - typing an empty nickname, or
+ * failing to resolve a binding, depending on the action. Refusing to load a file it does not fully
+ * understand is the correct behaviour for a reader, when the field it is missing carries execution
+ * semantics.
+ *
+ * Nothing was pinned to a version 1 artifact: the example is regenerated and no real capability
+ * exists yet. Doing this after GATE 1 would have cost considerably more.
+ */
+export const SCHEMA_VERSION = 2;
 
 /**
  * ==============================================================================================
@@ -142,8 +155,29 @@ export const StepSchema = z.object({
     backoffMs: z.array(z.number().int().nonnegative()),
   }),
   notes: z.string().min(1).optional(),
+  /**
+   * [MUST] SKIP this step when the named parameter was not supplied.
+   *
+   * `nickname` is optional. Its expected EFFECT is already guarded with `when.paramPresent`, so an
+   * invocation that omits it does not fail an assertion about it - but the STEP still has a value
+   * binding with nothing to resolve to, and the executor refuses to invent one.
+   *
+   * The guard lives on the step, in the artifact, rather than as an implicit rule inside the
+   * replay engine. A reader of the capability can see the step is conditional without knowing how
+   * replay works, which is this system's posture everywhere: behaviour is visible in the artifact,
+   * not implicit in the engine. See DECISIONS.md D16.
+   *
+   * A skipped step is RECORDED as skipped in the step results. It never passes silently.
+   */
+  when: z.object({ paramPresent: z.string().min(1) }).optional(),
 });
 export type Step = z.infer<typeof StepSchema>;
+
+/** True when this step should run for the given invocation. */
+export function stepApplies(step: Step, suppliedParams: ReadonlySet<string>): boolean {
+  if (step.when === undefined) return true;
+  return suppliedParams.has(step.when.paramPresent);
+}
 
 export const ProfilePinSchema = z.object({
   id: z.string().min(1),

@@ -1,10 +1,10 @@
-import { parseMoney } from '../types/money.js';
-import { normalizeText, valueMatchesParam } from '../types/normalize.js';
-import type { Observation, PerceivedControl } from '../types/perception.js';
+import { valueMatchesParam } from '../types/normalize.js';
+import type { Observation } from '../types/perception.js';
 import type { DiscoverySpec } from '../types/spec.js';
 import type { TargetResolver } from '../types/surface.js';
 import type { OutputBinding, RecordIdentityBinding } from '../types/discovery.js';
 import { bindDescriptor } from '../perception/bind.js';
+import { comparableText, validateDeclaredValue } from '../artifact/outputs.js';
 
 /**
  * ==============================================================================================
@@ -35,52 +35,6 @@ export interface CompletionResult {
   verified: boolean;
   reasons: string[];
   outputs: Record<string, string>;
-}
-
-function comparableText(control: PerceivedControl): string {
-  return control.value !== undefined && control.value !== '' ? control.value : control.name;
-}
-
-/** Validate an extracted value against the type a HUMAN declared for it. */
-function validateOutput(
-  spec: DiscoverySpec,
-  name: string,
-  raw: string,
-): { ok: true; value: string } | { ok: false; reason: string } {
-  const declared = spec.outputs.find((output) => output.name === name);
-  if (declared === undefined) {
-    return { ok: false, reason: 'output "' + name + '" is not declared by the spec' };
-  }
-
-  const value = normalizeText(raw);
-  if (value === '') return { ok: false, reason: 'output "' + name + '" read back empty' };
-
-  if (declared.type === 'enum') {
-    const allowed = declared.values ?? [];
-    if (!allowed.includes(value)) {
-      return {
-        ok: false,
-        reason:
-          'output "' +
-          name +
-          '" read back "' +
-          value +
-          '", which is not one of its declared ' +
-          'values (' +
-          allowed.join(', ') +
-          ')',
-      };
-    }
-  }
-
-  if (declared.type === 'currency' && parseMoney(value) === null) {
-    return {
-      ok: false,
-      reason: 'output "' + name + '" read back "' + value + '", which is not an amount',
-    };
-  }
-
-  return { ok: true, value };
 }
 
 export interface VerifyCompletionInput {
@@ -125,7 +79,7 @@ export function verifyCompletion(input: VerifyCompletionInput): CompletionResult
       continue;
     }
 
-    const validated = validateOutput(input.spec, declared.name, comparableText(resolution.control));
+    const validated = validateDeclaredValue(declared, comparableText(resolution.control));
     if (!validated.ok) {
       reasons.push(validated.reason);
       continue;

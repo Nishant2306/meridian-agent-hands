@@ -524,3 +524,379 @@ notes:  "Identified by accessible name \"Open\" within the row identified by {{m
 
 The first says what the step is FOR. The second says whether it will still find the right control
 next week. Reviewing a capability needs both questions answered, and neither answers the other.
+
+---
+
+## D28 - `Step.when` is a schema bump, not a quietly additive field
+
+**Decision.** The step-level guard for an optional parameter (D16) landed as `schemaVersion: 2`.
+
+**Why bump.** `z.object` strips unknown keys. A reader built for version 1 encountering a version 2
+artifact would silently DISCARD the guard and execute a step that was supposed to be skipped -
+typing an empty nickname, or failing to resolve a binding. Refusing to load a file it does not
+fully understand is the correct behaviour for a reader when the field it is missing carries
+execution semantics.
+
+**Why now.** Nothing was pinned to a version 1 artifact: the example is regenerated and no real
+capability exists yet. The same change after GATE 1 would have invalidated a real recording.
+
+**Why on the step rather than inside the engine.** A reader of the capability can see that the step
+is conditional without knowing how replay works. That is this system's posture everywhere:
+behaviour is visible in the artifact, not implicit in the engine.
+
+---
+
+## D29 - A row key constrains EVERY tier (supersedes the open note in D26)
+
+**Decision.** `rowKey` is a constraint applied to every tier's candidates, not a tier of its own.
+A descriptor saying "the Open link in the row keyed by memberId" can never resolve to an Open link
+in another row, whichever predicate located the candidate. When a row key is in play the resolution
+is reported as `T5_STRUCTURAL_ROW`, because the row key is part of what identified the control.
+
+**Why the earlier design was wrong.** With the cascade trying T1 first, a search returning ONE row
+resolves the link by name alone - and if the application returned a different member than the one
+requested, the click lands on the wrong record with the row key never consulted.
+
+**Why the old mitigation was not enough.** D26 noted that the record-identity invariant on the
+member-details state would catch it one step later. That is contingent on the shape of the next
+step and on execution order, and `step-3-open` carries `invariants: []`. Correctness must not
+depend on what happens to come after.
+
+**What changed in the PHASE 2 tests.** Nothing broke. The existing T5 test still passes because the
+four-row capture always needed the row key. Three tests were ADDED: the keyed row is chosen out of
+four; a single-row screen whose only row is NOT the keyed one FAILS rather than resolving; and the
+structural tier is reported even where role-plus-name alone would have been unique.
+
+---
+
+## D30 - An invariant must hold on BOTH SIDES of a transition
+
+**Decision.** The distiller chooses a step's identity invariant so that it holds on the FROM screen
+AND, for a step that changes screen, the TO screen. `checkStepDiscrimination` now also rejects an
+invariant that is false before the action or false after it.
+
+**How it was found.** The first replay of a freshly distilled artifact failed:
+
+```
+INVARIANT_VIOLATED at step-4-new-sub-account:
+  step-4-new-sub-account.identity (CONTROL_NOT_FOUND: no cell matched on screen "New Sub-Account")
+```
+
+The distiller had taken the strong identity check from the FROM screen - the cell beside the
+"Member ID" label on the member record - and that cell does not exist on the sub-account form. The
+artifact distilled cleanly, validated cleanly, and failed on its first execution.
+
+**Why the general rule matters more than the fix.** The specific bug is one line of screen
+selection. The rule - an invariant is checked before AND after, so it must be TRUE before and after
+
+- is what stops the next one. Note also where the failure surfaced: on the step that CARRIED the
+  invariant, one step after the transition that made it wrong. A rule that fails at distillation
+  points at the right place; a rule that fails at replay points one step late.
+
+---
+
+## D31 - `--json` has exactly one writer, and a business outcome exits 10
+
+**Decision.** With `--json`, `src/cli/replay.ts` writes ONE JSON object to stdout at the very end
+and every other line goes to stderr. Exit codes: 0 success, 10 business_outcome, 20 needs_human,
+25 cancelled, 30 failed.
+
+**Why.** The caller is an AI agent parsing stdout. One stray progress line turns a machine-readable
+result into a parse error in production, on the run that mattered. The file has a single
+`process.stdout.write`, and the human-readable logger is a function that no-ops under `--json`.
+
+**Why 10 is not 30.** "There is no such member" is a legitimate answer from a run in which
+everything worked. Collapsing it into the failure code is how a correct negative answer ends up
+paging somebody at 03:00. The exit code is where a calling system sees the distinction, so the
+distinction has to reach it.
+
+Verified end to end: `--params '{"memberId":"99999",...}'` returns
+`{"status":"business_outcome","outcome":"MEMBER_NOT_FOUND",...}` and exits 10 - in 586ms, not after
+a ten-second timeout. That is the integrated observation loop earning its place.
+
+---
+
+## D32 - The no-LLM proof is a counter, never a mode flag
+
+**Decision.** Three layers: the shape of `ReplayDeps` (no client field), an import-boundary test
+that walks the module graph from `src/replay/index.ts`, and a runtime provider-call counter
+snapshotted around every replay.
+
+**Why a counter and not a flag.** A module-global "we are replaying now" switch describes the
+PROCESS, and it breaks the moment discovery and replay share one - which they will, in any service
+offering both. A counter is a fact about what happened, and it stays true regardless of who else is
+running alongside.
+
+**The test has a negative control.** It also walks `src/agent/index.ts` and asserts the walker DOES
+find the agent package and the provider SDK there. Without that, a broken walker returning nothing
+would look exactly like a clean boundary - the one way this test could lie.
+
+---
+
+## D33 - .env is loaded at the entry points with `process.loadEnvFile`, not by an npm-script flag
+
+**The bug.** GATE 1 was blocked by `npm run discover` reporting "ANTHROPIC_API_KEY and LLM_MODEL
+must be set" with a correctly filled `.env` sitting in the repository root. Node does not read
+`.env` on its own, and nothing in this project did either.
+
+**Decision.** `src/config/env.ts` calls `process.loadEnvFile` (Node 20.12+) from each entry point
+that reads the environment: `src/cli/discover.ts`, `src/cli/replay.ts`, and
+`fixtures/legacy-app/main.ts`.
+
+**Why not `--env-file=.env` on the npm script**, which was the first thing to reach for. It throws
+ENOENT when the file is absent, so `npm run replay` - which needs no key at all - would stop working
+on a clean checkout. `--env-file-if-exists` fixes that and is Node 22.9+, above the `engines.node`
+floor of 20 that this project claims to support. Both only cover invocations that go through npm,
+and neither can be reached from a test. `process.loadEnvFile` is the same parser behind the flag,
+so quoting and comments behave identically, and it is an ordinary function call.
+
+**The root is found by walking up from `import.meta.url`, not from `process.cwd()`.** npm sets the
+working directory to the package root, so a cwd-based loader is correct under `npm run ...` and
+wrong the moment anyone runs `tsx src/cli/discover.ts` from elsewhere. Verified from PowerShell and
+Git Bash, at the repository root and from `C:\`.
+
+**Precedence is Node's: the real environment wins over the file.** That is the right way round.
+`LLM_MODEL=x npm run discover` overrides for one run without editing anything.
+
+**The message names each variable separately, and says whether a file was read.** The old sentence
+could not distinguish four different problems: neither variable set, one of two set, one present but
+empty, and the file never read at all. It was the last of those, and the message sent the reader to
+look at the first. Each variable now reports its own state, and the footer says either
+`Read .env from: <path>` or `No .env file was read. Looked for: <path>`. Pinned by
+`tests/config.env.test.ts`.
+
+---
+
+## D34 - Discovery validates caller arguments before the surface or the model is touched
+
+**Decision.** `runDiscovery` calls the same `validateInvocationParams` as replay, as its first
+statement, and returns `INPUT_VALIDATION_FAILED` without observing anything or calling the provider.
+`src/cli/discover.ts` calls it again before it constructs the client or launches Chromium.
+
+**Why it was missing and what that cost.** Replay has had this ordering since PHASE 5, proven with a
+surface that throws if touched. Discovery had no argument check at all. A run invoked with
+`--inputs '{}'` opened a browser, signed on, and spent three model calls before the missing
+parameter surfaced as `EFFECT_NOT_OBSERVED` - a code that is literally true and describes the
+symptom three actions downstream of the cause. The asymmetry was not a style problem; it was billed.
+
+**ONE validator, not two.** `validateInvocationParams` now takes `readonly InputDefinition[]`
+instead of a `CapabilityArtifact`, because `DiscoverySpec.inputs` and `CapabilityArtifact.inputs`
+are the same `InputDefinitionSchema`. A discovery-side copy that agreed with the replay-side one
+today would drift, and it would drift in the worst available direction: the recording accepting
+argument lists that the replay of that same recording rejects.
+
+**It moved from `/replay` to `/artifact`.** Once it took declared inputs it had nothing
+replay-specific left in it, and leaving it in `/replay` would have meant `/agent` importing from
+`/replay` - an edge that inverts how the packages are meant to read. `/artifact` is the contract
+vocabulary both already depend on. The replay import boundary is unaffected: the file imports only
+from `src/types/`, and `src/replay/index.ts` still re-exports it.
+
+**Tested with both stubs hostile.** `tests/agent.loop.inputs.test.ts` passes a surface and a client
+whose every method throws, and asserts neither is reached. It carries a negative control: a fully
+valid invocation must get PAST the gate and reach the surface, which the untouchable stub then
+proves by throwing. Without that, a gate that rejected everything would pass every other assertion
+in the file.
+
+---
+
+## D35 - There is exactly one sign-on definition, and it is checked by reading the source
+
+**Decision.** `src/cli/discover.ts` uses `MERIDIAN_SIGN_ON` from `src/config/sign-on.ts`, the same
+definition `SessionBroker` uses, reaching the credential refs and the authenticated-screen text
+through its fields rather than re-typing them. `fixtureCredentials()` replaces discover's own copy
+of the `OPERATOR_ID` / `OPERATOR_PASSCODE` fallbacks.
+
+**What was wrong.** Discovery carried its own copy of the descriptors. The copies agreed, and the
+doc comment in `src/config/sign-on.ts` already claimed they were shared, as did `docs/STATUS.md`.
+Duplication that currently agrees is the dangerous kind: nothing fails, so nothing draws attention
+to it until the copies differ.
+
+**Why this duplicate specifically.** Discovery RECORDS a capability from the screen state it
+reaches; replay RE-EXECUTES it from the screen state it reaches. Two authentication paths can
+arrive in two different states, and the artifact is then a recording of a place its own replay never
+visits. The failure appears as a locator error deep inside a replay - about the least informative
+place for a configuration mismatch to show up.
+
+**The test reads the source; it does not run discovery.** Running it needs a browser, a model and
+money, and would prove less: a green end-to-end run says the copies agree TODAY, which is exactly
+what the duplicated version also said. So the test asserts that a `SIGN_ON`-shaped declaration
+exists in one file only, that both entry points import it, and that the descriptor literals
+(`Operator ID`, `Passcode`, `name: 'Log In'`, `Member Search`) appear nowhere else. It carries a
+negative control confirming the pattern can actually see the one real definition.
+
+---
+
+## D36 - A name only enters a role recipe if `getByRole` will compute the same name
+
+**The GATE 1 defect.** The model tried to read `<p>Member Name: Avery Lin (10001)</p>` to bind the
+record identity. Perception saw it, synthesis described it, the resolver resolved it, and the
+transport could not point at it. The run was told `CONTROL_NOT_FOUND` - "the control is no longer
+present on the screen" - four times, against a screen with 22 controls before and 22 after, and
+then stopped on the repeated-action rule.
+
+**Cause, one layer below where it looked.** A `<p>` maps to the ARIA role `paragraph`, which IS
+addressable by `getByRole`. Chrome's full accessibility tree reports a NAME for that node, its own
+text, so `recipeFor` built a role-plus-name recipe. But ARIA does not give `paragraph` a name from
+its content, so Playwright computes its accessible name as empty:
+
+```
+getByRole('paragraph')                                    -> 1
+getByRole('paragraph', { name: <the text>, exact: true })  -> 0
+getByText(<the text>, { exact: true })                     -> 1
+```
+
+Two layers each behaving correctly by their own rules, disagreeing about what a "name" is.
+
+**Decision.** `ROLES_NAMED_FROM_CONTENT` in `src/perception/roles.ts`. A name goes into a role
+recipe only when the role takes its name from content, or when the name is demonstrably NOT the
+node's own text - which is what a name from a label or `aria-label` looks like, and which
+`getByRole` computes the same way we do. Otherwise the node's own text addresses it.
+
+**Why not simply drop `paragraph` from the addressable set.** Because the node is genuinely
+addressable, and it is the node that carries the record identity on that screen. Removing it would
+have traded a loud failure for a silent absence.
+
+**A second instance, found by the new test, not by a run.** `No member found for that ID.` on the
+no-results screen is the same `paragraph` case - and that screen is where the `MEMBER_NOT_FOUND`
+business outcome comes from. It would have failed the same way.
+
+---
+
+## D37 - Two invariants, at two layers, because one of them could not have caught this
+
+**The synthesis invariant** (`src/agent/descriptors.ts`): a descriptor synthesized from a perceived
+control must resolve back to that control, in the observation it was built from. Violating it
+throws `DescriptorSynthesisError` naming the control AND the descriptor, rather than travelling
+onward as `CONTROL_NOT_FOUND` - which is a claim about the screen, and sends the reader (and the
+model) to look for a problem that is not there. `tests/agent.descriptors.invariant.test.ts` checks
+it for every control of every recorded observation, with no browser.
+
+**It would not have caught the GATE 1 defect, and saying so is the point.** The paragraph descriptor
+resolved back to its own control perfectly. The break was in ADDRESSING, and a Playwright locator is
+only real against a live page.
+
+**So the addressing invariant is separate** (`tests/perception.addressing.live.test.ts`): every
+perceived control on every screen is `read` through the REAL input path - resolve, address,
+revalidate. `read` is the only action that can touch everything without changing anything. Reverting
+the D36 fix makes this test fail with the exact GATE 1 message, which is how we know it tests what
+it claims to.
+
+**Two things this test found about itself.** Written first with plain strings for `pathSegments`
+(they are `TextMatcher`s), it navigated nowhere and every case passed against whatever screen
+happened to be loaded - so it now asserts the screen it reached. And the review screen 303s back to
+the form unless a draft exists, so screens are reached by operating the app rather than by deep
+link.
+
+**One legitimate refusal is asserted rather than excluded**: the bootstrap safety minimum blocks
+even a READ of `Submit Request`, and the test requires that block to happen on the review screen.
+
+---
+
+## D38 - A rejection tells the model what to do, and a repeat says that it is one
+
+**The failure.** Four identical proposals is not the model being stubborn. Every rejection said only
+that the control was not present, on a screen that had not changed, so there was nothing to act on
+and re-proposing was reasonable. The repeated-action rule then stopped the run - correctly, and as
+the ONLY signal, which is not what a backstop is for.
+
+**Decision.** `src/agent/guidance.ts` maps each failure code to a next MOVE, and the loop counts
+failures per (code, mark). The first message says what happened and what to try; a repeat says
+plainly that it has now failed the same way N times and will keep failing.
+
+**Each code gets different advice, and a test asserts they are all different.** If two codes
+produced the same advice, one of them is not carrying its weight - which is the same rule the error
+taxonomy is already built on.
+
+**`POLICY_BLOCKED` deliberately does not say "try again".** A guardrail is not a transient failure,
+and inviting a retry against one is how a model spends a run discovering that no means no.
+
+---
+
+## D39 - The parameterization sweep covers model-authored PROSE, and refuses rather than rewrites
+
+**The GATE 1 leak.** The run passed, and the artifact it produced reached the store approved
+carrying:
+
+```
+steps[2](step-3-open).intent
+  "Click 'Open' link in the search results row for member 10001 (Avery Lin) to open the member
+   record."
+steps[2](step-3-open).expectedEffects[1].description
+  "Navigated from Member Search to Member Record screen for member 10001 (Avery Lin), ..."
+```
+
+A runtime member id and a member's name, inside a content-hashed, reusable capability.
+
+**The sweep did not miss a site it knew about.** It covered every place a value can be BOUND -
+action values, navigate segments, row keys, expected values, locator hints, output patterns,
+provenance - and the guarantee held at all of them. The gap was conceptual: the model writes PROSE,
+and a model narrates what it sees. The value was never bound anywhere. It was described.
+
+**Decision.** Class (e), model-authored prose: `step.intent`, `step.notes`, every
+`assertion.description` (expected effects, invariants, state screen assertions, qualifiers, state
+invariants, precondition checks) and `state.description`. Same classification, same fail-closed
+behaviour.
+
+**REFUSAL, never a scrub.** A rewritten `intent` is a step whose recorded reasoning no longer says
+what the model meant, which destroys the only thing `intent` is for: a reviewer checking the stated
+reason against the action. A scrubbed artifact would also be MORE dangerous than a rejected one,
+because it would look reviewed.
+
+**Substring, and deliberately blunt.** Prose embeds values mid-sentence, so this matches on
+containment, and it will occasionally refuse over a coincidence. That direction is correct: a false
+refusal costs a re-run, a false pass ships a person's name inside a reusable tool.
+
+**The contract-constant exemption still applies, per matched value.** "of type Savings" contains a
+runtime value that is also a declared enum member. Refusing that would refuse every correct
+artifact this system can produce.
+
+**Enumerated sites, not a blanket walk over every string.** A walk would also sweep the capability
+name and description, the input and output descriptions and the condition labels - all authored by
+a human in the DiscoverySpec and reviewed before a run happens. Reporting a spec author's own
+wording back as a leak is how a guardrail gets switched off.
+
+**It immediately found two more instances in our own files**: the tracked example artifact and the
+embedded artifact in `docs/SCHEMA.md` both illustrated currency comparison with the literal
+`"250.00"`. Both rewritten to state the rule without the value. The narrative paragraph in
+`SCHEMA.md` that explains typed comparison keeps its example, because documentation ABOUT the
+system is not artifact content.
+
+---
+
+## D40 - promptVersion v2: the model is told its own words are stored
+
+**Decision.** `PROMPT_VERSION` is `v2`. The prompt now has a section titled "WRITE FOR THE NEXT
+INVOCATION, NOT THIS ONE", with worked contrasts:
+
+```
+Write:  "click Open in the row identified by memberId"
+Not:    "click Open in the row for member 10001 (Avery Lin)"
+```
+
+It says explicitly that the rule covers values the model READ off the screen as well as values it
+was given, and that the system refuses the whole capability rather than editing the text.
+
+**Why the sweep alone is not enough.** The sweep is the guarantee; the prompt is what stops a run
+being wasted discovering it. v1 never told the model its prose was stored, so narrating the screen
+was the reasonable thing to do.
+
+**The bump is not cosmetic.** `promptVersion` is in provenance and therefore in the artifact content
+hash, so an artifact built under v1 is distinguishable from one built under v2 permanently. That is
+what makes "which artifacts were produced before the rule existed" an answerable question.
+
+---
+
+## D41 - The discovery run record is persisted, because the first thing we wanted was to re-distill
+
+**Decision.** `src/cli/discover.ts` writes the full `DiscoveryRunRecord` to `run.json` in the run
+directory.
+
+**Why.** Evidence answered "what happened". Nothing answered "what would this same run produce
+now". After GATE 1 the obvious next move was to re-run the distiller over the same recorded run to
+prove the fix, and it was impossible: only result, metrics and encountered conditions were written.
+The regression test therefore asserts against the distiller's OUTPUT, which is weaker than
+re-driving its input, and from the next run onward it will not have to be.
+
+**Disclosure.** The record contains observations, so it contains screen text, which can contain PII.
+It is written under `/runs`, which is gitignored, alongside screenshots that already have that
+property. PHASE 7 pseudonymizes persisted evidence and this file is in that scope.

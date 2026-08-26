@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { renderForModel, ValueOriginTracker } from './boundary.js';
 import { verifyCompletion } from './completion.js';
+import { bindDescriptor } from '../perception/bind.js';
 import { convertProposal } from './proposal.js';
 import { buildSystemPrompt, PROMPT_VERSION } from './prompts/v1.js';
 import { parseToolCall, type ToolCall } from './tools.js';
+import { failureFeedback, failureKey, type FailureCode } from './guidance.js';
+import { validateInvocationParams } from '../artifact/params.js';
 import type { LlmClient, LlmTurn } from './llm-client.js';
 import type { EvidenceWriter } from '../evidence/logger.js';
 import type { LeaseManager } from '../session/lease.js';
@@ -165,41 +168,6 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     return observation;
   };
 
-  const observe = async (): Promise<Observation> => remember(await options.surface.observe());
-
-  const say = (content: string): void => {
-    turns.push({ role: 'user', content });
-    options.evidence?.transcript({
-      at: new Date().toISOString(),
-      role: 'system-to-model',
-      content,
-    });
-  };
-
-  const showScreen = (observation: Observation, preamble: string): void => {
-    say(
-      preamble +
-        String.fromCharCode(10) +
-        String.fromCharCode(10) +
-        renderForModel(observation, tracker),
-    );
-  };
-
-  let current = await observe();
-  say(
-    'GOAL: ' +
-      options.goal +
-      String.fromCharCode(10) +
-      'TARGET: ' +
-      options.target +
-      String.fromCharCode(10) +
-      String.fromCharCode(10) +
-      'This is what is on screen now.' +
-      String.fromCharCode(10) +
-      String.fromCharCode(10) +
-      renderForModel(current, tracker),
-  );
-
   const finish = (result: RunResult): DiscoveryOutcome => {
     metrics.steps = steps.length;
     metrics.durationMs = now() - startedAtMs;
@@ -237,6 +205,58 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     metrics,
   });
 
+  // ==============================================================================================
+  // [MUST] STEP 1: THE CALLER'S ARGUMENTS ARE CHECKED BEFORE THE SURFACE OR THE MODEL IS TOUCHED.
+  // ==============================================================================================
+  //
+  // This is the same first step, the same validator and the same error code as replay. It is here
+  // because it was once absent: a run invoked with `--inputs '{}'` opened a browser, signed on,
+  // and spent three model calls before the missing parameter surfaced as EFFECT_NOT_OBSERVED -
+  // a code describing the symptom, three actions downstream of the cause.
+  //
+  // Nothing above this line observes anything or calls the provider, so a bad argument list costs
+  // a schema check. `tests/agent.loop.inputs.test.ts` proves it with a surface and a client that
+  // both throw if they are used at all.
+  const validation = validateInvocationParams(options.spec.inputs, options.runtimeInputs);
+  if (!validation.ok) {
+    return finish(failed('INPUT_VALIDATION_FAILED', validation.issues.join('; ')));
+  }
+
+  const observe = async (): Promise<Observation> => remember(await options.surface.observe());
+
+  const say = (content: string): void => {
+    turns.push({ role: 'user', content });
+    options.evidence?.transcript({
+      at: new Date().toISOString(),
+      role: 'system-to-model',
+      content,
+    });
+  };
+
+  const showScreen = (observation: Observation, preamble: string): void => {
+    say(
+      preamble +
+        String.fromCharCode(10) +
+        String.fromCharCode(10) +
+        renderForModel(observation, tracker),
+    );
+  };
+
+  let current = await observe();
+  say(
+    'GOAL: ' +
+      options.goal +
+      String.fromCharCode(10) +
+      'TARGET: ' +
+      options.target +
+      String.fromCharCode(10) +
+      String.fromCharCode(10) +
+      'This is what is on screen now.' +
+      String.fromCharCode(10) +
+      String.fromCharCode(10) +
+      renderForModel(current, tracker),
+  );
+
   /** Act, then record what actually changed. The record is what the distiller reasons over. */
   const perform = async (
     action: SurfaceAction,
@@ -244,20 +264,13 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     rationale: string,
     sourceObservation: Observation,
     before: Observation,
+    actedControl: PerceivedControl,
   ): Promise<{ ok: boolean; feedback: string }> => {
     const { result, trace } = await options.surface.resolveAndPerform(action, options.token);
     if (trace.downgraded) metrics.locatorTierDowngrades += 1;
 
     if (result.status !== 'performed') {
-      return {
-        ok: false,
-        feedback:
-          'That action did not happen (' +
-          result.error +
-          '): ' +
-          result.reason +
-          ' Look at the current screen and choose again.',
-      };
+      return { ok: false, feedback: sayFailure(result.error, result.reason, actedControl) };
     }
 
     const after = await observe();
@@ -277,8 +290,12 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     let resolvedControlName = '';
     let resolvedControlRole: PerceivedControl['role'] = 'unknown';
     if (action.type !== 'navigate') {
-      const beforeHit = options.resolver.resolve(before, action.target);
-      const afterHit = options.resolver.resolve(after, action.target);
+      // BOUND, not raw. A row key is still {kind:'param'} on the action, and the resolver refuses
+      // to resolve an unbound one - so without binding here the control never resolves, the step
+      // records an empty control name, and both the step id and the risk classification degrade.
+      const bound = bindDescriptor(action.target, options.runtimeInputs);
+      const beforeHit = options.resolver.resolve(before, bound);
+      const afterHit = options.resolver.resolve(after, bound);
       if (beforeHit.ok) {
         resolvedControlName = beforeHit.control.name;
         resolvedControlRole = beforeHit.control.role;
@@ -333,15 +350,40 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
 
   const performRead = async (
     action: SurfaceAction,
-  ): Promise<{ ok: true; value: string } | { ok: false; reason: string }> => {
+  ): Promise<{ ok: true; value: string } | { ok: false; code: FailureCode; reason: string }> => {
     const { result } = await options.surface.resolveAndPerform(action, options.token);
-    if (result.status !== 'performed' || result.readValue === undefined) {
-      return {
-        ok: false,
-        reason: result.status === 'performed' ? 'nothing could be read there' : result.reason,
-      };
+    if (result.status === 'performed' && result.readValue !== undefined) {
+      return { ok: true, value: result.readValue };
     }
-    return { ok: true, value: result.readValue };
+    // The CODE travels with the reason. Guidance is chosen from the code, and a bare reason string
+    // is what left the model with nothing to act on at GATE 1.
+    return result.status === 'performed'
+      ? { ok: false, code: 'EFFECT_NOT_OBSERVED', reason: 'nothing could be read there' }
+      : { ok: false, code: result.error, reason: result.reason };
+  };
+
+  /**
+   * Feedback for something that did not happen, escalating when the same target fails the same way.
+   * The counter is per (code, mark): a different failure on the same mark is new information and
+   * starts over.
+   */
+  const failures = new Map<string, number>();
+  const sayFailure = (
+    code: FailureCode,
+    reason: string,
+    control?: PerceivedControl | undefined,
+  ): string => {
+    const key = failureKey(code, control?.markId);
+    const attempt = (failures.get(key) ?? 0) + 1;
+    failures.set(key, attempt);
+    return failureFeedback({
+      code,
+      reason,
+      attempt,
+      ...(control === undefined
+        ? {}
+        : { control: { markId: control.markId, role: control.role, name: control.name } }),
+    });
   };
 
   while (terminal === null) {
@@ -572,7 +614,14 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
           reason: converted.rejection.code + ': ' + converted.rejection.reason,
         });
         current = fresh;
-        show(fresh, converted.rejection.reason);
+        show(
+          fresh,
+          sayFailure(
+            converted.rejection.code,
+            converted.rejection.reason,
+            fresh.controls.find((candidate) => candidate.markId === call.input.markId),
+          ),
+        );
         continue;
       }
 
@@ -591,7 +640,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
         const read = await performRead(converted.action);
         if (!read.ok) {
           noProgress += 1;
-          feedback.push('Could not read that: ' + read.reason);
+          feedback.push(sayFailure(read.code, read.reason, converted.control));
           continue;
         }
         outputs.push({
@@ -612,7 +661,10 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
         const read = await performRead(converted.action);
         if (!read.ok) {
           noProgress += 1;
-          feedback.push('Could not read the record identity there: ' + read.reason);
+          feedback.push(
+            'Could not bind the record identity. ' +
+              sayFailure(read.code, read.reason, converted.control),
+          );
           continue;
         }
         recordIdentity = {
@@ -638,6 +690,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
         converted.rationale,
         sourceForTurn,
         fresh,
+        converted.control,
       );
       if (!outcome.ok) {
         noProgress += 1;

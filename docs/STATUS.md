@@ -19,19 +19,50 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, **209 tests passing across 19 files**, in about 70 seconds.
+Expect: no type errors, no lint errors, **308 tests passing across 30 files**, in about 90 seconds.
 
 ### Two test commands
 
-| Command             | What it runs                                                | Time |
-| ------------------- | ----------------------------------------------------------- | ---- |
-| `npm run test:fast` | everything except the browser-driven files                  | ~10s |
-| `npm test`          | all of it, including three files that drive a real Chromium | ~70s |
+| Command             | What it runs                                               | Time  |
+| ------------------- | ---------------------------------------------------------- | ----- |
+| `npm run test:fast` | everything except the browser-driven files                 | ~20s  |
+| `npm test`          | all of it, including four files that drive a real Chromium | ~215s |
 
 `test:fast` excludes `**/*.live.test.ts` and nothing else. **No test is weakened or skipped to
 achieve it** - the same assertions run, in fewer files. Use the fast one while working inside a
 phase and the full one at every gate; the browser-driven files are where perception, the input path
 and the discovery loop are actually proven, so they are not optional before a gate.
+
+### Environment and .env
+
+Copy `.env.example` to `.env` at the repository root and fill it in. Node does not read `.env` on
+its own, so each entry point that touches the environment loads it explicitly through
+`src/config/env.ts`:
+
+| Entry point         | Needs                                                  |
+| ------------------- | ------------------------------------------------------ |
+| `npm run discover`  | `ANTHROPIC_API_KEY` and `LLM_MODEL`, both required     |
+| `npm run replay`    | nothing required; reads `OPERATOR_ID` etc. if present  |
+| `npm run dev:app-a` | nothing required; reads `FIXTURE_SEED` and `LOG_LEVEL` |
+
+The root is located by walking up from the module, not from the working directory, so it behaves
+the same under `npm run ...`, under a bare `tsx src/cli/discover.ts`, and from any directory in
+either PowerShell or Git Bash. A variable already set in the shell wins over the file, so
+`LLM_MODEL=... npm run discover` overrides for a single run.
+
+A missing variable names itself and says whether a file was read at all:
+
+```text
+Missing required environment variable: LLM_MODEL
+
+  LLM_MODEL  present but empty (there is nothing after the "=")
+
+Read .env from: <repo>\.env
+```
+
+`tests/config.env.test.ts` pins that behaviour, including the case that caused the confusion: a
+`.env` that exists and is never read must not produce the same message as a `.env` that was read and
+is missing a line. See DECISIONS.md D33.
 
 ### Reading real distiller output
 
@@ -531,23 +562,281 @@ capability that carried a credential would be a capability that could be replaye
 
 ---
 
+## Phase 5 - replay (COMPLETE, GATE 1 NOT YET RUN)
+
+The end-to-end slice works: **the model discovers, the artifact becomes a capability, replay
+invokes it** - with no model anywhere in the replay loop. Happy path only, as scoped.
+
+### The no-LLM proof, three layers
+
+| Layer      | Where                                  | What it proves                                                                                                             |
+| ---------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Structural | `ReplayDeps` in `src/replay/engine.ts` | no client field, so there is nothing to inject                                                                             |
+| Test       | `tests/replay.boundary.test.ts`        | walks the module graph from `src/replay/index.ts`; fails if `src/agent/` or a provider SDK appears anywhere in the closure |
+| Runtime    | `src/observability/provider-calls.ts`  | a counter snapshotted around every replay; `metrics.llmCalls` is asserted zero before a result is returned                 |
+
+It is a COUNTER, not a "replay mode" flag: a flag describes the process and breaks the moment
+discovery and replay share one. The boundary test carries a **negative control** - it also walks
+`src/agent/index.ts` and asserts the walker DOES find the forbidden imports there, because a broken
+walker returning nothing looks exactly like a clean boundary.
+
+### Session bootstrap: authentication is not part of the capability
+
+`SessionBroker` opens the allowlisted origin, authenticates via SECRET REFERENCES, navigates to the
+entry point, and VERIFIES the authenticated precondition before handing the session over. The
+capability begins at "authenticated, on member search", and there is no field in the artifact
+schema that could hold a credential. The sign-on descriptors live in `src/config/sign-on.ts`,
+which is deployment configuration.
+
+**Corrected after PHASE 5.** This section previously claimed both CLIs used that one definition.
+They did not: `SessionBroker` used `MERIDIAN_SIGN_ON` while `src/cli/discover.ts` carried its own
+copy of the same descriptors, and the doc comment in `src/config/sign-on.ts` asserted the sharing
+that was not happening. The copies agreed, which is the dangerous form of that bug - nothing fails
+and the copies drift later. Discovery and replay authenticating by different paths is precisely the
+drift that makes a recorded capability not match the thing that replays it. The duplicate is now
+removed and the claim is enforced by `tests/config.sign-on.test.ts`, which reads the source rather
+than running discovery. See DECISIONS.md D35.
+
+### Execution order
+
+1. every caller parameter against OUR contract -> `INPUT_VALIDATION_FAILED`, **before the browser opens**
+2. the pinned profiles -> `PROFILE_INTEGRITY_FAILURE`
+3. fingerprint pre-flight -> `FINGERPRINT_MISMATCH` (block, do not guess)
+4. declared preconditions -> `PRECONDITION_FAILED`
+5. per step: resolve and perform -> integrated observation loop -> verify effects and invariants -> extract outputs due at the reached state
+6. the success state, and every invariant
+
+Steps 1 and 2 reach a verdict without observing anything, and the test proves it with a surface
+that throws if touched.
+
+**Discovery now has step 1 too.** It did not until after PHASE 5. `runDiscovery` calls the same
+`validateInvocationParams` as its first statement and returns `INPUT_VALIDATION_FAILED` before it
+observes anything or calls the provider; `npm run discover` calls it again before constructing the
+client or launching Chromium. This was found the expensive way: `--inputs '{}'` opened a browser,
+signed on, and spent three model calls before the missing parameter surfaced as
+`EFFECT_NOT_OBSERVED`, which is a true statement about the symptom three actions after the cause.
+
+```bash
+npx vitest run tests/agent.loop.inputs.test.ts
+```
+
+Seven tests, a surface and a client whose every method throws, asserting neither is reached - plus a
+negative control where a valid invocation must get PAST the gate and reach the surface. See
+DECISIONS.md D34. One validator serves both halves: it takes declared inputs rather than an
+artifact, and lives in `src/artifact/params.ts` because `DiscoverySpec.inputs` and
+`CapabilityArtifact.inputs` are the same schema.
+
+### The integrated observation loop
+
+After an action, on EVERY pass until the deadline: observe, then safety detectors, then hard
+failures, then known business outcomes, then recoveries, then the expected effect - and only then
+poll again.
+
+**Why detectors are inside the wait and not after it.** Search for a member who does not exist. The
+next step's expected effect is a member-details screen, and that predicate will never become true.
+A wait-then-check design sits there until the timeout and reports `TIMEOUT` - a FAILURE, escalated
+to a human - for a run in which everything worked and the answer was simply "no such member".
+
+Measured, end to end through the CLI:
+
+```
+--params '{"memberId":"99999",...}'
+{"status":"business_outcome","outcome":"MEMBER_NOT_FOUND",...}   exit 10, 586ms
+```
+
+Not a ten-second timeout, and not exit 30.
+
+### Retry safety
+
+Before ANY retry, re-observe and check whether the expected effect ALREADY holds; if it does, the
+step is marked complete and the action is NOT repeated. Stated honestly: this capability is
+deliberately non-mutating end to end, so a duplicate action here is merely wasteful. On a
+capability that submits anything, re-observing first is the difference between one request and two.
+
+### Recoveries when nothing matches
+
+The recovery detectors reference screens that arrive in PHASE 6, so nothing matches them today. A
+step declaring `try_recoveries_then_fail` therefore takes the real no-match path: detectors were
+consulted on every pass of the observation loop, nothing applied, and the step falls through to
+failure saying so. The path is not stubbed away.
+
+### How to check it
+
+```bash
+npm run dev:app-a
+```
+
+Then, in another shell:
+
+```bash
+npm run distill:demo
+```
+
+```bash
+npm run replay -- --artifact prepare_subaccount_review@1.0.0 --params '{"memberId":"10002","accountType":"Checking","initialDeposit":"99.00"}' --artifacts artifacts-demo --json
+```
+
+**Exit codes** (these belong in README.md, which is PHASE 10):
+
+| Code | Status             | Meaning                                                              |
+| ---- | ------------------ | -------------------------------------------------------------------- |
+| 0    | `success`          |                                                                      |
+| 10   | `business_outcome` | the automation worked and the answer is negative. **Not** a failure. |
+| 20   | `needs_human`      |                                                                      |
+| 25   | `cancelled`        |                                                                      |
+| 30   | `failed`           |                                                                      |
+
+Variations worth trying:
+
+| Params                               | What you get                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `memberId: "99999"`                  | `business_outcome` / `MEMBER_NOT_FOUND`, exit 10, in well under a second |
+| `memberId: "abc"`                    | `INPUT_VALIDATION_FAILED`, exit 30, and **no browser opens**             |
+| no `nickname`                        | success, and the nickname step is reported `skipped`                     |
+| append a comment to a pinned profile | `PROFILE_INTEGRITY_FAILURE` before anything is observed                  |
+
+Then the tests:
+
+```bash
+npm test -- tests/replay.boundary.test.ts tests/replay.test.ts
+```
+
+```bash
+npm test -- tests/replay.live.test.ts tests/replay.cli.live.test.ts
+```
+
+**What each file is for.**
+
+- `replay.boundary.test.ts` - the module-graph walk, plus its negative control.
+- `replay.test.ts` - the execution order proven with a surface that throws if touched: a bad
+  member id and a tampered profile both reach a verdict without observing anything.
+- `replay.live.test.ts` - **the end-to-end slice.** Discovery drives the real fixture with a
+  scripted client, the distiller produces a capability, and replay executes it: happy path with
+  typed outputs and zero llm calls; **member 10002, whom discovery never saw**; the nickname step
+  SKIPPED and recorded when no nickname is supplied; and determinism across three runs with
+  identical steps, tiers and outputs - each against a freshly booted fixture that regenerated every
+  class name and element id.
+- `replay.cli.live.test.ts` - the `--json` contract, run as a real subprocess: exactly one JSON
+  object on stdout, no log lines, on both a successful run and one that fails before the browser
+  opens; and exit 10 for a business outcome.
+
+### Three defects the first real replay found
+
+Worth recording, because all three distilled and validated cleanly first:
+
+1. **An invariant that does not survive its own transition.** The distiller took the strong
+   identity check from the FROM screen; that cell does not exist on the TO screen. Fixed by
+   choosing an invariant that holds on both, and by a new distiller rule that rejects an invariant
+   which is false before or after the action. See DECISIONS.md D30.
+2. **Row-keyed targets stopped resolving in the discovery loop's diagnostics**, because the row key
+   became a constraint on every tier and the diagnostic resolve was not binding parameters. The
+   symptom was cosmetic - step ids degrading to `step-3-click` - and the cause was not.
+3. **The distiller was still emitting `schemaVersion: 1`** after the bump, which the replay test
+   caught immediately.
+
+---
+
+## GATE 1: PASSED, and what it leaked
+
+Run 2 passed. Discovery took 8 steps and 10 model calls; replay ran the distilled capability on
+member 10002 against a freshly seeded fixture with no nickname, in 1.8s, with `llmCalls: 0` and
+correct typed outputs.
+
+**The artifact it produced leaked, and reached the store approved.**
+
+```
+steps[2](step-3-open).intent
+  "Click 'Open' link in the search results row for member 10001 (Avery Lin) ..."
+steps[2](step-3-open).expectedEffects[1].description
+  "Navigated from Member Search to Member Record screen for member 10001 (Avery Lin), ..."
+```
+
+`grep -rn "10001" artifacts/` catches it. That grep is on the GATE 1 checklist, and the artifact
+had already passed distillation, validation and approval.
+
+**The sweep did not miss a site it knew about.** It covers every place a value can be BOUND, and the
+guarantee held at all of them. The model writes PROSE, and a model narrates what it sees. The value
+was never bound. It was described.
+
+The sweep now covers model-authored free text - `step.intent`, `step.notes`, every
+`assertion.description`, `state.description` - and REFUSES rather than rewriting, because an edited
+intent is a step whose recorded reasoning no longer says what the model meant. `PROMPT_VERSION` is
+`v2` and tells the model its words are stored. See DECISIONS.md D39 and D40.
+
+```bash
+npx vitest run tests/artifact.gate1-leak.test.ts
+```
+
+That test runs against the real GATE 1 artifact, kept verbatim at
+`tests/fixtures/artifacts/gate1-leaked-prose@1.0.0.json` with its genuine provenance
+(`discover-1787709809977-e0d9047b`, `claude-sonnet-5`, `promptVersion: v1`, `status: approved`).
+
+**Two more instances of the same class, in our own files, found by the new sweep rather than by a
+run**: the tracked example artifact and the embedded artifact in `docs/SCHEMA.md` both illustrated
+currency comparison with the literal `"250.00"`. Both rewritten.
+
+---
+
+## GATE 1, run 1: what it proved and what it found
+
+The first real model call was made by the user. It failed with `MAX_STEPS_EXCEEDED` after 8 calls
+and 40 seconds, and it was worth the two cents.
+
+**What worked, on a real model against a live UI.** Six steps deep: the `Open` link resolved at
+`T5_STRUCTURAL_ROW`, `New Sub-Account` at `T1_EXACT_ROLE_NAME`, and the unnamed combobox and deposit
+field at `T3_EXTERNAL_LABEL_OR_NEARBY`. `cdp_ax` throughout, zero tier downgrades, zero locator
+conflicts. The stopping condition fired correctly.
+
+**The defect: a control that was perceived, described, resolved, and could not be addressed.**
+`<p>Member Name: Avery Lin (10001)</p>` is ARIA role `paragraph`. Chrome's accessibility tree gives
+it a name; ARIA does not give `paragraph` a name from its content; so a role-plus-name locator
+matched nothing while the control sat plainly on screen. See DECISIONS.md D36.
+
+The same bug also affected `No member found for that ID.`, which is the screen the
+`MEMBER_NOT_FOUND` business outcome is read from. Found by the new test, not by a second run.
+
+### The two invariants, and why one of them is not enough
+
+```bash
+npx vitest run tests/agent.descriptors.invariant.test.ts   # no browser, milliseconds
+npx vitest run tests/perception.addressing.live.test.ts    # real Chromium
+```
+
+| Invariant                                                         | Layer      | Would it have caught GATE 1? |
+| ----------------------------------------------------------------- | ---------- | ---------------------------- |
+| A synthesized descriptor resolves back to its own control         | resolver   | **No.** It did resolve.      |
+| Every perceived control can be `read` through the real input path | addressing | **Yes.**                     |
+
+The first is exhaustive over every recorded observation and every control on it, and it is enforced
+inside `buildDescriptor` as a throw, not just observed by a test. The second needs a browser because
+a Playwright locator is only real against a live page. Reverting the D36 fix makes it fail with the
+exact GATE 1 message, which is how the test is known to test what it claims. See DECISIONS.md D37.
+
+### Rejections now say what to do
+
+`src/agent/guidance.ts` turns each failure code into a next move, and the loop counts failures per
+(code, mark) so a repeat says it is a repeat. At GATE 1 the model was told four times that a control
+was "no longer present on the screen" - on an unchanged screen - which is why it proposed the same
+thing four times. The repeated-action rule was the only signal; it is meant to be the backstop.
+See DECISIONS.md D38.
+
+---
+
 ## Deliberately absent
 
 Not oversights. Each belongs to a later phase, and building it now would be building ahead.
 
 | Absent                                                                             | Phase |
 | ---------------------------------------------------------------------------------- | ----- |
-| Artifact schema, profile YAML with pinned hashes, capability store                 | 3     |
-| The discovery loop and the distiller                                               | 4     |
-| `ReplayEngine`, and the import-boundary scan proving replay makes zero LLM calls   | 5     |
 | Business outcomes at runtime, known conditions, fault injection in the fixture     | 6     |
 | The configurable policy engine, PII pseudonymization, screenshot masking           | 7     |
 | The human handoff protocol (pause / cede / resume)                                 | 8     |
-| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then | 11    |
 | `README.md`, `REPORT.md`, `/evidence/README.md`                                    | 10    |
+| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then | 11    |
 
-`npm run replay | operator` currently exit 2 and name the phase that builds them.
-`capability:approve` is real as of PHASE 3. That is deliberate: a script that fails loudly beats one that is missing.
+`npm run operator` currently exits 2 and names the phase that builds it.
+`capability:approve`, `discover` and `replay` are real as of PHASES 3, 4 and 5. That is deliberate:
+a script that fails loudly beats one that is missing.
 
 **Also disclosed:** screenshots captured today are UNMASKED. Without OCR it is not possible to prove
 a sensitive value is absent from screenshot pixels. PHASE 7 masks declared boxes, and the claim will

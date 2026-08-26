@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { loadEnvFile } from '../../src/config/env.js';
 import { createLegacyApp } from './server.js';
 import { tenantA } from './tenants/tenant-a.js';
 
@@ -13,6 +14,8 @@ import { tenantA } from './tenants/tenant-a.js';
  *   FIXTURE_SEED  fixes the per-boot obfuscation seed, so a boot can be reproduced exactly.
  *   LOG_LEVEL     pino level (default info).
  */
+
+loadEnvFile();
 
 const seedFromEnv = process.env['FIXTURE_SEED'];
 const logger = pino({ level: process.env['LOG_LEVEL'] ?? 'info' });

@@ -11,6 +11,7 @@ import {
 } from './profiles.js';
 import {
   CapabilityArtifactSchema,
+  SCHEMA_VERSION,
   type CapabilityArtifact,
   type State,
   type Step,
@@ -88,6 +89,21 @@ function uniqueId(candidate: string, used: Set<string>): string {
   return id;
 }
 
+/**
+ * The OPTIONAL parameter this step's value is bound to, if any.
+ *
+ * A step typing `{{nickname}}` has nothing to type when no nickname was supplied, and the executor
+ * refuses to invent a value. So the step carries a guard and replay skips it.
+ */
+function optionalParamOf(run: DiscoveryRunRecord, step: RecordedStep): string | undefined {
+  const action = step.action;
+  if (action.type !== 'type' && action.type !== 'select') return undefined;
+  if (action.value.kind !== 'param') return undefined;
+  const bound = action.value.name;
+  const declared = run.spec.inputs.find((input) => input.name === bound);
+  return declared !== undefined && !declared.required ? bound : undefined;
+}
+
 /** Omitted when it would only restate the intent. */
 function notesFor(step: RecordedStep): string | undefined {
   const rationale = step.descriptorRationale.trim();
@@ -129,13 +145,14 @@ function observationsOnScreen(run: DiscoveryRunRecord, screen: string): Observat
  */
 function identityInvariant(
   run: DiscoveryRunRecord,
-  screen: string,
+  screens: readonly string[],
   evaluator: AssertionEvaluator,
   inputs: readonly InputDefinition[],
 ): Assertion | null {
   const identity = run.recordIdentity;
-  const observations = observationsOnScreen(run, screen);
+  const observations = screens.flatMap((candidate) => observationsOnScreen(run, candidate));
   if (observations.length === 0) return null;
+  const screen = screens[0] ?? '';
 
   const context = (observation: Observation) => ({
     observation,
@@ -218,7 +235,7 @@ function buildStates(
     const base = slug(screen);
     const segment = segments.find((candidate) => candidate.screen === screen);
     const filled = segment === undefined ? [] : filledFields(segment);
-    const identity = identityInvariant(run, screen, evaluator, inputs);
+    const identity = identityInvariant(run, [screen], evaluator, inputs);
     const invariants = identity === null ? [] : [identity];
 
     const screenAssertions: Assertion[] = [
@@ -533,10 +550,18 @@ export function distill(options: DistillOptions): DistillResult {
       const toState = isLastInSegment ? stateIdForScreen.get(nextScreen)?.base : undefined;
 
       const effects = expectedEffectsFor(run, recorded, stepId, runtimeValuesFor(run));
+      const optionalParam = optionalParamOf(run, recorded);
+      // AN INVARIANT MUST HOLD ON BOTH SIDES OF THE STEP, which for a step that changes screen
+      // means both screens. The strong identity check - the cell beside the "Member ID" label -
+      // holds on the member record and does not exist on the sub-account form, so a transition
+      // step falls back to the weaker check that holds on both. Choosing it from the FROM screen
+      // alone produces an artifact that distils cleanly and fails on the first replay, one step
+      // after the one that is actually wrong.
+      const invariantScreens = isLastInSegment ? [segment.screen, nextScreen] : [segment.screen];
       const identity =
         ids === undefined
           ? null
-          : identityInvariant(run, segment.screen, evaluator, run.spec.inputs);
+          : identityInvariant(run, invariantScreens, evaluator, run.spec.inputs);
 
       const step: Step = {
         id: stepId,
@@ -555,6 +580,8 @@ export function distill(options: DistillOptions): DistillResult {
         // restates its neighbour is noise in the first document a reviewer reads, so it is omitted
         // when it would add nothing.
         ...(notesFor(recorded) === undefined ? {} : { notes: notesFor(recorded) }),
+        // A step bound to an OPTIONAL parameter is conditional, and says so in the artifact.
+        ...(optionalParam === undefined ? {} : { when: { paramPresent: optionalParam } }),
       };
       steps.push(step);
 
@@ -656,7 +683,7 @@ export function distill(options: DistillOptions): DistillResult {
   );
 
   const draft = {
-    schemaVersion: 1 as const,
+    schemaVersion: SCHEMA_VERSION,
     capabilityId: run.spec.capabilityId,
     name: run.spec.name,
     description: run.spec.description,

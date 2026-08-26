@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { LlmClient, LlmRequest, LlmResponse, RawToolCall } from './llm-client.js';
 import { TOOL_ARGS, TOOL_NAMES } from './tools.js';
+import { recordProviderCall } from '../observability/provider-calls.js';
 
 /**
  * The real client. NOTHING IN THE TEST SUITE CONSTRUCTS THIS.
@@ -53,6 +54,9 @@ export class AnthropicLlmClient implements LlmClient {
       role: turn.role,
       content: turn.content === '' ? '(no text)' : turn.content,
     }));
+
+    // Counted so replay can assert, at run time, that no provider call happened during it.
+    recordProviderCall();
 
     const response = await this.#client.messages.create({
       model: this.model,

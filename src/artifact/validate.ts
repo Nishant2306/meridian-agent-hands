@@ -187,6 +187,7 @@ export function checkStepDiscrimination(
   for (const invariant of step.invariants) {
     const wasTrue = evaluator.evaluate(invariant, beforeContext);
     const isTrue = evaluator.evaluate(invariant, afterContext);
+
     if (!wasTrue.skipped && !wasTrue.passed && isTrue.passed) {
       issues.push({
         code: 'INVARIANT_IS_AN_EFFECT',
@@ -195,8 +196,40 @@ export function checkStepDiscrimination(
           invariant.id +
           '" on step "' +
           step.id +
-          '" was false before the action ' +
-          'and true after it. That is an expected effect, not an invariant.',
+          '" was false before the ' +
+          'action and true after it. That is an expected effect, not an invariant.',
+      });
+      continue;
+    }
+
+    // An invariant holds on BOTH SIDES of the step. The failure this catches is specific and
+    // nasty: an identity check chosen from the FROM screen that does not exist on the TO screen
+    // distils cleanly, then fails on the first replay - reported against the step that carries it,
+    // one step after the transition that is actually wrong.
+    if (!wasTrue.skipped && !wasTrue.passed) {
+      issues.push({
+        code: 'INVARIANT_FALSE_BEFORE_ACTION',
+        message:
+          'invariant "' +
+          invariant.id +
+          '" on step "' +
+          step.id +
+          '" was already false BEFORE ' +
+          'the action: ' +
+          wasTrue.detail,
+      });
+    }
+    if (!isTrue.skipped && !isTrue.passed) {
+      issues.push({
+        code: 'INVARIANT_FALSE_AFTER_ACTION',
+        message:
+          'invariant "' +
+          invariant.id +
+          '" on step "' +
+          step.id +
+          '" is false AFTER the action, ' +
+          'so it does not hold across the step: ' +
+          isTrue.detail,
       });
     }
   }

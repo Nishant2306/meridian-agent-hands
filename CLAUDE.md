@@ -188,21 +188,21 @@ tracked - the `/artifacts` ignore pattern is root-anchored and does not reach it
 The real phase map, supplied by the user after PHASE 0. **Knowing the map is fine; building ahead of
 the pasted phase is not** (Hard Rule 7).
 
-| Phase | Scope                                                                                                                                       | Status         |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| 0     | Constitution, directory scaffold, `CLAUDE.md`, `.gitignore`, `git init`                                                                     | ✅ Complete    |
-| 1     | Scaffold + types + DiscoverySpec + target app                                                                                               | ✅ Complete    |
-| 2     | Surface / perception / lease - `resolveAndPerform` exists and enforces the **bootstrap safety minimum** from here onward                    | ✅ Complete    |
-| 3     | Artifact schema + profiles + store - the **final versioned condition + safety profile YAML** is written here and does not change afterwards | ✅ Complete    |
-| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete    |
-| 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ⬜ Not started |
-| 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ⬜ Not started |
-| 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started |
-| 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started |
-| 9     | Tests                                                                                                                                       | ⬜ Not started |
-| 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started |
-| 11    | Cross-tenant                                                                                                                                | ⬜ Not started |
-| 12    | Polish                                                                                                                                      | ⬜ Not started |
+| Phase | Scope                                                                                                                                       | Status                   |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 0     | Constitution, directory scaffold, `CLAUDE.md`, `.gitignore`, `git init`                                                                     | ✅ Complete              |
+| 1     | Scaffold + types + DiscoverySpec + target app                                                                                               | ✅ Complete              |
+| 2     | Surface / perception / lease - `resolveAndPerform` exists and enforces the **bootstrap safety minimum** from here onward                    | ✅ Complete              |
+| 3     | Artifact schema + profiles + store - the **final versioned condition + safety profile YAML** is written here and does not change afterwards | ✅ Complete              |
+| 4     | Discovery + distiller - uses a scripted fake LLM client for tests                                                                           | ✅ Complete              |
+| 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ✅ Built, GATE 1 pending |
+| 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ⬜ Not started           |
+| 7     | Safety - the configurable policy engine replaces the bootstrap minimum                                                                      | ⬜ Not started           |
+| 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started           |
+| 9     | Tests                                                                                                                                       | ⬜ Not started           |
+| 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started           |
+| 11    | Cross-tenant                                                                                                                                | ⬜ Not started           |
+| 12    | Polish                                                                                                                                      | ⬜ Not started           |
 
 ### Companion documents
 
@@ -213,9 +213,8 @@ the pasted phase is not** (Hard Rule 7).
 
 ### Deferred work (noted, not built - Hard Rule 7)
 
-- **`ReplayEngine` import-boundary scan** - PHASE 5. Confirmed approach: a vitest static import scan,
-  NOT npm workspaces and NOT eslint boundary rules. Nothing is built for it yet because
-  `ReplayEngine` does not exist. See DECISIONS.md D8.
+- **GATE 1 HAS NOT BEEN RUN.** Everything in PHASE 5 is exercised with a scripted fake client. The
+  first real model call is the user's to make: `npm run discover` with a key in `.env`.
 - **`staticPolicyHook` / `resolvedPolicyHook`** in `src/surface/bootstrap-policy.ts` are named no-ops.
   PHASE 7 fills them in ALONGSIDE the bootstrap minimum, never instead of it.
 - **`redactForPersistence`** in `src/evidence/logger.ts` is the identity function and is called on
@@ -241,7 +240,8 @@ the pasted phase is not** (Hard Rule 7).
 - **Deferred artifact fields** (listed in `docs/SCHEMA.md`, not built, and each needs a
   `schemaVersion` bump): tenant overrides, locator stability scores, automatic demotion, an evidence
   policy, and any approval workflow beyond a single status flip.
-- **A step bound to an OPTIONAL parameter** needs a replay skip rule. PHASE 5. See DECISIONS.md D16.
+- ~~A step bound to an OPTIONAL parameter needs a replay skip rule~~ - DONE in PHASE 5 as
+  `Step.when`, which bumped the artifact to `schemaVersion: 2`. See DECISIONS.md D16 and D28.
 - **A pseudonymizer for read-only sensitive nodes** at the model boundary is written up in
   `DATA_HANDLING.md` and not built. Rule 3 forbids blind substitution, and doing it properly changes
   what the model sees on every screen; doing that before GATE 1 would mean the first real discovery
@@ -250,6 +250,16 @@ the pasted phase is not** (Hard Rule 7).
   tested directly rather than by the happy path. See DECISIONS.md D19.
 - **Materializing the effective detector set and the global policy hash into run evidence** has its
   helpers; a runner wires them in from PHASE 4 onward.
+- **NOTED FOR PHASE 6, NOT BUILT - a tier downgrade is computed and propagated, but never asserted
+  end to end.** `resolver.ts` sets `trace.downgraded` and one PHASE 2 test pins that behaviour at the
+  resolver level. Above that line nothing is asserted: the replay engine carries `tierUsed` and
+  `downgraded` per step, the evidence logger writes both, and the discovery loop counts
+  `locatorTierDowngrades` - and no test drives a real replay against a drifted screen and checks that
+  the downgrade actually lands in the step result and the evidence. Determinism across fresh boots is
+  covered and is a DIFFERENT claim: it shows the tier does not move when the page is unchanged, not
+  that a move is caught when it is. "Replay resolved at a weaker tier than recorded" is a PHASE 10
+  evidence claim with no test behind it, and PHASE 10 must not be where that is discovered. The
+  fixture work in PHASE 6 is the natural place to produce a screen that resolves one tier weaker.
 - **The async status API** for `needs_human` is deliberately not built - see the note at the bottom
   of `src/types/run.ts`.
 - **`README.md` / `REPORT.md` / `/evidence/README.md`** are PHASE 10.
@@ -258,9 +268,9 @@ the pasted phase is not** (Hard Rule 7).
 - `npm run distill:demo` runs the scripted fake client end to end and writes a real distilled
   artifact to the throwaway `artifacts-demo/`. No model is called, and the artifact's provenance
   says so.
-- `npm run replay | operator` currently point at `scripts/not-implemented.ts` and exit 2
-  with the phase that builds them. Each is repointed at its real `src/cli/*.ts` entry point by that
-  phase. `capability:approve` is real as of PHASE 3, `discover` as of PHASE 4.
+- `npm run operator` currently points at `scripts/not-implemented.ts` and exits 2 with the phase
+  that builds it. `capability:approve` is real as of PHASE 3, `discover` as of PHASE 4, `replay`
+  as of PHASE 5.
 
 ---
 
@@ -377,3 +387,26 @@ the pasted phase is not** (Hard Rule 7).
     and a literal-valued fill deriving no expected effect at all.
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 209 passing (`npm run test:fast` 191 in ~5s).
   - **Decisions recorded**: `DECISIONS.md` D19-D23.
+
+- **PHASE 5** - Replay. The end-to-end slice works; **GATE 1 has NOT been run.**
+  - **No-LLM proof, three layers**: `ReplayDeps` has no client field; an import-boundary test walks
+    the module graph from `src/replay/index.ts` and carries a NEGATIVE CONTROL; a provider-call
+    COUNTER (never a mode flag) is snapshotted around every run and `metrics.llmCalls` asserted 0.
+  - **SessionBroker**: authenticate via secret references, verify the precondition, hand over.
+    Credentials stay out of the artifact; sign-on descriptors live in `src/config/sign-on.ts` and
+    both CLIs share them.
+  - **Execution order**: params, pins, fingerprint, preconditions, steps, success state. The first
+    two reach a verdict before anything is observed, proven with a surface that throws if touched.
+  - **Integrated observation loop**: detectors on EVERY pass, so MEMBER_NOT_FOUND returns a
+    business outcome in 586ms instead of a ten-second TIMEOUT.
+  - **Retry safety**: re-observe before any retry; if the effect already holds, do not repeat.
+  - **Recoveries**: the real no-match path, falling through to failure. Not stubbed.
+  - **CLI**: `npm run replay`, one JSON writer on stdout, exit codes 0 / 10 / 20 / 25 / 30.
+  - **Addendum work**: D16 delivered as `Step.when` (schemaVersion 2); D26 closed by making rowKey
+    a CONSTRAINT ON EVERY TIER, with three added resolver tests.
+  - **Three defects found by the first real replay**, all of which distilled and validated cleanly:
+    an invariant that did not survive its own transition (D30), row-keyed targets failing the
+    loop's diagnostic resolve, and the distiller still emitting the old schema version.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 231 passing
+    (`npm run test:fast` 205 in ~5s).
+  - **Decisions recorded**: `DECISIONS.md` D28-D32.
