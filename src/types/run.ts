@@ -36,15 +36,36 @@ export type RunMetrics = z.infer<typeof RunMetricsSchema>;
 export const CompletionModeSchema = z.enum(['automation', 'human_assisted']);
 export type CompletionMode = z.infer<typeof CompletionModeSchema>;
 
+/**
+ * ================================================================================================
+ * EVERY BRANCH IS STRICT. AN UNKNOWN KEY IS A REFUSAL, NOT A PASSENGER.
+ * ================================================================================================
+ *
+ * zod 4 does NOT strip unknown keys - it passes them through - which was discovered by writing a
+ * contract test that assumed the opposite.
+ *
+ * TypeScript already stops OUR producers from inventing a field, because these are object literals
+ * against a typed union. What `strictObject` closes is the other direction: a result being READ
+ * BACK, from a `result.json` written by a different version of this system or by something else
+ * entirely. A key we do not recognise means the sender and the receiver disagree about the
+ * contract, and the safe response is to say so rather than to hand the extra along to a caller who
+ * may act on it.
+ *
+ * NOTE WHAT THIS IS NOT ABOUT. `outputs` on a `business_outcome` is DECLARED and optional, and that
+ * is deliberate: a run can legitimately read a declared output and then reach a negative answer -
+ * "the member exists and here is their name, but the account you asked about does not" - and
+ * throwing that away would make the caller ask again for something we already had. Strictness is
+ * about keys nobody declared, not about which declared keys each status may carry.
+ */
 export const RunResultSchema = z.discriminatedUnion('status', [
-  z.object({
+  z.strictObject({
     status: z.literal('success'),
     completionMode: CompletionModeSchema,
     outputs: OutputsSchema,
     evidenceRef: EvidenceRefSchema,
     metrics: RunMetricsSchema,
   }),
-  z.object({
+  z.strictObject({
     status: z.literal('business_outcome'),
     outcome: BusinessOutcomeCodeSchema,
     detail: z.string(),
@@ -52,7 +73,7 @@ export const RunResultSchema = z.discriminatedUnion('status', [
     evidenceRef: EvidenceRefSchema,
     metrics: RunMetricsSchema,
   }),
-  z.object({
+  z.strictObject({
     status: z.literal('needs_human'),
     interventionId: z.string().min(1),
     reason: z.string().min(1),
@@ -60,14 +81,14 @@ export const RunResultSchema = z.discriminatedUnion('status', [
     evidenceRef: EvidenceRefSchema,
     metrics: RunMetricsSchema,
   }),
-  z.object({
+  z.strictObject({
     status: z.literal('cancelled'),
     reason: z.literal('OPERATOR_ABORTED'),
     stepId: z.string().min(1).optional(),
     evidenceRef: EvidenceRefSchema,
     metrics: RunMetricsSchema,
   }),
-  z.object({
+  z.strictObject({
     status: z.literal('failed'),
     error: ErrorCodeSchema,
     stepId: z.string().min(1).optional(),

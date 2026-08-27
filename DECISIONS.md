@@ -1543,3 +1543,91 @@ nothing to point at.
 exercises the API is testing a different artefact from the one a person uses, and documentation is a
 claim that has to be executed like any other. Every step of a documented manual path gets performed -
 by a person or by something that clicks - before the path is called finished.
+
+---
+
+## D69 - /tests is laid out by what a test COSTS to run, not by what it covers
+
+**Decision.** `unit/` (one module, saved AX snapshots, no browser), `contract/` (guarantees about
+what we ship), `integration/` (the fixture, the CLIs, the console, every browser-driven path).
+
+**Why cost rather than subject.** A subject split - `perception/`, `artifact/`, `replay/` - reads
+better in a listing and answers the wrong question. The question a person has fifty times a day is
+"can I run this in ten seconds", and that is decided by whether a browser starts. `test:fast` is
+exactly `unit` plus `contract`, which is a fact about the directories rather than a glob somebody
+maintains.
+
+**`contract/` is the one worth arguing for.** Those tests are not about a module; they are about what
+this project PROMISES: the golden artifact still validates and its pins still verify, the five
+`RunResult` shapes and their exit codes, replay's dependency graph contains no provider, there is one
+input path. They break when a promise breaks, which is different from a unit failing.
+
+**The move found a bug in itself.** A blanket relative-path rewrite turned a string that describes
+what a SOURCE file imports - `from '../config/sign-on.js'` in `src/cli/discover.ts` - into `../../`,
+and `config.sign-on` failed. The test caught a bad edit to the test. Left as a comment in place,
+because the next person to move these files will make exactly the same mistake.
+
+---
+
+## D70 - RunResult branches are strict, and zod 4 does not strip unknown keys
+
+**Found by writing a contract test that assumed the opposite.** `z.object` in zod 4 passes unknown
+keys through rather than dropping them, so a result read back from a `result.json` could carry a
+field nobody declared straight to a caller.
+
+**Decision.** Every branch of `RunResultSchema` is `z.strictObject`. TypeScript already stops OUR
+producers from inventing a field - these are object literals against a typed union - so what this
+closes is the read-back direction. A key we do not recognise means the sender and the receiver
+disagree about the contract, and saying so beats handing the extra along.
+
+**What it is NOT about, and I had this wrong first.** The test was originally written as "only
+success can carry outputs", which is false: `outputs` on a `business_outcome` is a DECLARED optional
+field and deliberately so. A run can read a declared output and then reach a negative answer - "the
+member exists and here is their name, but the sub-account you asked about does not" - and discarding
+it would make the caller ask again for something we already had. Strictness is about keys nobody
+declared, not about which declared keys each status may carry.
+
+---
+
+## D71 - The gate list was audited against the code, and item 7 had no test
+
+**The point of the audit.** Fifteen of the sixteen gate items already had a test, several of them
+stronger than the item asks for. Item 7 - "an invariant may be true before and after" - had only its
+INVERSE covered: `INVARIANT_IS_AN_EFFECT`, which rejects an "invariant" that only becomes true after
+the action.
+
+The positive half was untested, and so were the two rules that came out of the GATE 1 defect
+(D30): `INVARIANT_FALSE_BEFORE_ACTION` and `INVARIANT_FALSE_AFTER_ACTION`. The second of those is
+the rule that catches an invariant taken from the screen a step LEAVES - which distilled cleanly,
+validated cleanly, and failed one transition downstream of the thing that was wrong.
+
+**Three tests added**, all in `unit/artifact.states`: an invariant that holds on both sides is
+accepted; one that does not survive its own transition is `INVARIANT_FALSE_AFTER_ACTION`; one that
+was never true is `INVARIANT_FALSE_BEFORE_ACTION`.
+
+**Item 2 was checked and is stronger than it needed to be**: the stale-context test uses a control
+that exists on BOTH screens and resolves perfectly against the new one, which is the case
+re-resolution alone cannot catch. Item 13 already covered all five resume outcomes.
+
+---
+
+## D72 - TEST_MAP is written to be accurate rather than generous
+
+**Decision.** `docs/TEST_MAP.md` maps every gate item and every design commitment to the test
+covering it, with a strength: **direct**, **structural**, or **thin**. Every row was checked by
+opening the test named in it, and a script verifies that every path the document names exists.
+
+**Structural is stronger than direct, and the document says so.** `ArtifactAction` has no field a
+`markId` could occupy, so a mark id cannot reach an artifact whatever anyone writes. A test asserting
+"no mark ids appear" would check one instance of something the type already forbids - which is the
+coverage theatre this phase was told not to produce.
+
+**It has a section for what is thin, and that section is the reason to trust the rest.** Cross-tenant
+is not covered at all. The desktop adapter is a stub. Discovery runs against a scripted client in CI,
+so nothing in the suite catches what a real model does - which is precisely what both GATE 1 runs
+caught. Masking covers declared regions only. The downgrade claim is proven by one drift shape.
+
+**The audit also found four references in `docs/STATUS.md` to test files that have never existed** -
+`agent.discovery.test.ts` and `agent.verification.test.ts`, whose real names carry `.live`. They had
+been wrong since PHASE 4 and no one had followed them. Every documented path now resolves, checked
+mechanically rather than by eye.

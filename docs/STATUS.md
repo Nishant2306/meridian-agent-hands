@@ -19,14 +19,27 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, and **444 tests passing across 43 files**.
+Expect: no type errors, no lint errors, and **461 tests passing across 44 files**.
 
 ### Two test commands
 
-| Command             | What it runs                                               | Time  |
-| ------------------- | ---------------------------------------------------------- | ----- |
-| `npm run test:fast` | everything except the browser-driven files                 | ~8s   |
-| `npm test`          | all of it, including NINE files that drive a real Chromium | ~125s |
+| Command             | What it runs                                                      | Time    |
+| ------------------- | ----------------------------------------------------------------- | ------- |
+| `npm run test:fast` | `unit/` and `contract/` - no browser                              | ~10s    |
+| `npm test`          | all of it, including the browser-driven `integration/`            | 2-6 min |
+| `npm run test:ci`   | the same as `npm test`, verbose and stopping on the first failure | 2-6 min |
+
+### How /tests is laid out
+
+| Directory            | What is in it                                                                                                      | Needs a browser |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------- |
+| `tests/unit/`        | one module at a time, against saved AX snapshots                                                                   | no              |
+| `tests/contract/`    | guarantees about what we ship: golden artifact, the five RunResult shapes, the no-LLM boundary, the one input path | no              |
+| `tests/integration/` | the fixture, the CLIs, the console, and every browser-driven path                                                  | mostly          |
+| `tests/fixtures/`    | saved AX captures and the GATE 1 artifact, written verbatim by `npm run inventory`                                 | -               |
+| `tests/helpers/`     | booting the fixture, loading a capture, the descriptors a browser test clicks                                      | -               |
+
+**No test needs an API key.** The only command that spends money is `npm run discover`.
 
 **How long `npm test` takes, honestly.** It varies by a factor of three on the same code and the
 same machine: measured runs at the end of PHASE 8 came back at 148s, 343s, 373s and 380s, with the
@@ -39,10 +52,7 @@ measured on an idle machine (124s); none of them was wrong so much as unrepeatab
 
 **So take a range, not a number**: roughly 2 minutes on an idle machine, up to 6 under load. If
 yours is much worse than that, check what else is running before believing it is the code.
-`test:fast` is the one to use inside a phase. Earlier versions of this file quoted 215s and 295s, both of
-which were measured while browsers from other work were running alongside - a full suite that is
-almost entirely CPU-bound on Chromium roughly doubles under that. If your number is much larger,
-check what else is using the machine before believing it.
+`test:fast` is the one to use inside a phase.
 
 Files run SERIALLY (`fileParallelism: false` in `vitest.config.ts`). Parallelism was measured at
 about 17% faster and is not enabled by default; the reasoning is in that file.
@@ -79,7 +89,7 @@ Missing required environment variable: LLM_MODEL
 Read .env from: <repo>\.env
 ```
 
-`tests/config.env.test.ts` pins that behaviour, including the case that caused the confusion: a
+`tests/unit/config.env.test.ts` pins that behaviour, including the case that caused the confusion: a
 `.env` that exists and is never read must not produce the same message as a `.env` that was read and
 is missing a line. See DECISIONS.md D33.
 
@@ -166,7 +176,7 @@ of what is hostile and why.
 ### How to check it
 
 ```bash
-npm test -- tests/types.money.test.ts tests/types.normalize.test.ts tests/config.spec.test.ts
+npm test -- tests/unit/types.money.test.ts tests/unit/types.normalize.test.ts tests/unit/config.spec.test.ts
 ```
 
 **The claim worth checking by hand.** Class names change on every boot; `name=` attributes do not.
@@ -176,7 +186,7 @@ npm run dev:app-a
 ```
 
 Then `curl http://localhost:4180/__test__/seed`, restart, and compare. The seed changes, and with
-it every CSS class and element id in the application. `tests/fixture.smoke.test.ts` asserts this
+it every CSS class and element id in the application. `tests/integration/fixture.smoke.test.ts` asserts this
 directly: two boots produce **disjoint** class-token and id sets and **identical** `name=` sets.
 
 ---
@@ -277,9 +287,9 @@ Read the output. What it demonstrates, in order:
 Then the automated suite:
 
 ```bash
-npm test -- tests/session.test.ts
-npm test -- tests/perception.observe.test.ts tests/perception.resolver.test.ts
-npm test -- tests/surface.bootstrap-policy.test.ts tests/surface.live.test.ts
+npm test -- tests/unit/session.test.ts
+npm test -- tests/unit/perception.observe.test.ts tests/unit/perception.resolver.test.ts
+npm test -- tests/unit/surface.bootstrap-policy.test.ts tests/integration/surface.live.test.ts
 ```
 
 **What each file is for.**
@@ -415,11 +425,11 @@ Then try the variations:
 Then the automated suite:
 
 ```bash
-npm test -- tests/artifact.profiles.test.ts tests/artifact.states.test.ts
+npm test -- tests/unit/artifact.profiles.test.ts tests/unit/artifact.states.test.ts
 ```
 
 ```bash
-npm test -- tests/artifact.store.test.ts tests/artifact.docs.test.ts
+npm test -- tests/integration/artifact.store.test.ts tests/contract/artifact.docs.test.ts
 ```
 
 **What each file is for.**
@@ -525,7 +535,7 @@ all, with the reasons listed. It has no access to a model - its only input is a
 one the model reasoned over - a model that has convinced itself it is finished has by construction
 been reasoning over a screen that supports that conclusion.
 
-`tests/agent.verification.test.ts` runs a discovery that does everything right **on the wrong
+`tests/integration/agent.verification.live.test.ts` runs a discovery that does everything right **on the wrong
 member**. Every declared output extracts and validates: the member name is a real name, the account
 type is a declared enum member, the status really is `PENDING REVIEW`. The only thing wrong is the
 identity, which is precisely the failure no output check would catch. Discovery does not succeed,
@@ -542,8 +552,8 @@ fails on Continue, several steps from the two that were quietly removed, and the
 nothing like a distiller bug.
 
 So the unit of reasoning is the SEGMENT. Within a retained segment, the ONLY thing removed is an
-action the run itself RECORDED as a no-op. `tests/agent.discovery.test.ts` asserts against a real
-scripted run that all three parameter bindings survive; `tests/artifact.distill.test.ts` tests the
+action the run itself RECORDED as a no-op. `tests/integration/agent.discovery.live.test.ts` asserts against a real
+scripted run that all three parameter bindings survive; `tests/unit/artifact.distill.test.ts` tests the
 algorithm directly, including a branch the run backed out of.
 
 A third signal had to be added to make "no-op" mean something precise: `changedInventory`. Running a
@@ -553,21 +563,21 @@ value alone a search looks like a no-op and would be deleted.
 ### How to check it
 
 ```bash
-npm test -- tests/agent.discovery.test.ts tests/agent.verification.test.ts
+npm test -- tests/integration/agent.discovery.live.test.ts \n          tests/integration/agent.verification.live.test.ts
 ```
 
 ```bash
-npm test -- tests/agent.proposal.test.ts tests/artifact.distill.test.ts
+npm test -- tests/unit/agent.proposal.test.ts tests/unit/artifact.distill.test.ts
 ```
 
 **What each file is for.**
 
-- `agent.discovery.test.ts` - a full scripted run against the real fixture and a real browser: the
+- `integration/agent.discovery.live.test.ts` - a full scripted run against the real fixture and a real browser: the
   goal is reached and the SYSTEM declares it; the model is never shown a value it typed or any
   secret; the model IS still shown values it read (rule 3); all three fills survive distillation;
   the artifact carries verified pins and no runtime values; a condition the run merely MET stays out
   of the artifact.
-- `agent.verification.test.ts` - the hallucinated completion, the wrong-member completion, and the
+- `integration/agent.verification.live.test.ts` - the hallucinated completion, the wrong-member completion, and the
   no-progress stopping condition.
 - `agent.proposal.test.ts` - conversion, including the STALE_OBSERVATION_CONTEXT case where a
   same-named control exists on the new screen so re-resolution alone would have succeeded; row-key
@@ -599,11 +609,11 @@ invokes it** - with no model anywhere in the replay loop. Happy path only, as sc
 
 ### The no-LLM proof, three layers
 
-| Layer      | Where                                  | What it proves                                                                                                             |
-| ---------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Structural | `ReplayDeps` in `src/replay/engine.ts` | no client field, so there is nothing to inject                                                                             |
-| Test       | `tests/replay.boundary.test.ts`        | walks the module graph from `src/replay/index.ts`; fails if `src/agent/` or a provider SDK appears anywhere in the closure |
-| Runtime    | `src/observability/provider-calls.ts`  | a counter snapshotted around every replay; `metrics.llmCalls` is asserted zero before a result is returned                 |
+| Layer      | Where                                    | What it proves                                                                                                             |
+| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Structural | `ReplayDeps` in `src/replay/engine.ts`   | no client field, so there is nothing to inject                                                                             |
+| Test       | `tests/contract/replay.boundary.test.ts` | walks the module graph from `src/replay/index.ts`; fails if `src/agent/` or a provider SDK appears anywhere in the closure |
+| Runtime    | `src/observability/provider-calls.ts`    | a counter snapshotted around every replay; `metrics.llmCalls` is asserted zero before a result is returned                 |
 
 It is a COUNTER, not a "replay mode" flag: a flag describes the process and breaks the moment
 discovery and replay share one. The boundary test carries a **negative control** - it also walks
@@ -624,7 +634,7 @@ copy of the same descriptors, and the doc comment in `src/config/sign-on.ts` ass
 that was not happening. The copies agreed, which is the dangerous form of that bug - nothing fails
 and the copies drift later. Discovery and replay authenticating by different paths is precisely the
 drift that makes a recorded capability not match the thing that replays it. The duplicate is now
-removed and the claim is enforced by `tests/config.sign-on.test.ts`, which reads the source rather
+removed and the claim is enforced by `tests/unit/config.sign-on.test.ts`, which reads the source rather
 than running discovery. See DECISIONS.md D35.
 
 ### Execution order
@@ -647,7 +657,7 @@ signed on, and spent three model calls before the missing parameter surfaced as
 `EFFECT_NOT_OBSERVED`, which is a true statement about the symptom three actions after the cause.
 
 ```bash
-npx vitest run tests/agent.loop.inputs.test.ts
+npx vitest run tests/unit/agent.loop.inputs.test.ts
 ```
 
 Seven tests, a surface and a client whose every method throws, asserting neither is reached - plus a
@@ -729,11 +739,11 @@ Variations worth trying:
 Then the tests:
 
 ```bash
-npm test -- tests/replay.boundary.test.ts tests/replay.test.ts
+npm test -- tests/contract/replay.boundary.test.ts tests/unit/replay.test.ts
 ```
 
 ```bash
-npm test -- tests/replay.live.test.ts tests/replay.cli.live.test.ts
+npm test -- tests/integration/replay.live.test.ts tests/integration/replay.cli.live.test.ts
 ```
 
 **What each file is for.**
@@ -816,9 +826,9 @@ of a modal belongs to the application, and a role does not.
 ### How to check it
 
 ```bash
-npx vitest run tests/fixture.faults.test.ts          # no browser, ~1s
-npx vitest run tests/replay.outcomes.live.test.ts    # real Chromium, ~35s
-npx vitest run tests/replay.downgrade.live.test.ts   # real Chromium, ~22s
+npx vitest run tests/integration/fixture.faults.test.ts          # no browser, ~1s
+npx vitest run tests/integration/replay.outcomes.live.test.ts    # real Chromium, ~35s
+npx vitest run tests/integration/replay.downgrade.live.test.ts   # real Chromium, ~22s
 ```
 
 | Claim                                                            | Test                                             |
@@ -898,7 +908,7 @@ a configuration that switches the minimum off is not expressible because the min
 configuration.
 
 ```bash
-npx vitest run tests/policy.engine.test.ts
+npx vitest run tests/unit/policy.engine.test.ts
 ```
 
 | Claim                                                       | Asserted                                                   |
@@ -912,7 +922,7 @@ npx vitest run tests/policy.engine.test.ts
 ### One input path, enforced mechanically
 
 ```bash
-npx vitest run tests/policy.input-path.lint.test.ts
+npx vitest run tests/contract/policy.input-path.lint.test.ts
 ```
 
 Fails if `page.click`, `page.goto`, `page.fill`, `page.type` or their relatives appear outside
@@ -932,7 +942,7 @@ DECISIONS.md D51.
 
 The third is the one that gets "helpfully" broken. The brief requires replay to RETURN what it read;
 an agent that asked for the review status and got `[reviewStatus:subject-01]` has been given
-nothing. `tests/replay.cli.live.test.ts` asserts both halves in one test: the real value on stdout,
+nothing. `tests/integration/replay.cli.live.test.ts` asserts both halves in one test: the real value on stdout,
 absent from stderr.
 
 **The pseudonym map is per-run and random.** A truncated hash of a five-digit member id is
@@ -943,8 +953,8 @@ and the logs stay readable.
 ### Screenshot masking, checked in pixels
 
 ```bash
-npx vitest run tests/redaction.test.ts              # no browser
-npx vitest run tests/redaction.masking.live.test.ts # real Chromium, real boxes
+npx vitest run tests/unit/redaction.test.ts              # no browser
+npx vitest run tests/integration/redaction.masking.live.test.ts # real Chromium, real boxes
 ```
 
 Only the masked image is written; the unmasked bytes never get a filename. Regions come from
@@ -972,7 +982,7 @@ request · unguessable intervention ids · **no list-all endpoint**, and an unkn
 answer as a bad token so it is not an oracle.
 
 ```bash
-npx vitest run tests/escalation.console.test.ts
+npx vitest run tests/integration/escalation.console.test.ts
 ```
 
 **Not implemented, and REPORT.md will say so:** enterprise identity, RBAC, per-operator accounts,
@@ -994,7 +1004,7 @@ remote operator auth. What it must not say is that the console has no access pro
 `transfer` in its irreversible list, so "Transfer history" is refused. The PHASE 7 requirement that
 deny patterns be contextual is met by the allowlist, which this phase controls; it cannot be met by
 the profile, which is immutable. The false positive is asserted out loud in
-`tests/policy.engine.test.ts` rather than hidden, and the real fix is a `2.0.0` profile. See
+`tests/unit/policy.engine.test.ts` rather than hidden, and the real fix is a `2.0.0` profile. See
 DECISIONS.md D54.
 
 ---
@@ -1128,9 +1138,9 @@ operator typed it" from "the application autofilled it".
 ### How to check it
 
 ```bash
-npx vitest run tests/escalation.handoff.test.ts          # no browser, ~0.1s
-npx vitest run tests/escalation.console.routes.test.ts   # no browser, ~1s
-npx vitest run tests/escalation.handoff.live.test.ts     # real Chromium, ~15s
+npx vitest run tests/unit/escalation.handoff.test.ts          # no browser, ~0.1s
+npx vitest run tests/integration/escalation.console.routes.test.ts   # no browser, ~1s
+npx vitest run tests/integration/escalation.handoff.live.test.ts     # real Chromium, ~15s
 ```
 
 | Claim                                                              | Test                                           |
@@ -1146,7 +1156,7 @@ npx vitest run tests/escalation.handoff.live.test.ts     # real Chromium, ~15s
 ### The console is opened, not called
 
 ```bash
-npx vitest run tests/escalation.console.page.live.test.ts   # real Chromium, ~1.5s
+npx vitest run tests/integration/escalation.console.page.live.test.ts   # real Chromium, ~1.5s
 ```
 
 It drives a browser through what a person does: GET the banner URL with **no cookie** and require
@@ -1172,6 +1182,49 @@ first thing a person does. See DECISIONS.md D65 and D66.
    placeholder and the real one - the banner pointed at the placeholder, and the page was mounted
    behind the very cookie it exists to obtain. There is now ONE `interventionPath()` shared by the
    banner and the route. D65.
+
+---
+
+## Phase 9 - tests (COMPLETE)
+
+Few new tests. The suite was CONSOLIDATED, two genuine gaps were filled, and `/tests` is now laid
+out so it reads as documentation of what the system promises.
+
+### The layout is by what a test COSTS, not by what it covers
+
+`unit/` needs no browser. `contract/` needs no browser and is about what the project PROMISES -
+the golden artifact still validates and its pins verify, the five `RunResult` shapes and their exit
+codes, replay's dependency graph containing no provider, the single input path. `integration/` is
+the fixture, the CLIs, the console and every browser-driven path.
+
+A subject split would read better in a listing and answer the wrong question. The question a person
+has fifty times a day is "can I run this in ten seconds", and that is decided by whether a browser
+starts. `test:fast` is exactly `unit` plus `contract`. See DECISIONS.md D69.
+
+### The gate list, audited item by item
+
+[`docs/TEST_MAP.md`](TEST_MAP.md) maps all sixteen gate items and every design commitment to the
+test covering it, with a strength - **direct**, **structural**, or **thin** - and a section saying
+plainly where coverage is weak. Every row was checked by opening the test named in it.
+
+**Structural is stronger than direct.** `ArtifactAction` has no field a `markId` could occupy, so a
+mark id cannot reach an artifact whatever anyone writes; a test asserting "no mark ids appear" would
+check one instance of something the type already forbids.
+
+**One item had no test.** Item 7 - "an invariant may be true before and after" - had only its INVERSE
+covered. The positive half and both rules from the GATE 1 defect (D30) are now in
+`unit/artifact.states`. Item 2 turned out stronger than it needed to be, and item 13 already covered
+all five resume outcomes. See DECISIONS.md D71.
+
+### Two defects the consolidation found
+
+1. **`RunResult` branches were not strict, and zod 4 does not strip unknown keys.** A result read
+   back from a `result.json` could carry an undeclared field straight to a caller. Every branch is
+   `strictObject` now. Writing that test also corrected a wrong belief of mine: `outputs` on a
+   `business_outcome` is DECLARED and deliberate - a run can read an output and then reach a
+   negative answer. D70.
+2. **Four references in this file pointed at test files that have never existed**, since PHASE 4.
+   Every documented path is now checked mechanically rather than by eye. D72.
 
 ---
 
@@ -1208,8 +1261,8 @@ not by another paid run. See DECISIONS.md D36.
 **Two invariants came out of it, at two layers, because one of them could not have caught this.**
 
 ```bash
-npx vitest run tests/agent.descriptors.invariant.test.ts   # no browser, milliseconds
-npx vitest run tests/perception.addressing.live.test.ts    # real Chromium
+npx vitest run tests/unit/agent.descriptors.invariant.test.ts   # no browser, milliseconds
+npx vitest run tests/integration/perception.addressing.live.test.ts    # real Chromium
 ```
 
 | Invariant                                                         | Layer      | Would it have caught GATE 1? |
@@ -1257,7 +1310,7 @@ intent is a step whose recorded reasoning no longer says what the model meant. `
 `v2` and tells the model that its own words are stored in a reusable capability. D39, D40.
 
 ```bash
-npx vitest run tests/artifact.gate1-leak.test.ts
+npx vitest run tests/contract/artifact.gate1-leak.test.ts
 ```
 
 That test runs against the real GATE 1 artifact, kept verbatim at

@@ -199,7 +199,7 @@ the pasted phase is not** (Hard Rule 7).
 | 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ✅ Complete                |
 | 7     | Safety - the configurable engine runs ALONGSIDE the bootstrap minimum, which stays                                                          | ✅ Complete                |
 | 8     | Human handoff - **GATE 2**                                                                                                                  | ✅ Complete                |
-| 9     | Tests                                                                                                                                       | ⬜ Not started             |
+| 9     | Tests                                                                                                                                       | ✅ Complete                |
 | 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started             |
 | 11    | Cross-tenant                                                                                                                                | ⬜ Not started             |
 | 12    | Polish                                                                                                                                      | ⬜ Not started             |
@@ -208,6 +208,8 @@ the pasted phase is not** (Hard Rule 7).
 
 - `docs/STATUS.md` - what is built, how it works, and how to verify it. Updated every phase.
 - `docs/SCHEMA.md` - the annotated capability artifact. Hand-written, and machine-checked.
+- `docs/TEST_MAP.md` - every gate item and design commitment mapped to the test covering it, with an
+  honest strength and a section for what is thin. PHASE 10's traceability table is built from it.
 - `docs/DATA_HANDLING.md` - what is stored, pseudonymized, masked, never captured, and an
   explicit LIMITS section for what it does NOT protect.
 - `DECISIONS.md` - the calls that could reasonably have gone the other way. Appended every phase.
@@ -552,3 +554,29 @@ the pasted phase is not** (Hard Rule 7).
     `npm run demo:store` copies the tracked example into `artifacts-demo/`. `docs/STATUS.md` now has
     one row per walkthrough step naming what covers it.
   - **Decisions recorded**: `DECISIONS.md` D58-D68.
+
+- **PHASE 9** - Tests. Consolidation, two genuine gaps, and `/tests` made readable.
+  - **Laid out by what a test COSTS to run** (D69): `unit/` and `contract/` need no browser and are
+    exactly what `test:fast` runs; `integration/` is the fixture, the CLIs, the console and every
+    browser-driven path. A subject split reads better and answers the wrong question - the question
+    a person has fifty times a day is "can I run this in ten seconds".
+  - **`contract/` is about what the project PROMISES**: the golden artifact validates and its pins
+    verify, the five `RunResult` shapes and their exit codes, replay's graph contains no provider,
+    there is ONE input path.
+  - **The sixteen gate items were audited one by one.** Fifteen already had a test, several stronger
+    than asked. Item 7 - an invariant may be true before AND after - had only its inverse covered,
+    and both rules from the GATE 1 defect (D30) were untested; three tests added. D71.
+  - **`docs/TEST_MAP.md`** maps every gate item and design commitment to its test with a strength -
+    direct, structural, or thin - and says plainly where coverage is weak: cross-tenant not at all,
+    the desktop adapter a stub, discovery scripted in CI, masking declared-regions-only, the
+    downgrade claim proven by one drift shape. D72.
+  - **Two defects found by consolidating** (D70, D72): `RunResult` branches were not strict and zod 4
+    does not strip unknown keys, so a result read back could carry an undeclared field to a caller;
+    and four references in `docs/STATUS.md` pointed at test files that have never existed. Every
+    documented test path is now verified mechanically.
+  - **Prefer impossible-by-type over tested-for**: `ArtifactAction` has nowhere to put a `markId`,
+    `allowedChoices` cannot express `complete`, the two outcome taxonomies are disjoint by
+    construction. TEST_MAP marks those STRUCTURAL and says why that is stronger than direct.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 461 passing across
+    44 files, and no test needs an API key.
+  - **Decisions recorded**: `DECISIONS.md` D69-D72.
