@@ -93,6 +93,7 @@ export class OperatorConsole {
   /** cookie value -> the ONE intervention it authorizes. */
   readonly #sessions = new Map<string, ConsoleSession>();
   readonly #interventions = new Set<string>();
+  #requireScopedSession: ((req: Request, res: Response, next: NextFunction) => void) | undefined;
 
   constructor(options: OperatorConsoleOptions) {
     this.#token = options.token;
@@ -137,13 +138,13 @@ export class OperatorConsole {
     });
 
     /**
-     * Exchange the token for a cookie, ONCE, for ONE intervention.
+     * POST /auth - exchange the token for a cookie, ONCE, for ONE intervention.
      *
      * The token arrives in a JSON body, never in the URL and never in a query string. What goes
      * back is HttpOnly (so no script can read it, which is also why nothing here uses
      * localStorage), SameSite=Strict (so no other site can cause it to be sent), and short-lived.
      */
-    app.post('/session', (req, res) => {
+    app.post('/auth', (req, res) => {
       const body = req.body as { token?: unknown; interventionId?: unknown };
       const supplied = typeof body.token === 'string' ? body.token : '';
       const interventionId = typeof body.interventionId === 'string' ? body.interventionId : '';
@@ -198,14 +199,34 @@ export class OperatorConsole {
       next();
     };
 
-    // NOTE THE ABSENCE. There is no `GET /interventions`. See the banner: enumeration is the
-    // attack, and a per-run token must not become a directory of every run in flight.
-    app.get('/intervention/:id', requireScopedSession, (req, res) => {
-      // PHASE 8 renders the handoff here. The security shell is what PHASE 7 owes.
-      res.json({ interventionId: req.params['id'], state: 'awaiting-phase-8' });
-    });
-
+    // NOTE THE ABSENCE. There is no `GET /interventions`. Enumeration is the attack, and a per-run
+    // token must not become a directory of every run in flight.
+    //
+    // There is also no `GET /intervention/:id` any more. PHASE 7 had one here as a placeholder, and
+    // PHASE 8 added the real page at INTERVENTION_PATH without removing it - so two routes existed
+    // for one thing, the banner pointed at the older one, and opening the URL a person was told to
+    // open returned `{"error":"no valid console session"}`. The page is mounted by
+    // `src/escalation/console.ts`; this file owns only the security.
+    this.#requireScopedSession = requireScopedSession;
     this.app = app;
+  }
+
+  /**
+   * Mount a route BEHIND the intervention-scoped session guard.
+   *
+   * The guard is not exported as a bare middleware anyone can forget to apply. Routes are mounted
+   * through here so that "protected" is the only way to add one, rather than a convention somebody
+   * has to remember at the moment they are adding a feature under time pressure.
+   */
+  mountScoped(
+    path: string,
+    method: 'get' | 'post',
+    handler: (req: Request, res: Response) => void,
+  ): void {
+    const guard = this.#requireScopedSession;
+    if (guard === undefined) throw new Error('console not initialised');
+    if (method === 'get') this.app.get(path, guard, handler);
+    else this.app.post(path, guard, handler);
   }
 
   /** Register an intervention this console will accept a session for. */
@@ -236,6 +257,18 @@ export class OperatorConsole {
 export const CONSOLE_HOST = '127.0.0.1';
 
 /**
+ * The ONE path an intervention is served at.
+ *
+ * A constant because it was not one. The banner built its URL from a literal here and the page was
+ * mounted at a different literal in `console.ts`, which is exactly the kind of duplication that
+ * looks harmless in review: both strings are correct, they are just not the same string. The result
+ * was a documented manual path that could not be opened at all.
+ */
+export function interventionPath(interventionId: string): string {
+  return '/i/' + interventionId;
+}
+
+/**
  * What the CLI prints. The URL and the token are on SEPARATE LINES so that copying the URL - into a
  * browser, a chat, a ticket - cannot carry the token with it.
  */
@@ -244,7 +277,7 @@ export function consoleBanner(port: number, token: string, interventionId: strin
   return [
     'An operator is needed.',
     '',
-    '  url:          http://' + CONSOLE_HOST + ':' + port + '/intervention/' + interventionId,
+    '  url:          http://' + CONSOLE_HOST + ':' + port + interventionPath(interventionId),
     '  token:        ' + token,
     '',
     'The page will ask for the token once. It is never part of the URL: a token in a URL leaks',

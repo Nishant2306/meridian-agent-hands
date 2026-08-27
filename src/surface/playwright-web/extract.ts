@@ -548,8 +548,41 @@ const FRAME_OFFSET_EXPRESSION = `(function () {
  * A cross-origin frame throws on access; the offset is then reported as UNKNOWN rather than zero,
  * because zero is a coordinate and would silently produce the misplaced-mask failure above.
  */
+/**
+ * Cached per frame, because computing it is a CDP round trip and observation is the hot path.
+ *
+ * PHASE 7 added this and PHASE 8 measured what it cost: `observe()` went from 45ms to 195ms, and
+ * since a replay observes dozens of times, the whole suite went from about 2 minutes to over 6.
+ * Three round trips per observation, for a number that had not changed.
+ *
+ * The offset is the position of the frame ELEMENT inside its parent's layout. In this application
+ * that is fixed by the shell: the content changes, the frameset geometry does not. So it is
+ * recomputed only when the frame's own URL or its parent's URL changes - a navigation, which is
+ * exactly when the layout could have moved. A WeakMap keyed by the frame object means a frame that
+ * goes away takes its entry with it.
+ */
+const FRAME_OFFSETS = new WeakMap<
+  Frame,
+  { url: string; parentUrl: string; offset: { x: number; y: number } | 'unknown' }
+>();
+
 async function frameOffset(frame: Frame): Promise<{ x: number; y: number } | 'unknown'> {
-  if (frame.parentFrame() === null) return { x: 0, y: 0 };
+  const parent = frame.parentFrame();
+  if (parent === null) return { x: 0, y: 0 };
+
+  const url = frame.url();
+  const parentUrl = parent.url();
+  const cached = FRAME_OFFSETS.get(frame);
+  if (cached !== undefined && cached.url === url && cached.parentUrl === parentUrl) {
+    return cached.offset;
+  }
+
+  const computed = await computeFrameOffset(frame);
+  FRAME_OFFSETS.set(frame, { url, parentUrl, offset: computed });
+  return computed;
+}
+
+async function computeFrameOffset(frame: Frame): Promise<{ x: number; y: number } | 'unknown'> {
   try {
     // Passed as a STRING for the same reason ENRICH_FUNCTION is: this module is compiled without
     // the DOM lib, deliberately, so that nothing in the perception layer can reach for a browser

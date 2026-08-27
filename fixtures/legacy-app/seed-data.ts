@@ -28,6 +28,15 @@ export interface SeedMember {
   readonly flags: {
     readonly restricted: boolean;
     readonly knownNotice: boolean;
+    /**
+     * PHASE 8. Servicing this member raises a blocking modal that the pinned condition profile
+     * deliberately does NOT describe, and that a PERSON can clear and the automation cannot.
+     *
+     * It is seed data rather than an armed fault so the handoff can be driven by hand with one
+     * command and no setup: `npm run replay -- --params '{"memberId":"20001",...}'`. A demo that
+     * needs three terminals to reproduce is a demo nobody reproduces.
+     */
+    readonly attestationRequired?: boolean;
   };
   readonly notice: typeof DUMMY_DATA_NOTICE;
 }
@@ -66,8 +75,20 @@ export const SEED_MEMBERS: readonly SeedMember[] = [
     name: 'Riley Chen',
     status: 'Active',
     accounts: [{ number: '10004-01', type: 'Checking', balanceMinorUnits: 15000 }],
-    // PHASE 6: member with a known notice condition. No behaviour attached yet.
+    // PHASE 6: member with a known notice condition - a RECOVERY the automation clears itself.
     flags: { restricted: false, knownNotice: true },
+    notice: DUMMY_DATA_NOTICE,
+  },
+  {
+    // PHASE 8: the handoff subject.
+    //
+    // The id deliberately does NOT contain "1000", so it stays out of the four-row partial-search
+    // case that `T5_STRUCTURAL_ROW` depends on.
+    id: '20001',
+    name: 'Dana Whitfield',
+    status: 'Active',
+    accounts: [{ number: '20001-01', type: 'Checking', balanceMinorUnits: 88250 }],
+    flags: { restricted: false, knownNotice: false, attestationRequired: true },
     notice: DUMMY_DATA_NOTICE,
   },
 ];

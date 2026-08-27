@@ -107,6 +107,8 @@ export function createLegacyApp(options: LegacyAppOptions = {}): LegacyApp {
   const faults = new FaultStore();
   /** Sessions that have dismissed the maintenance notice. Dismissal is per session, like the fault. */
   const dismissedNotice = new Set<string>();
+  /** Sessions that have completed the attestation. Overrides the modal from EITHER source. */
+  const attested = new Set<string>();
   /** sessionId -> memberId -> draft. In-memory only; a restart clears everything. */
   const drafts = new Map<string, Map<string, StoredDraft>>();
 
@@ -208,9 +210,10 @@ export function createLegacyApp(options: LegacyAppOptions = {}): LegacyApp {
   /** The overlay a screen should carry, if any. The unknown modal wins: it is BLOCKING. */
   function overlayFor(req: Request, member: SeedMember, returnTo: string): string {
     const flags = faultsFor(req, member);
-    if (flags.showUnknownModal === true) return unknownModalHtml(ctx);
-
     const sessionId = readCookie(req, SESSION_COOKIE);
+    const hasAttested = sessionId !== undefined && attested.has(sessionId);
+    if (flags.showUnknownModal === true && !hasAttested) return unknownModalHtml(ctx, returnTo);
+
     const dismissed = sessionId !== undefined && dismissedNotice.has(sessionId);
     if (flags.showKnownNotice === true && !dismissed) return maintenanceNoticeHtml(ctx, returnTo);
 
@@ -451,7 +454,10 @@ export function createLegacyApp(options: LegacyAppOptions = {}): LegacyApp {
     };
 
     faults.set(key, flags);
-    if (cookie !== undefined) dismissedNotice.delete(cookie);
+    if (cookie !== undefined) {
+      dismissedNotice.delete(cookie);
+      attested.delete(cookie);
+    }
     res.json({ session: key, flags });
   });
 
@@ -469,6 +475,41 @@ export function createLegacyApp(options: LegacyAppOptions = {}): LegacyApp {
    * session, and the caller lands back where it was. Nothing about the record changes, which is
    * exactly why the profile classes it as a recovery the automation may perform unattended.
    */
+  /**
+   * The attestation the unrecognised modal demands.
+   *
+   * A PERSON can do this and the automation cannot, because no detector in the pinned profile
+   * describes that modal. That asymmetry is deliberate: it is what makes the handoff demo real
+   * rather than a dead end where the human is shown a wall and asked to admire it.
+   */
+  app.post('/__fixture__/attest', requireSession, (req, res) => {
+    const sessionId = readCookie(req, SESSION_COOKIE);
+    const code = formField(req.body, 'ctl00$Main$txtAttest').trim();
+    const returnTo = formField(req.body, 'returnTo');
+
+    // ANY non-empty code is accepted, and the code is printed in the modal. The thing being
+    // demonstrated is the handoff, not a puzzle: a demo that needs knowledge a reviewer does not
+    // have is a demo a reviewer cannot run.
+    if (code === '') {
+      res
+        .status(200)
+        .type('html')
+        .send(renderMessage(ctx, 'Attestation', 'Enter the code shown.'));
+      return;
+    }
+
+    // [MUST] RECORDED AS ITS OWN FACT, not by clearing a fault flag.
+    //
+    // The first version deleted `showUnknownModal` from the SESSION fault store. For member 20001
+    // that flag lives in the SEED DATA, so the delete removed something that was never there, the
+    // next render read the seeded flag again, and the modal never went away - the handoff demo
+    // could be started and never finished. "This session has attested" is the actual domain fact,
+    // and it overrides both sources.
+    if (sessionId !== undefined) attested.add(sessionId);
+
+    res.redirect(303, returnTo === '' ? '/app' : returnTo);
+  });
+
   app.post('/__fixture__/dismiss-notice', requireSession, (req, res) => {
     const sessionId = readCookie(req, SESSION_COOKIE);
     if (sessionId !== undefined) dismissedNotice.add(sessionId);

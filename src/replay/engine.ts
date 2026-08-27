@@ -20,6 +20,9 @@ import type { LeaseToken } from '../types/session.js';
 import type { Surface, TargetResolver } from '../types/surface.js';
 import { validateInvocationParams } from '../artifact/params.js';
 import { settle } from './observation-loop.js';
+import { decideResume } from '../escalation/resume.js';
+import type { HumanActionEvidence, Intervention, InterventionKind } from '../types/intervention.js';
+import { newInterventionId } from '../escalation/handoff.js';
 
 /**
  * ==============================================================================================
@@ -37,6 +40,35 @@ import { settle } from './observation-loop.js';
  * "replay mode" flag, because a flag describes the PROCESS and breaks the moment discovery and
  * replay share one.
  */
+/**
+ * What the engine does when it cannot continue and a person is needed.
+ *
+ * A CALLBACK rather than a console reference, for the same reason `ReplayDeps` has no LlmClient:
+ * the engine must not know what a console is. It knows that it stopped, what it can say about why,
+ * and that somebody may hand control back. Whether that somebody is a web page, a CLI prompt or a
+ * test is not its business - and a test can therefore drive the entire handoff without a browser
+ * or a server.
+ */
+export interface EscalationRequest {
+  readonly intervention: Intervention;
+  readonly observation: Observation;
+}
+
+export type EscalationOutcome =
+  | { choice: 'abort'; notes: string }
+  | {
+      choice: 'resume';
+      notes: string;
+      humanEvents: HumanActionEvidence[];
+      /** The AUTOMATION lease, re-issued after the human released theirs. */
+      token: LeaseToken;
+      sameSession: boolean;
+    };
+
+export interface EscalationHandler {
+  escalate(request: EscalationRequest): Promise<EscalationOutcome>;
+}
+
 export interface ReplayDeps {
   resolver: TargetResolver;
   conditionProfile: ConditionProfile;
@@ -44,6 +76,13 @@ export interface ReplayDeps {
   configRoot?: string;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  /**
+   * Absent means a needs_human condition is TERMINAL, which is the PHASE 6 behaviour and still the
+   * right default: a caller with nobody to ask must not sit blocked forever.
+   */
+  escalation?: EscalationHandler;
+  /** How many times one run may go back to a person before giving up. */
+  maxInterventions?: number;
 }
 
 export interface ReplayRequest {
@@ -334,7 +373,20 @@ export class ReplayEngine {
     };
 
     // ---- 5. the steps ---------------------------------------------------------------------------
-    for (const step of artifact.steps) {
+    //
+    // Indexed rather than `for...of`, because a resume can move the cursor. When a person takes
+    // control and hands it back, the system decides WHICH state the screen now matches and resumes
+    // at the first step leaving that state - which may be several steps ahead of where we stopped,
+    // and must never be assumed to be "the next one".
+    let cursor = 0;
+    let activeToken = token;
+    let completionMode: 'automation' | 'human_assisted' = 'automation';
+    let interventions = 0;
+    const maxInterventions = this.#deps.maxInterventions ?? 3;
+
+    while (cursor < artifact.steps.length) {
+      const step = artifact.steps[cursor] as Step;
+      cursor += 1;
       const stepStarted = this.#now();
 
       // [MUST] D16. A step bound to an OPTIONAL parameter the caller did not supply is SKIPPED,
@@ -384,7 +436,7 @@ export class ReplayEngine {
 
       const attemptResult = await this.#runStep(step, {
         surface,
-        token,
+        token: activeToken,
         detectors,
         params,
         artifact,
@@ -396,8 +448,129 @@ export class ReplayEngine {
       steps.push({ ...attemptResult.outcome, ms: this.#now() - stepStarted });
       current = attemptResult.observation;
 
-      if (attemptResult.terminal !== null)
-        return finish(attemptResult.terminal(evidenceRef, metrics));
+      if (attemptResult.terminal !== null) {
+        const terminal = attemptResult.terminal(evidenceRef, metrics);
+        const handler = this.#deps.escalation;
+
+        // Only needs_human is escalatable. A hard failure and a business outcome are DECIDED, and
+        // asking a person to look at a decided run is how a clean negative answer turns into an
+        // hour of somebody's afternoon.
+        if (terminal.status !== 'needs_human' || handler === undefined) {
+          return finish(terminal);
+        }
+
+        // ======================================================================================
+        // ESCALATE, RECONCILE, REPEAT - as a LOOP, because a resume can fail to place us.
+        // ======================================================================================
+        //
+        // The first version of this was written straight-line: escalate, reconcile, and if the
+        // reconciliation failed, escalate once more and carry on. That is wrong in a specific way.
+        // "Carry on" meant re-running the step from a screen the system had just said it could not
+        // place, which fails with a locator error - so a run that should have come back to a person
+        // for a second question reported a control-not-found instead.
+        //
+        // Asking again is the correct answer, and it is the SAME question, so it is a loop.
+        let reason = terminal.reason;
+        let resolved = false;
+
+        while (!resolved) {
+          if (interventions >= maxInterventions) {
+            return finish({
+              ...terminal,
+              reason:
+                reason +
+                ' (gave up after ' +
+                interventions +
+                ' interventions: the run kept coming back to a person)',
+            });
+          }
+          interventions += 1;
+          metrics.humanInterventions = interventions;
+
+          const resolution = await this.#escalate({
+            handler,
+            artifact,
+            step,
+            stepIndex: cursor - 1,
+            observation: current,
+            reason,
+            surface,
+            evidence,
+            runId: evidenceRef,
+          });
+
+          if (resolution.choice === 'abort') {
+            return finish({
+              status: 'cancelled',
+              reason: 'OPERATOR_ABORTED',
+              stepId: step.id,
+              evidenceRef,
+              metrics,
+            });
+          }
+
+          // The person handed control back. NOW the system decides where we are - never "carry on
+          // from the next step", and never "the furthest checkpoint that still holds".
+          activeToken = resolution.token;
+          completionMode = 'human_assisted';
+          current = await surface.observe();
+          evidence?.observed(current);
+
+          const decision = decideResume({
+            artifact,
+            observation: current,
+            evaluator: this.#evaluator,
+            context: context(current),
+          });
+
+          // ORDER, and it follows the detector ladder: TERMINAL before non-terminal.
+          //
+          // A screen can be both still-blocked AND the wrong record - an operator who cleared
+          // nothing and navigated somewhere else. Reporting the modal would hide the more serious
+          // fact, and "you are on a different member" is the one that must never be softened into
+          // "please have another look". So the identity check is asked first.
+          if (decision.kind === 'hard_failure') {
+            // [MUST] Never continue on the wrong record.
+            return failed('INVARIANT_VIOLATED', decision.reason, step.id);
+          }
+          // IS THE THING THAT STOPPED US STILL THERE?
+          //
+          // Asked after the identity check and before anything else, because a screen carrying an
+          // unrecognised blocking modal can still match a resume-eligible state perfectly - the
+          // modal sits ON TOP of a member record, and the member record is exactly what the state
+          // describes. Resuming there sends the next click into the overlay, which times out as a
+          // locator failure and reports the symptom instead of the cause.
+          //
+          // Found by driving the handoff by hand and pressing Resume without fixing anything, which
+          // is the first thing any operator will do.
+          const stillBlocked = detectCondition(current, detectors);
+          if (stillBlocked !== null && stillBlocked.kind === 'hard_failure') {
+            return failed(stillBlocked.failure.code, stillBlocked.failure.description, step.id);
+          }
+          if (stillBlocked !== null && stillBlocked.kind === 'needs_human') {
+            reason = 'that is still in the way: ' + stillBlocked.reason;
+            continue;
+          }
+
+          if (decision.kind === 'success_state') {
+            const missingNow = harvestOutputs(current);
+            if (missingNow !== null) return failed('OUTPUT_PARSE_ERROR', missingNow, step.id);
+            cursor = artifact.steps.length;
+            resolved = true;
+            break;
+          }
+          if (decision.kind === 'resume_after') {
+            cursor = decision.resumeAtStepIndex;
+            resolved = true;
+            break;
+          }
+
+          // Zero matched, or more than one did. Same question, asked again, with what we learned.
+          reason = decision.reason + ' - ' + decision.detail.join('; ');
+        }
+
+        continue;
+      }
 
       const afterInvariants = this.#evaluator.evaluateAll(step.invariants, context(current));
       if (!afterInvariants.passed) {
@@ -446,7 +619,7 @@ export class ReplayEngine {
 
     return finish({
       status: 'success',
-      completionMode: 'automation',
+      completionMode,
       outputs,
       evidenceRef,
       metrics,
@@ -604,6 +777,80 @@ export class ReplayEngine {
     return held
       ? { kind: 'settled', observation: after }
       : { kind: 'unsettled', observation: after };
+  }
+
+  /**
+   * Build the intervention and hand it to whoever is listening.
+   *
+   * The intervention carries everything a person needs to decide WITHOUT reading the run's logs or
+   * opening the artifact: which capability, which step and the intent recorded for it, what stopped
+   * us, what is on screen, what we did immediately before. A notification that says "needs human"
+   * and a run id is not a handoff, it is an interruption.
+   */
+  async #escalate(input: {
+    handler: EscalationHandler;
+    artifact: CapabilityArtifact;
+    step: Step;
+    stepIndex: number;
+    observation: Observation;
+    reason: string;
+    surface: Surface;
+    evidence: EvidenceWriter | undefined;
+    runId: string;
+  }): Promise<EscalationOutcome> {
+    const { artifact, step, observation } = input;
+
+    // The screenshot is MASKED before it is written - the evidence writer refuses to write an
+    // unmasked one - so the console can poll it and a person can look at a live banking screen
+    // without the declared-sensitive regions being in a file.
+    const screenshotRef = await input.surface.captureEvidence('screenshot').catch(() => 'none');
+    const inventoryRef = await input.surface.captureEvidence('ax').catch(() => 'none');
+
+    const kind: InterventionKind = input.reason.includes('blocking dialog')
+      ? 'unknown_state'
+      : input.reason.includes('AMBIGUOUS')
+        ? 'ambiguous_control'
+        : input.reason.includes('recovery')
+          ? 'recovery_exhausted'
+          : 'unknown_state';
+
+    const intervention: Intervention = {
+      id: newInterventionId(),
+      createdAt: new Date().toISOString(),
+      kind,
+      runId: input.runId,
+      mode: 'replay',
+      capabilityId: artifact.capabilityId,
+      capabilityVersion: artifact.capabilityVersion,
+      currentStep: { id: step.id, index: input.stepIndex, intent: step.intent },
+      stopReason: input.reason,
+      state: {
+        screenIdentity: observation.screenIdentity.canonicalScreenName,
+        visibleHeading: observation.screenIdentity.headings[0] ?? '',
+        maskedScreenshotRef: screenshotRef,
+        inventoryRef,
+      },
+      previousAction: step.action.type + ' (' + step.id + ')',
+      policyContext: {
+        allowedOrigins: [],
+        maxRiskAllowed: step.risk,
+        deniedControlPhrases: [],
+      },
+      // [MUST] resume | abort. There is no 'complete': a person clicking a button must not be able
+      // to produce a successful capability result. See src/escalation/console.ts.
+      allowedChoices: ['resume', 'abort'],
+      status: 'open',
+    };
+
+    input.evidence?.append({
+      type: 'session_transition',
+      at: new Date().toISOString(),
+      from: 'AUTOMATION_RUNNING',
+      to: 'PAUSING',
+      reason: 'intervention ' + intervention.id + ': ' + input.reason,
+    });
+
+    return await input.handler.escalate({ intervention, observation });
   }
 
   async #runStep(

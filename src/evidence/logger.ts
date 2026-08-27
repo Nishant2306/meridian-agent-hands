@@ -67,7 +67,44 @@ export type EvidenceEvent =
    * evidence, and a count with no record of WHICH recovery and what was supposed to happen next is
    * a number nobody can check.
    */
-  | { type: 'recovery_applied'; at: string; recoveryId: string; continuation: string };
+  | { type: 'recovery_applied'; at: string; recoveryId: string; continuation: string }
+  /**
+   * The identity of the live session, recorded before control is ceded to a person and again when
+   * it comes back. PHASE 10 asserts the pair matches: it is the ONLY hard evidence that the human
+   * operated the SAME session rather than a fresh one, and every other part of the handoff story is
+   * a claim.
+   */
+  | {
+      type: 'handoff_session_identity';
+      at: string;
+      phase: 'before' | 'after';
+      interventionId: string;
+      browserContextId: string;
+      targetId: string;
+      url: string;
+    }
+  /** The comparison itself, so the claim is one line rather than a correlation of two. */
+  | {
+      type: 'handoff_same_session';
+      at: string;
+      interventionId: string;
+      same: boolean;
+      beforeTargetId: string;
+      afterTargetId: string;
+    }
+  /**
+   * Something a PERSON did while holding the lease. Never a raw typed value: `valueChanged` says a
+   * value changed and `redactedValueToken` is a correlation token, not a record of what was typed.
+   */
+  | {
+      type: 'human_action';
+      at: string;
+      kind: string;
+      role: string;
+      name: string;
+      valueChanged?: boolean;
+      redactedValueToken?: string;
+    };
 
 /**
  * The ONE place persistence pseudonymization happens. Called on every event.

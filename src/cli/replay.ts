@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Command } from 'commander';
 import { conditionProfilePath, loadConditionProfile } from '../artifact/profiles.js';
@@ -11,6 +11,10 @@ import { DefaultTargetResolver } from '../perception/resolver.js';
 import { ReplayEngine } from '../replay/engine.js';
 import { validateInvocationParams } from '../artifact/params.js';
 import { formatResultForHuman } from '../replay/report.js';
+import { HandoffCoordinator } from '../escalation/handoff.js';
+import { startOperatorConsole, type RunningConsole } from '../escalation/console.js';
+import { generateOperatorToken } from '../escalation/console-security.js';
+import type { Intervention } from '../types/intervention.js';
 import { allowlistPath, loadAllowlist } from '../policy/allowlist.js';
 import { PolicyEngine } from '../policy/engine.js';
 import { pseudonymizerFromEnv } from '../redaction/pseudonymize.js';
@@ -58,6 +62,8 @@ interface ReplayCliOptions {
   params: string;
   tenant?: string;
   json?: boolean;
+  /** `--no-operator` makes a needs_human condition terminal, for an unattended caller. */
+  operator?: boolean;
   artifacts: string;
   config: string;
   origin?: string;
@@ -172,8 +178,116 @@ async function run(options: ReplayCliOptions): Promise<void> {
   log('tenant:       ' + (options.tenant ?? '(default)'));
   log('origin:       ' + origin);
 
+  // ============================================================================================
+  // THE HANDOFF, WIRED FOR A REAL PERSON.
+  // ============================================================================================
+  //
+  // The engine knows nothing about consoles. It calls `escalate` when it cannot continue; this
+  // starts the console, prints where to go and blocks the run until the operator chooses. The
+  // browser is HEADED by default, so the window the person is asked to work in is the one already
+  // in front of them - the same context, the same page, still signed in.
+  //
+  // `--no-operator` turns it off, and then a needs_human condition is terminal, which is the right
+  // behaviour for an unattended caller with nobody to ask.
+  const coordinator = new HandoffCoordinator();
+  let consoleServer: RunningConsole | undefined;
+  const pending = new Map<string, (choice: 'resume' | 'abort') => void>();
+  const openInterventions = new Map<string, Intervention>();
+
+  const escalation =
+    options.operator === false
+      ? undefined
+      : {
+          escalate: async (request: { intervention: Intervention }) => {
+            const intervention = request.intervention;
+            openInterventions.set(intervention.id, intervention);
+
+            consoleServer ??= await startOperatorConsole(
+              {
+                get: (id) => openInterventions.get(id),
+                screenshot: async (id) => {
+                  if (!openInterventions.has(id)) return null;
+                  // A fresh MASKED capture of the same page, every poll. The evidence writer will
+                  // not write an unmasked one, so what the operator sees is what a reviewer sees.
+                  const ref = await brokered.surface.captureEvidence('screenshot');
+                  try {
+                    return 'data:image/png;base64,' + readFileSync(ref).toString('base64');
+                  } catch {
+                    return null;
+                  }
+                },
+                choose: async (id, choice) => {
+                  const resolve = pending.get(id);
+                  if (resolve === undefined) throw new Error('that intervention is not open');
+                  pending.delete(id);
+                  openInterventions.delete(id);
+                  resolve(choice);
+                },
+              },
+              { token: generateOperatorToken() },
+            );
+
+            await coordinator.cede({
+              surface: brokered.surface,
+              lease: brokered.lease,
+              session: brokered.session,
+              evidence,
+              interventionId: intervention.id,
+              reason: intervention.stopReason,
+            });
+
+            // stderr, like every other human-facing line. The URL and the token are on SEPARATE
+            // lines: a token in a URL leaks through history, Referer, proxy logs and screenshots.
+            const nl = String.fromCharCode(10);
+            process.stderr.write(
+              nl +
+                consoleServer.banner(intervention.id) +
+                nl +
+                nl +
+                '  why:          ' +
+                intervention.stopReason +
+                nl +
+                '  step:         ' +
+                intervention.currentStep.id +
+                ' - ' +
+                intervention.currentStep.intent +
+                nl +
+                '  screen:       ' +
+                intervention.state.screenIdentity +
+                nl +
+                nl +
+                'The browser window in front of you IS the run. Act in it, then choose Resume.' +
+                nl +
+                'There is no "mark complete": the system re-checks the screen and decides itself.' +
+                nl +
+                nl,
+            );
+
+            const choice = await new Promise<'resume' | 'abort'>((resolve) => {
+              pending.set(intervention.id, resolve);
+            });
+
+            const reclaimed = await coordinator.reclaim({
+              surface: brokered.surface,
+              lease: brokered.lease,
+              session: brokered.session,
+              evidence,
+            });
+
+            if (choice === 'abort') return { choice: 'abort' as const, notes: '' };
+            return {
+              choice: 'resume' as const,
+              notes: '',
+              humanEvents: reclaimed.humanEvents,
+              token: reclaimed.token,
+              sameSession: coordinator.sameSession(),
+            };
+          },
+        };
+
   const engine = new ReplayEngine({
     resolver,
+    ...(escalation === undefined ? {} : { escalation }),
     conditionProfile: loadConditionProfile(
       conditionProfilePath(
         options.config,
@@ -262,6 +376,7 @@ async function run(options: ReplayCliOptions): Promise<void> {
 
     process.exitCode = EXIT_CODES[outcome.result.status];
   } finally {
+    await consoleServer?.close();
     await brokered.close();
   }
 }
@@ -278,6 +393,10 @@ program
   .option('--artifacts <dir>', 'artifact store root', 'artifacts')
   .option('--config <dir>', 'profile config root', 'config')
   .option('--origin <url>', 'override the origin (for a fixture on an ephemeral port)')
+  .option(
+    '--no-operator',
+    'do not offer a human handoff; a needs_human condition ends the run instead',
+  )
   .action(run);
 
 await program.parseAsync(process.argv);

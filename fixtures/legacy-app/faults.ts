@@ -84,6 +84,8 @@ export const FAULT_TEXT = {
    * for this string, this fixture stops testing what it exists to test.
    */
   unknownModal: 'Compliance attestation required',
+  /** Shown ON SCREEN in the modal. The server accepts any non-empty value; see the route. */
+  attestationCode: '4417',
   unknownModalBody:
     'Compliance attestation required before this record may be serviced.' +
     ' Contact your supervisor for the attestation code.',
@@ -138,10 +140,12 @@ export class FaultStore {
 export function seededFaultsFor(member: {
   restricted?: boolean;
   knownNotice?: boolean;
+  attestationRequired?: boolean;
 }): FaultFlags {
   return {
     ...(member.restricted === true ? { denyPermission: true } : {}),
     ...(member.knownNotice === true ? { showKnownNotice: true } : {}),
+    ...(member.attestationRequired === true ? { showUnknownModal: true } : {}),
   };
 }
 

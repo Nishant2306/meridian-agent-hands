@@ -1270,3 +1270,276 @@ which describes the symptom and points away from the cause. The actual message i
 the step and the reason. The general rule: a helper that performs a sequence of actions and discards
 their results converts a precise failure into a vague one, at exactly the moment somebody needs the
 precise one.
+
+---
+
+## D58 - Resume is anchor matching, and a partially filled form matching nothing is the answer
+
+**The tempting implementation** walks the states in order and resumes after the last one that still
+holds. It is wrong in a way that produces a plausible-looking run against the wrong record.
+
+**Checkpoints are not monotonic.** A member id is visible on the search results, the member record,
+the form and the review. A heading can appear inside a modal sitting on top of a different screen. A
+person can navigate straight to a later route without filling anything required on the way. Two
+states can hold at once - which is precisely why resume-eligible states must be mutually exclusive
+and why the distiller checks that they are.
+
+**Decision.** Resume asks WHICH ONE state this screen matches. Exactly one is a resume point; zero
+means we do not know where we are; more than one means the artifact's exclusivity has been violated.
+Both of the latter go back to the person, with the reason.
+
+**`subaccount-form` is not resume-eligible and `subaccount-form-complete` is.** A form with the
+account type chosen and the deposit empty matches neither, so it returns to the human. That costs one
+more question. Treating "the form screen is showing" as a resume point would have resumed by typing
+over work an operator had just done by hand, which is the failure this design exists to prevent.
+
+**Identity invariants are checked BEFORE the state search**, so a screen that matches nothing AND is
+the wrong record is reported as the wrong record - the more serious of the two, and the one that must
+never be answered with "please have another look".
+
+---
+
+## D59 - There is no /complete endpoint, and that is the whole claim
+
+**Decision.** The console offers `resume` and `abort`. `allowedChoices` is typed as those two, so
+the absence is enforced by the schema rather than by the UI, and a test asks the server for
+`/complete`, `/success` and `/done` and requires 404 from each.
+
+**Why it matters more than it looks.** "Only the SYSTEM may declare success" is the strongest claim
+in this project. It has been enforced against the model since PHASE 4 - the model proposes
+completion and the system re-observes and decides. If a person could click a button marked
+"complete" and get `status: success` out of the other end, the claim would be about models only, and
+it is not.
+
+**`resume` subsumes completion.** The system re-observes, evaluates the success condition, validates
+every declared output against its declared type, and declares success itself with
+`completionMode: 'human_assisted'`. The operator's contribution is recorded permanently in the
+result: a run a person helped with never reports as `automation`.
+
+---
+
+## D60 - The same-session guarantee is evidence, not assertion
+
+**Decision.** `SessionIdentity` - the CDP `browserContextId` and page `targetId` - is captured before
+control is ceded and again when it comes back, written to the evidence as two events plus an explicit
+`handoff_same_session` comparison, and asserted by the end-to-end test.
+
+**Why it needs proving at all.** A handoff that closed the browser and opened a fresh one would look
+identical in a screenshot, in a log, and in a live demo. It would also have thrown away the
+authenticated session, which is the one thing the automation had that the person needs. Every other
+part of the handoff story is a claim about what the code does; this is a fact about two identifiers.
+
+**The negative control matters as much.** A `sameSession()` that returned true unconditionally would
+pass the positive test, so there is a test where the target id changes under it and the answer must
+be false.
+
+---
+
+## D61 - Human acts are witnessed, because they cannot be gated
+
+**The honest limit, stated first.** The lease governs SOFTWARE-issued actions. In the headed-browser
+transport a person types on a real keyboard into a real window, and those keystrokes do not pass
+through `resolveAndPerform`. Nothing in this system can stop them.
+
+**Decision.** If the acts cannot be gated, they are recorded. Listeners are injected into every frame
+during HUMAN_CONTROL for click, input, change, submit and navigation, and re-injected after every
+navigation because a page load discards them.
+
+**Why not just diff the observations.** A diff records the NET result: the deposit field holds a value
+it did not hold before. It cannot tell "the operator typed it" from "the application autofilled it",
+it cannot see a correction, and an act that leaves no visible trace does not appear at all. The diff
+is kept as supplemental evidence rather than as the mechanism.
+
+**[MUST] Never a raw typed value.** `HumanActionEvidence` has nowhere to put one:
+`valueChanged: boolean` and an optional `redactedValueToken` that is a one-way hash prefix for
+correlating the same value across two events. Not a rule about what to log - a shape with no field
+for it.
+
+**Desktop equivalent**: OS accessibility event hooks (UI Automation event handlers on Windows,
+AXObserver on macOS). Same shape, same redaction rule, different source.
+
+---
+
+## D62 - Resuming while the blocker is still there asks again
+
+**Found by driving the handoff by hand and pressing Resume without fixing anything**, which is the
+first thing any operator will do.
+
+An unrecognised blocking modal sits ON TOP of a member record, and the member record is exactly what
+a resume-eligible state describes - so the screen matched, the run resumed, the next click went into
+the modal's overlay, and Playwright reported a locator timeout. The run failed with a message about
+an element intercepting pointer events: a description of the symptom that says nothing about the
+cause.
+
+**Decision.** After a resume, the detectors run again before anything else is decided. A needs_human
+condition that is still present sends the same question back to the operator - `that is still in the
+way: ...` - rather than resuming into it.
+
+**Ordering.** The identity check comes first, because a screen can be both still-blocked and the
+wrong record, and reporting the modal would hide the more serious fact. That is the detector ladder's
+own rule - terminal before non-terminal - applied one level up.
+
+---
+
+## D63 - Escalate-reconcile is a loop, not a straight line
+
+**The bug.** The first version escalated, reconciled, and if the reconciliation failed to place us,
+escalated once more and carried on. "Carried on" meant re-running the step from a screen the system
+had just said it could not place, which fails with a locator error - so a run that should have asked
+a second question reported a control-not-found instead.
+
+**Decision.** Asking again is the correct answer and it is the same question, so it is a `while` loop
+bounded by `maxInterventions`. The bound exists because a person who cannot resolve something twice
+will not resolve it on the third pass either, and a run that asks forever is worse than one that
+stops.
+
+**`cede` had to learn a second entry point at the same time.** From `AUTOMATION_RUNNING` it goes
+through `PAUSING`, which admits no actor and makes the gap between the two leases safe. From
+`RESUME_VALIDATION` - the second-question case - the system has already stopped, and
+`RESUME_VALIDATION -> HUMAN_CONTROL` is the modelled transition. The state table written in PHASE 2
+anticipated this; the first version of `cede` did not, and threw an illegal-transition error.
+
+---
+
+## D64 - A seeded member for the handoff, not an armed fault
+
+**Decision.** Member `20001` carries `attestationRequired` in the seed data and raises the
+unrecognised modal on its own.
+
+**Why.** PHASE 8 has to be driven by hand: watch it stop, clear the modal in the real browser, resume,
+watch it finish. A demo that needs a second terminal to POST a fault before it will reproduce is a
+demo nobody reproduces. One command now does it:
+
+```bash
+npm run replay -- --artifact prepare_subaccount_review@1.0.0 \
+  --params '{"memberId":"20001","accountType":"Savings","initialDeposit":"250.00"}'
+```
+
+**The id avoids `1000` on purpose.** Search is a substring match, and `q=1000` returning exactly four
+identically-named `Open` links is what makes `T5_STRUCTURAL_ROW` necessary rather than theoretical. A
+fifth match would have quietly changed what that test proves.
+
+**The modal is clearable by a PERSON and not by the automation** - its attestation button posts to a
+route the profile knows nothing about. That asymmetry is the point: it is the state that must reach a
+human, and a human has to actually be able to resolve it, or the handoff is a wall to admire.
+
+---
+
+## D65 - Two routes for one page, and a test suite that could not see it
+
+**The bug that blocked GATE 2.** The URL the CLI printed returned
+`{"error":"no valid console session"}`. There was nowhere to enter a token, so the handoff could not
+be driven by hand at all - while the automated end-to-end handoff test passed.
+
+**Two causes, and the second one is the real one.**
+
+1. The page was mounted behind the session guard. The first visit is unauthenticated BY
+   CONSTRUCTION - obtaining the cookie is what the page is for - so guarding it makes the console
+   impossible to open. The page is now served unauthenticated; every route with DATA behind it, and
+   every route that changes anything, still requires the cookie.
+
+2. **There were two routes for one thing.** PHASE 7 left a placeholder `GET /intervention/:id`
+   returning JSON, and PHASE 8 added the real page at `/i/:id` without removing it. `consoleBanner`
+   built its URL from one literal; the page was mounted at the other. Both strings were correct.
+   They were not the same string.
+
+**Decision.** The placeholder is deleted, and there is now ONE `interventionPath()` used by both the
+banner and the route. A path that appears in two files is a path that will diverge, and this one
+diverged inside a single phase.
+
+**An unknown id still gets the page**, deliberately. A 404 there would say which interventions
+exist, which is the same enumeration attack the missing list endpoint prevents. The page is static;
+`/auth` then refuses the id with the same 401 a bad token gets.
+
+**The PHASE 7 console tests were exercising the placeholder.** They asserted scoping, expiry and
+revocation against a route that existed only as a stand-in - so they kept passing after the real
+route diverged from it. They now mount a route through `mountScoped`, which is the API real code
+uses.
+
+---
+
+## D66 - A test that drives the API is testing a different artefact than the one a person uses
+
+**The pattern, twice in one phase.** The handoff mechanism worked: the lease moved, the session
+survived, resume reconciled correctly, and an end-to-end test proved all of it. The thing a HUMAN
+touches did not work at all. Before that, the manual walkthrough needed a fault armed from a second
+terminal, which is why member 20001 was seeded (D64).
+
+Both are the same mistake: building and testing the MECHANISM, and assuming the way a person reaches
+it therefore works. The route-level tests were not wrong - `/complete` really did 404, data really
+did require a cookie, the token really was in no URL. They were all asking the server questions. The
+first thing a person does is a GET on the URL in the banner, and no test did that.
+
+**Decision.** `tests/escalation.console.page.live.test.ts` drives a REAL BROWSER through the REAL
+SEQUENCE: GET the banner URL with no cookie and require HTML and 200, type the token, require the
+HttpOnly SameSite=Strict cookie to be set, require the operator view to render the reason and the
+step and the live screenshot, click Resume and require the run to be told.
+
+**The rule this generalises to**: where a human-facing path exists, at least one test uses it the way
+the human does. An API test and a UI test are not two tests of one thing; they are tests of two
+things, and the one that ships broken is the one nobody drove.
+
+**It also earned an exemption in the input-path lint test**, and the exemption is worth reading. That
+rule forbids `page.click` outside the transport because every action against the BANKING APP must go
+through `resolveAndPerform`. The console is a different application, served by us, with no lease over
+it and no input path to bypass. The exemption is a single FILE rather than a directory, and a test
+asserts it stays that way and that the exempt file never touches the fixture.
+
+---
+
+## D67 - The attestation control cleared a flag that was never set
+
+**The bug that blocked GATE 2 for the third time.** The handoff mechanism worked completely: the
+modal was detected, the run stopped, the console opened, Resume without fixing anything correctly
+reported "that is still in the way" and asked again. And the button that clears the modal did
+nothing, so the demo could be started and never finished.
+
+**The cause.** The handler deleted `showUnknownModal` from the SESSION fault store. For member 20001
+that flag comes from the SEED DATA, through `seededFaultsFor`, and `mergeFaults` re-supplies it on
+every render. The delete removed something that was never there.
+
+**Decision.** Attestation is recorded as its own per-session fact - `attested` - which overrides the
+modal from EITHER source, exactly as `dismissedNotice` already did for the maintenance banner. The
+domain fact is "this session has attested", not "this fault flag is off", and modelling it as the
+latter is what made a two-source flag look like a one-source flag.
+
+**The code is now printed on screen and any non-empty value is accepted.** A demo that requires
+knowledge a reviewer does not have is a demo a reviewer cannot run, and the thing being demonstrated
+is the handoff rather than a puzzle. An empty code is refused, so the field is not decoration.
+
+---
+
+## D68 - D66 applied to the fixture, and an audit of every documented manual step
+
+**Three times in one phase** the MECHANISM was proven and the path a person takes was not: the
+walkthrough needed a fault armed from a second terminal (D64), the console could not be opened at
+all (D65), and the control that clears the modal did nothing (D67).
+
+D66 already named the rule - _where a human-facing path exists, at least one test uses it the way the
+human does_ - and it had been applied to the operator console only. The application a person is
+handed control of has human-facing controls too, and nothing clicked them: every test POSTed to the
+route, so the ROUTE was proven and the CONTROL was not.
+
+**Decision.** `tests/fixture.human-controls.live.test.ts` drives a real browser and clicks:
+attestation (and asserts the modal is GONE and the record stays servable across three revisits),
+Dismiss on the maintenance notice, and the entire happy path from search to the review screen.
+Asserting a 303 would have passed throughout the outage.
+
+**And the walkthrough itself was audited line by line**, which found a fourth problem nothing had
+caught: `/artifacts` is gitignored, so on a clean checkout the documented replay command fails with
+"prepare_subaccount_review@1.0.0 is not in artifacts". The only ways to fill it were to run a real
+discovery - which costs money - or to have already done so. A reviewer who cannot run the walkthrough
+cannot check any claim it makes.
+
+`npm run demo:store` copies the tracked example into `artifacts-demo/`. Never into `artifacts/`: a
+published version there is immutable, and seeding it would make the next genuine discovery run be
+refused by the store.
+
+**The audit table is in `docs/STATUS.md`**, one row per line of the walkthrough, naming what covers
+it. Writing it is what surfaced the missing artifact - the rows for the first two commands had
+nothing to point at.
+
+**The general lesson, now stated where it applies to everything and not just consoles**: a test that
+exercises the API is testing a different artefact from the one a person uses, and documentation is a
+claim that has to be executed like any other. Every step of a documented manual path gets performed -
+by a person or by something that clicks - before the path is called finished.

@@ -50,11 +50,35 @@ const FORBIDDEN = [
   'keyboard.type',
 ];
 
-/** The transport, the fixture itself, and this file. */
+/**
+ * The transport, the fixture itself, this file - and the operator console's own page.
+ *
+ * The rule is about THE APPLICATION UNDER TEST: every software-issued action against the legacy
+ * banking app goes through `resolveAndPerform`, where the lease, the policy engine, the single
+ * resolver and revalidation live.
+ *
+ * `escalation.console.page.live.test.ts` drives a different application - the operator console we
+ * serve ourselves. It is not behind a `Surface`, there is no lease over it, and there is no input
+ * path to bypass; driving it with Playwright directly is the only way to check the thing a person
+ * actually loads. That test exists precisely because API-level checks did not notice the console
+ * could not be opened, so refusing to let it use a browser would be the wrong lesson.
+ *
+ * `fixture.human-controls.live.test.ts` is the second exemption and needs a different argument. It
+ * DOES drive the banking app - with a browser, clicking - and that is the point: it is checking that
+ * a PERSON can operate the controls the documented walkthrough depends on. A person is not bound by
+ * the lease (see D61: the honest limit is that direct input is out of band), so requiring that test
+ * to go through `resolveAndPerform` would make it a test of the automation again, which is the
+ * mistake it exists to correct.
+ *
+ * Both exemptions are FILES, not directories, so neither can quietly grow to cover a helper that
+ * automation uses.
+ */
 const ALLOWED_PREFIXES = [
   join('src', 'surface', 'playwright-web'),
   join('fixtures', 'legacy-app'),
   join('tests', 'policy.input-path.lint.test.ts'),
+  join('tests', 'escalation.console.page.live.test.ts'),
+  join('tests', 'fixture.human-controls.live.test.ts'),
 ];
 
 const SEARCHED_ROOTS = ['src', 'tests', 'scripts', 'fixtures'];
@@ -94,6 +118,24 @@ describe('no code outside the transport issues browser input directly', () => {
     });
 
     expect(hits.length).toBeGreaterThan(0);
+  });
+
+  it('the exemptions are named files, and none of them drives the automation', () => {
+    // An exemption that grew into a directory would silently re-open the hole this test closes.
+    const exemptTests = ALLOWED_PREFIXES.filter((prefix) => prefix.startsWith('tests'));
+    expect(exemptTests).toEqual([
+      join('tests', 'policy.input-path.lint.test.ts'),
+      join('tests', 'escalation.console.page.live.test.ts'),
+      join('tests', 'fixture.human-controls.live.test.ts'),
+    ]);
+
+    // Neither exempt test may drive the AUTOMATION: they are about the console and about what a
+    // person can click. A test that reached for the replay harness would be automation again.
+    for (const file of exemptTests.slice(1)) {
+      const code = readFileSync(join(REPO, file), 'utf8');
+      expect(code, file).not.toContain('replayAgainstFixture');
+      expect(code, file).not.toContain('resolveAndPerform');
+    }
   });
 
   it('[MUST] finds none anywhere else', () => {

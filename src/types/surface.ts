@@ -4,6 +4,7 @@ import type { TargetDescriptor } from './control.js';
 import type { ErrorCode } from './outcomes.js';
 import type { Observation, ScreenIdentity } from './perception.js';
 import type { Resolution, ResolutionTrace } from './resolution.js';
+import type { HumanActionEvidence, SessionIdentity } from './intervention.js';
 import type { LeaseToken } from './session.js';
 
 /**
@@ -122,6 +123,24 @@ export interface Surface {
    * that desktop session (locally, or over RDP for a hosted runner).
    */
   exposeForHuman(): Promise<HumanSessionHandle>;
+
+  /**
+   * Identity of the live session, for proving the human operated THIS one.
+   *
+   * Recorded before control is ceded and again when it comes back. If a handoff quietly opened a
+   * new browser, or a new context, or a new page, these change - and nothing else in the handoff
+   * story would notice. Optional because a surface may not be able to answer; the desktop adapter
+   * would report the window handle.
+   */
+  sessionIdentity?(): Promise<SessionIdentity>;
+
+  /**
+   * Start recording what a PERSON does while they hold the lease, and stop.
+   *
+   * The listeners are removed by the returned function. Optional: a surface that cannot observe
+   * human input returns nothing and the observation diff stands alone as evidence.
+   */
+  recordHumanActions?(): Promise<() => Promise<HumanActionEvidence[]>>;
 
   /**
    * Is the driven process gone?

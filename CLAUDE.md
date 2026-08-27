@@ -198,7 +198,7 @@ the pasted phase is not** (Hard Rule 7).
 | 5     | Replay - **GATE 1**: a real model against a live UI at the end of this phase. Also the replay import-boundary scan                          | ✅ Complete, GATE 1 PASSED |
 | 6     | Runtime outcomes - business outcomes, known conditions, fault injection in the fixture                                                      | ✅ Complete                |
 | 7     | Safety - the configurable engine runs ALONGSIDE the bootstrap minimum, which stays                                                          | ✅ Complete                |
-| 8     | Human handoff - **GATE 2**                                                                                                                  | ⬜ Not started             |
+| 8     | Human handoff - **GATE 2**                                                                                                                  | ✅ Complete                |
 | 9     | Tests                                                                                                                                       | ⬜ Not started             |
 | 10    | Evidence + README + REPORT - **GATE 3**                                                                                                     | ⬜ Not started             |
 | 11    | Cross-tenant                                                                                                                                | ⬜ Not started             |
@@ -217,8 +217,6 @@ the pasted phase is not** (Hard Rule 7).
 - **GATE 1 PASSED.** Discovery 8 steps / 10 model calls; replay on member 10002 against a freshly
   seeded fixture, 1.8s, `llmCalls: 0`. It also leaked a member id and name into model-authored
   prose, which the parameterization sweep now refuses. See DECISIONS.md D39 and D40.
-- **`exposeForHuman`** returns a handle describing the live headed browser. The pause / cede / resume
-  protocol itself is PHASE 8.
 - **`semanticKey`** exists on `TargetDescriptor` but is unused until PHASE 11. It is present now only
   so that cross-tenant support is not a schema retrofit against artifacts that already exist and are
   already content-hashed.
@@ -256,7 +254,7 @@ the pasted phase is not** (Hard Rule 7).
 - `npm run distill:demo` runs the scripted fake client end to end and writes a real distilled
   artifact to the throwaway `artifacts-demo/`. No model is called, and the artifact's provenance
   says so.
-- `npm run operator` currently points at `scripts/not-implemented.ts` and exits 2 with the phase
+- `npm run operator` still points at `scripts/not-implemented.ts` and exits 2 with the phase
   that builds it. `capability:approve` is real as of PHASE 3, `discover` as of PHASE 4, `replay`
   as of PHASE 5.
 
@@ -492,3 +490,65 @@ the pasted phase is not** (Hard Rule 7).
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 401 passing across
     38 files.
   - **Decisions recorded**: `DECISIONS.md` D49-D57.
+
+- **PHASE 8** - Human handoff. The MECHANISM, and the console is minimal by design.
+  - **Control transfer** (`src/escalation/handoff.ts`): AUTOMATION_RUNNING -> PAUSING -> [lease
+    revoked, HUMAN lease issued] -> HUMAN_CONTROL -> RESUME_VALIDATION. The run process stays alive
+    and the browser context is NOT recreated. Mutual exclusion is the lease AND the session state,
+    independently, so one being wrong does not mean two actors can drive at once.
+  - **[MUST] The same-session guarantee is EVIDENCE** (D60). `browserContextId` and page `targetId`
+    are captured before control is ceded and again when it comes back, written as two events plus an
+    explicit `handoff_same_session` comparison. A handoff that opened a fresh browser would look
+    identical in a screenshot, a log and a demo. There is a NEGATIVE control where the id changes
+    and `sameSession()` must be false.
+  - **[MUST] There is no `/complete`** (D59). `allowedChoices` is typed `resume | abort`, so the
+    absence is in the schema rather than the UI, and a test requires 404 from `/complete`,
+    `/success` and `/done`. `resume` subsumes it: the system re-observes, validates every declared
+    output and declares success itself with `completionMode: 'human_assisted'`. "Only the system may
+    declare success" binds the operator exactly as it binds the model.
+  - **[MUST] Safe resume is ANCHOR MATCHING** (D58), never "the furthest checkpoint that holds".
+    Checkpoints are not monotonic. Exactly one resume-eligible state must match; zero or two go back
+    to the person. A PARTIALLY filled form matches nothing and returns to the human - correct, and
+    cheaper than a run that types over work somebody just did. Identity invariants are checked FIRST,
+    so a wrong record is reported as a wrong record and never as "please look again".
+  - **Human acts are WITNESSED, because they cannot be gated** (D61). The lease governs
+    software-issued actions; a person at a real keyboard is out of band, and REPORT.md says so. So
+    listeners record click/input/change/submit/navigation per frame, re-injected after every
+    navigation. `HumanActionEvidence` has NOWHERE to put a raw value - `valueChanged` plus a one-way
+    correlation token. Desktop equivalent: OS accessibility event hooks.
+  - **Console** (`src/escalation/console.ts`): four routes, plain HTML, behind the PHASE 7 security
+    shell. The CLI prints the URL and - on a SEPARATE line - the token, then blocks. `--no-operator`
+    makes a needs_human condition terminal again for an unattended caller.
+  - **Member `20001` is seeded with `attestationRequired`** (D64) so the handoff can be driven by
+    hand with one command. Its id avoids `1000` on purpose: `q=1000` returning exactly four `Open`
+    links is what makes T5_STRUCTURAL_ROW necessary rather than theoretical.
+  - **Three defects found in this phase's own design**: escalate-reconcile was straight-line and
+    "carried on" into a screen it could not place (D63); `cede` could not be entered from
+    RESUME_VALIDATION, which the PHASE 2 state table had anticipated and the code had not (D63); and
+    resuming while the blocker was still on screen resumed INTO it, found by pressing Resume without
+    fixing anything (D62).
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 444 passing across
+    43 files. The CLI handoff was also driven end to end over HTTP: two interventions, the second
+    reporting "that is still in the way", then abort with exit code 25.
+  - **GATE 2 fix**: the console could not be OPENED. Two routes existed for one page - a PHASE 7
+    placeholder returning JSON and the real page - the banner pointed at the placeholder, and the
+    page was mounted behind the very cookie it exists to obtain. There is now one
+    `interventionPath()` shared by the banner and the route, and the page is served unauthenticated
+    while every data and state-changing route still requires the cookie. D65.
+  - **The lesson, and it is the more important half** (D66): the mechanism worked and had an
+    end-to-end test; the thing a PERSON touches did not work at all. Route-level tests ask the
+    server questions. The first thing a person does is a GET on the URL in the banner, and no test
+    did that. `tests/escalation.console.page.live.test.ts` now drives a real browser through the
+    real sequence. Where a human-facing path exists, at least one test uses it the way the human
+    does.
+  - **GATE 2, third block**: the attestation control did nothing. It deleted `showUnknownModal` from
+    the SESSION fault store, and for member 20001 that flag comes from the SEED DATA - so it removed
+    something that was never there and the modal never cleared. Attestation is now its own
+    per-session fact, the code is printed ON SCREEN, and any non-empty value is accepted. D67.
+  - **D66 applied to the FIXTURE, and the walkthrough audited line by line** (D68).
+    `tests/fixture.human-controls.live.test.ts` clicks: attestation (asserting the modal is GONE),
+    Dismiss, and the whole happy path. The audit found a fourth problem nothing had caught -
+    `/artifacts` is gitignored, so the documented replay command fails on a clean checkout;
+    `npm run demo:store` copies the tracked example into `artifacts-demo/`. `docs/STATUS.md` now has
+    one row per walkthrough step naming what covers it.
+  - **Decisions recorded**: `DECISIONS.md` D58-D68.

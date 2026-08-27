@@ -5,6 +5,7 @@ import {
   consoleBanner,
   generateInterventionId,
   generateOperatorToken,
+  interventionPath,
   OperatorConsole,
   tokensMatch,
 } from '../src/escalation/console-security.js';
@@ -59,7 +60,7 @@ describe('[MUST] the token is never in a URL', () => {
     // the screenshot somebody takes to ask a colleague for help.
     expect(urlLine).not.toContain(token);
     expect(banner).toContain(token);
-    expect(banner).toContain('/intervention/' + id);
+    expect(banner).toContain(interventionPath(id));
   });
 
   it('binds loopback only, and the host is not a parameter', () => {
@@ -95,7 +96,7 @@ describe('the session exchange', () => {
   async function openSession(
     body: Record<string, unknown>,
   ): Promise<{ status: number; cookie: string | null }> {
-    const response = await fetch(base + '/session', {
+    const response = await fetch(base + '/auth', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
       body: JSON.stringify(body),
@@ -128,7 +129,7 @@ describe('the session exchange', () => {
   });
 
   it('rejects a cross-site POST', async () => {
-    const response = await fetch(base + '/session', {
+    const response = await fetch(base + '/auth', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -142,7 +143,7 @@ describe('the session exchange', () => {
   });
 
   it('rejects a POST claiming a foreign origin', async () => {
-    const response = await fetch(base + '/session', {
+    const response = await fetch(base + '/auth', {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: 'https://evil.example.com' },
       body: JSON.stringify({ token, interventionId }),
@@ -163,6 +164,12 @@ describe('[MUST] a session is scoped to ONE intervention, and there is no list e
     const console_ = new OperatorConsole({ token, sessionTtlMs: 60_000 });
     console_.register(mine);
     console_.register(someoneElses);
+    // Mounted through `mountScoped`, which is the only way real code adds a protected route. The
+    // PHASE 7 tests used a placeholder route that this file owned, and a placeholder is exactly the
+    // thing that keeps passing after the real route it stood in for has diverged.
+    console_.mountScoped('/scoped/:id', 'get', (req, res) => {
+      res.json({ interventionId: req.params['id'] });
+    });
     base = await new Promise<string>((resolve) => {
       const server = console_.app.listen(0, CONSOLE_HOST, () => {
         const address = server.address() as AddressInfo;
@@ -177,7 +184,7 @@ describe('[MUST] a session is scoped to ONE intervention, and there is no list e
   });
 
   async function cookieFor(interventionId: string): Promise<string> {
-    const response = await fetch(base + '/session', {
+    const response = await fetch(base + '/auth', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
       body: JSON.stringify({ token, interventionId }),
@@ -188,7 +195,7 @@ describe('[MUST] a session is scoped to ONE intervention, and there is no list e
 
   it('opens the intervention it was issued for', async () => {
     const cookie = await cookieFor(mine);
-    const response = await fetch(base + '/intervention/' + mine, { headers: { cookie } });
+    const response = await fetch(base + '/scoped/' + mine, { headers: { cookie } });
 
     expect(response.status).toBe(200);
     expect((await response.json()) as { interventionId: string }).toMatchObject({
@@ -199,13 +206,13 @@ describe('[MUST] a session is scoped to ONE intervention, and there is no list e
   it('REFUSES a different intervention with the same cookie', async () => {
     // A leaked cookie is worth exactly one handoff, not every handoff in flight.
     const cookie = await cookieFor(mine);
-    const response = await fetch(base + '/intervention/' + someoneElses, { headers: { cookie } });
+    const response = await fetch(base + '/scoped/' + someoneElses, { headers: { cookie } });
 
     expect(response.status).toBe(403);
   });
 
   it('refuses with no cookie at all', async () => {
-    const response = await fetch(base + '/intervention/' + mine);
+    const response = await fetch(base + '/scoped/' + mine);
     expect(response.status).toBe(401);
   });
 
@@ -227,6 +234,7 @@ describe('expiry and revocation', () => {
     const id = generateInterventionId();
     const console_ = new OperatorConsole({ token, sessionTtlMs: 1_000, now: () => now });
     console_.register(id);
+    console_.mountScoped('/scoped/:id', 'get', (_req, res) => res.json({ ok: true }));
 
     const base = await new Promise<string>((resolve) => {
       const server = console_.app.listen(0, CONSOLE_HOST, () => {
@@ -235,17 +243,17 @@ describe('expiry and revocation', () => {
       });
     });
 
-    const opened = await fetch(base + '/session', {
+    const opened = await fetch(base + '/auth', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
       body: JSON.stringify({ token, interventionId: id }),
     });
     const cookie = (opened.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 
-    expect((await fetch(base + '/intervention/' + id, { headers: { cookie } })).status).toBe(200);
+    expect((await fetch(base + '/scoped/' + id, { headers: { cookie } })).status).toBe(200);
 
     now += 2_000;
-    expect((await fetch(base + '/intervention/' + id, { headers: { cookie } })).status).toBe(401);
+    expect((await fetch(base + '/scoped/' + id, { headers: { cookie } })).status).toBe(401);
     // And the dead session is dropped rather than accumulating.
     expect(console_.openSessions).toBe(0);
   });
@@ -255,6 +263,7 @@ describe('expiry and revocation', () => {
     const id = generateInterventionId();
     const console_ = new OperatorConsole({ token, sessionTtlMs: 60_000 });
     console_.register(id);
+    console_.mountScoped('/scoped/:id', 'get', (_req, res) => res.json({ ok: true }));
 
     const base = await new Promise<string>((resolve) => {
       const server = console_.app.listen(0, CONSOLE_HOST, () => {
@@ -263,7 +272,7 @@ describe('expiry and revocation', () => {
       });
     });
 
-    const opened = await fetch(base + '/session', {
+    const opened = await fetch(base + '/auth', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
       body: JSON.stringify({ token, interventionId: id }),
@@ -271,6 +280,6 @@ describe('expiry and revocation', () => {
     const cookie = (opened.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 
     console_.revoke(id);
-    expect((await fetch(base + '/intervention/' + id, { headers: { cookie } })).status).toBe(401);
+    expect((await fetch(base + '/scoped/' + id, { headers: { cookie } })).status).toBe(401);
   });
 });

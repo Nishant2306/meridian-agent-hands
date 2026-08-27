@@ -15,6 +15,7 @@ import type {
 } from '../../types/surface.js';
 import type { TextMatcher } from '../../types/values.js';
 import type { AdapterAddressing } from '../../perception/addressing.js';
+import type { HumanActionEvidence, SessionIdentity } from '../../types/intervention.js';
 import { bindDescriptor } from '../../perception/bind.js';
 import { buildObservation } from '../../perception/observe.js';
 import { buildScreenIdentity } from '../../perception/screen-identity.js';
@@ -54,6 +55,112 @@ export interface PlaywrightWebSurfaceOptions {
    */
   readonly policy?: PolicyEngine;
 }
+
+/**
+ * Injected into every frame while a PERSON holds the lease.
+ *
+ * A string rather than a function for the same reason ENRICH_FUNCTION is: this module compiles
+ * without the DOM lib on purpose, so nothing in it can reach a browser global by accident.
+ *
+ * The descriptor it builds is the SAME vocabulary automation uses - role, accessible name, the
+ * label to the left - so a human action and an automated one are described identically in the
+ * evidence. A second vocabulary here would mean a reviewer comparing the two was comparing
+ * translations.
+ */
+const HUMAN_LISTENER_SCRIPT = `(function () {
+  if (window.__meridianHumanListenersInstalled) return;
+  window.__meridianHumanListenersInstalled = true;
+
+  var send = window.__BINDING__;
+  if (typeof send !== 'function') return;
+
+  function roleOf(el) {
+    var explicit = el.getAttribute && el.getAttribute('role');
+    if (explicit) return explicit;
+    var tag = (el.tagName || '').toLowerCase();
+    if (tag === 'a') return 'link';
+    if (tag === 'button') return 'button';
+    if (tag === 'select') return 'combobox';
+    if (tag === 'textarea') return 'textbox';
+    if (tag === 'input') {
+      var type = (el.getAttribute('type') || 'text').toLowerCase();
+      if (type === 'checkbox') return 'checkbox';
+      if (type === 'radio') return 'radio';
+      if (type === 'submit' || type === 'button') return 'button';
+      return 'textbox';
+    }
+    return 'unknown';
+  }
+
+  function nameOf(el) {
+    var label = el.getAttribute && el.getAttribute('aria-label');
+    if (label) return label.trim();
+    if (el.id) {
+      var forLabel = document.querySelector('label[for="' + el.id + '"]');
+      if (forLabel) return (forLabel.textContent || '').trim();
+    }
+    var text = (el.innerText || el.textContent || '').trim();
+    return text.slice(0, 80);
+  }
+
+  function nearbyOf(el) {
+    var out = [];
+    var cell = el.closest ? el.closest('td,th') : null;
+    var prev = cell && cell.previousElementSibling;
+    if (prev) {
+      var t = (prev.innerText || prev.textContent || '').trim();
+      if (t) out.push(t.slice(0, 80));
+    }
+    return out;
+  }
+
+  // A hash prefix, NOT the value. Present only so the same value can be correlated across two
+  // events. It is one-way and short on purpose: it is a correlation token, not a record.
+  function token(value) {
+    if (!value) return undefined;
+    var h = 5381;
+    for (var i = 0; i < value.length; i += 1) h = ((h << 5) + h + value.charCodeAt(i)) >>> 0;
+    return 'v' + h.toString(16);
+  }
+
+  function report(kind, el, valueChanged, rawValue) {
+    try {
+      var descriptor = {
+        semantic: {
+          role: roleOf(el),
+          name: nameOf(el),
+          nameMatch: 'normalized',
+          nearbyText: nearbyOf(el),
+        },
+        recordedTier: 'T3_EXTERNAL_LABEL_OR_NEARBY',
+      };
+      send({
+        at: new Date().toISOString(),
+        kind: kind,
+        target: descriptor,
+        valueChanged: valueChanged,
+        redactedValueToken: token(rawValue),
+        dedupe: kind + '|' + descriptor.semantic.role + '|' + descriptor.semantic.name + '|' + Date.now(),
+      });
+    } catch (e) {
+      /* evidence must never break the page a person is working in */
+    }
+  }
+
+  document.addEventListener('click', function (e) { report('click', e.target, false); }, true);
+  document.addEventListener('change', function (e) {
+    report('change', e.target, true, e.target && e.target.value);
+  }, true);
+  document.addEventListener('input', function (e) {
+    report('input', e.target, true, e.target && e.target.value);
+  }, true);
+  document.addEventListener('submit', function (e) { report('submit', e.target, false); }, true);
+  window.addEventListener('beforeunload', function () {
+    try { send({ at: new Date().toISOString(), kind: 'navigation',
+      target: { semantic: { role: 'unknown', name: document.location.pathname, nameMatch: 'exact' },
+        recordedTier: 'T3_EXTERNAL_LABEL_OR_NEARBY' } }); } catch (e) {}
+  });
+})();`;
 
 const DEFAULT_ACTION_TIMEOUT_MS = 5_000;
 const POLL_INTERVAL_MS = 100;
@@ -542,6 +649,92 @@ export class PlaywrightWebSurface implements Surface {
    * already on the operator screen. Nothing is copied, nothing is mirrored, and the automation
    * lease is what stops the two actors from acting at once.
    */
+  /**
+   * [MUST] The evidence that the human operated THE SAME session.
+   *
+   * `browserContextId` and `targetId` come from CDP and are stable for the life of the context and
+   * the page. If a handoff opened a new window, a new context, or navigated by recreating the page,
+   * these change. Nothing else in the handoff story would notice: the URL would look right, the
+   * screenshot would look right, and the run would carry on against a session the automation never
+   * signed into.
+   */
+  async sessionIdentity(): Promise<SessionIdentity> {
+    const session = await this.#context.newCDPSession(this.#page);
+    try {
+      const { targetInfo } = (await session.send('Target.getTargetInfo')) as {
+        targetInfo: { targetId: string; browserContextId?: string };
+      };
+      return {
+        browserContextId: targetInfo.browserContextId ?? 'default',
+        targetId: targetInfo.targetId,
+        url: this.#page.url(),
+      };
+    } finally {
+      await session.detach().catch(() => undefined);
+    }
+  }
+
+  /**
+   * ============================================================================================
+   * WHAT A PERSON DID, RECORDED AS ACTS RATHER THAN INFERRED FROM THE RESULT.
+   * ============================================================================================
+   *
+   * An observation diff says the deposit field now holds a value it did not hold before. It cannot
+   * say whether the operator typed it, whether the application autofilled it, or whether they typed
+   * something and then corrected it - and an action that leaves no visible trace does not appear at
+   * all. So listeners record the acts, and the diff is kept alongside.
+   *
+   * [MUST] NO RAW VALUES. `valueChanged` records that a value changed. `redactedValueToken` is a
+   * hash prefix, present only so the same value can be correlated across two events. Writing what
+   * an operator typed into a banking application into a file is the thing this project exists not
+   * to do.
+   *
+   * Re-injected on every frame navigation, because a page load discards them - and a navigation is
+   * exactly when a person is most likely to be doing something worth recording.
+   *
+   * DESKTOP EQUIVALENT: the same evidence comes from OS accessibility event hooks (UI Automation
+   * event handlers on Windows, AXObserver on macOS). Same shape, same redaction rule, different
+   * source. `src/surface/desktop-stub.ts` documents it.
+   */
+  async recordHumanActions(): Promise<() => Promise<HumanActionEvidence[]>> {
+    const collected: HumanActionEvidence[] = [];
+    const seen = new Set<string>();
+
+    const record = (raw: unknown): void => {
+      const event = raw as HumanActionEvidence & { dedupe?: string };
+      const key = event.dedupe ?? JSON.stringify(event);
+      if (seen.has(key)) return;
+      seen.add(key);
+      collected.push({
+        at: event.at,
+        kind: event.kind,
+        target: event.target,
+        ...(event.valueChanged === undefined ? {} : { valueChanged: event.valueChanged }),
+        ...(event.redactedValueToken === undefined
+          ? {}
+          : { redactedValueToken: event.redactedValueToken }),
+      });
+    };
+
+    const binding = '__meridianHumanEvent_' + randomUUID().replace(/-/g, '');
+    await this.#context.exposeBinding(binding, (_source, raw: unknown) => record(raw));
+    // `addInitScript` covers every frame created from now on, including after a navigation.
+    await this.#context.addInitScript(HUMAN_LISTENER_SCRIPT.replace(/__BINDING__/g, binding));
+
+    // ...and the frames that already exist, which addInitScript does not reach.
+    for (const frame of this.#page.frames()) {
+      await frame
+        .evaluate(HUMAN_LISTENER_SCRIPT.replace(/__BINDING__/g, binding))
+        .catch(() => undefined);
+    }
+
+    return async (): Promise<HumanActionEvidence[]> => {
+      // Give any in-flight binding calls a moment to land before the listeners stop mattering.
+      await this.#page.waitForTimeout(150).catch(() => undefined);
+      return [...collected];
+    };
+  }
+
   async exposeForHuman(): Promise<HumanSessionHandle> {
     return {
       sessionId: this.id + ':' + randomUUID(),

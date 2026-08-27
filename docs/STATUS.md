@@ -19,7 +19,7 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, and **401 tests passing across 38 files in about 2 minutes**.
+Expect: no type errors, no lint errors, and **444 tests passing across 43 files**.
 
 ### Two test commands
 
@@ -28,9 +28,18 @@ Expect: no type errors, no lint errors, and **401 tests passing across 38 files 
 | `npm run test:fast` | everything except the browser-driven files                 | ~8s   |
 | `npm test`          | all of it, including NINE files that drive a real Chromium | ~125s |
 
-**How those numbers were measured**, because they are easy to get wrong: two consecutive runs on an
-otherwise idle machine, taking vitest's own reported `Duration`. `npm test` came back at 124.3s and
-124.5s; `test:fast` at 8.15s and 8.10s. Earlier versions of this file quoted 215s and 295s, both of
+**How long `npm test` takes, honestly.** It varies by a factor of three on the same code and the
+same machine: measured runs at the end of PHASE 8 came back at 148s, 343s, 373s and 380s, with the
+number of tests changing by ten between the first and the rest. `test:fast` is stable at 9-11s.
+
+The suite is almost entirely CPU-bound on real Chromium, so it is very sensitive to whatever else
+the machine is doing - and after several hours of running browsers, that includes the machine's own
+state. Earlier versions of this file quoted single figures measured under load (295s, 215s), and one
+measured on an idle machine (124s); none of them was wrong so much as unrepeatable.
+
+**So take a range, not a number**: roughly 2 minutes on an idle machine, up to 6 under load. If
+yours is much worse than that, check what else is running before believing it is the code.
+`test:fast` is the one to use inside a phase. Earlier versions of this file quoted 215s and 295s, both of
 which were measured while browsers from other work were running alongside - a full suite that is
 almost entirely CPU-bound on Chromium roughly doubles under that. If your number is much larger,
 check what else is using the machine before believing it.
@@ -990,6 +999,182 @@ DECISIONS.md D54.
 
 ---
 
+## Phase 8 - human handoff (COMPLETE)
+
+The run stops, a person takes control of **the same live browser session**, does something the
+automation cannot, hands control back, and the SYSTEM decides the outcome.
+
+### Drive it yourself
+
+```bash
+npm run demo:store        # only needed on a fresh clone - see below
+npm run dev:app-a         # the fixture, on http://localhost:4180
+
+npm run replay -- --artifact prepare_subaccount_review@1.0.0   --artifacts artifacts-demo   --params '{"memberId":"20001","accountType":"Savings","initialDeposit":"250.00"}'
+```
+
+`/artifacts` holds run output and is gitignored, so a fresh clone has no capability to replay.
+`npm run demo:store` copies the TRACKED example into `artifacts-demo/`, which is a throwaway store -
+never into `artifacts/`, because a published version there is immutable and would refuse the next
+real discovery. If you have run `npm run discover` yourself, drop the `--artifacts` flag and it uses
+your own approved artifact instead.
+
+Member `20001` raises a blocking modal the pinned condition profile deliberately does not describe.
+The run stops, prints the console URL and - **on a separate line** - the token, and blocks:
+
+```
+An operator is needed.
+  url:          http://127.0.0.1:58220/i/iv_6bd9d88ae1f349e0976b39
+  token:        xTxpsxHiz2kGIXL-YZsH7l3VNTkV6awQB5EpmHmTjvI
+  why:          a blocking dialog ("Compliance attestation required") is displayed...
+  step:         step-3-open-member - Open the member record from the results row for this member id.
+  screen:       Member Record
+```
+
+Open the URL, paste the token, look at the masked live view. Then, **in the browser window that is
+already open**, type the attestation code shown in the modal and submit it - the code is printed on
+screen, because a demo that needs knowledge a reviewer does not have is a demo a reviewer cannot run.
+The modal clears. Press Resume. The system re-observes, works out where it is, finishes the form, and
+reports `success` with `completionMode: 'human_assisted'`.
+
+`--no-operator` turns the handoff off, and a needs_human condition is terminal again - the right
+behaviour for an unattended caller with nobody to ask.
+
+### Every step of that walkthrough is exercised by a browser
+
+Not by an API call. The mechanism was proven three times while the path a person takes was broken -
+the fixture seeding, the console page, and the attestation control - so each line above is now
+covered by something that clicks.
+
+| Walkthrough step                                                | Covered by                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `npm run demo:store` puts a replayable capability in place      | run, and the CLI loads it                                              |
+| `npm run dev:app-a` serves on 4180                              | run: `GET /` 200, `/__test__/seed` answers                             |
+| `npm run replay` stops and prints URL + token on separate lines | run; `escalation.console.page.live` asserts the URL is the page's      |
+| opening the URL with no cookie shows a token prompt             | `escalation.console.page.live` - real browser GET                      |
+| pasting the token reveals the operator view                     | `escalation.console.page.live` - fills and clicks                      |
+| the masked live view renders                                    | `escalation.console.page.live`                                         |
+| **typing the code and submitting CLEARS the modal**             | `fixture.human-controls.live` - real click, asserts the screen changed |
+| the member record stays clear afterwards                        | `fixture.human-controls.live` - three revisits                         |
+| pressing Resume hands control back                              | `escalation.console.page.live`                                         |
+| the run then finishes as `human_assisted`                       | `escalation.handoff.live` - real browser, same session                 |
+| the whole happy path is clickable by a person                   | `fixture.human-controls.live` - search, open, form, review             |
+
+### Control transfer
+
+```
+AUTOMATION_RUNNING
+  -> PAUSING            automation has stopped; NO actor may act
+  -> [AUTOMATION lease revoked, HUMAN lease issued]
+  -> HUMAN_CONTROL      the person acts in the window already on their screen
+  -> RESUME_VALIDATION  human lease released, the system re-observes and decides
+```
+
+The run process stays alive and the browser context is **not** recreated. Mutual exclusion is the
+lease and the session state, independently: issuing the HUMAN token invalidates the AUTOMATION token,
+AND `HUMAN_CONTROL` admits HUMAN actions only. One of them being wrong must not mean two actors can
+drive at once.
+
+**The evidence that it was the same session.** `browserContextId` and page `targetId` are captured
+before control is ceded and again when it comes back, written as two events plus an explicit
+`handoff_same_session` comparison. A handoff that closed the browser and opened a fresh one would
+look identical in a screenshot, a log and a demo - and would have thrown away the authenticated
+session. This is the only hard fact in the handoff story; everything else is a claim about code.
+
+### [MUST] There is no /complete
+
+The console offers `resume` and `abort`. `allowedChoices` is typed as those two, and a test asks the
+server for `/complete`, `/success` and `/done` and requires 404 from each.
+
+`resume` subsumes completion: the system re-observes, evaluates the success condition, validates every
+declared output against its declared type, and declares success itself. "Only the system may declare
+success" has bound the model since PHASE 4; this is where it either binds the operator too or is a
+claim about models only.
+
+A run a person helped with reports `completionMode: 'human_assisted'`, permanently.
+
+### [MUST] Safe resume is anchor matching
+
+Not "the furthest checkpoint that still holds". Checkpoints are not monotonic: a member id appears on
+four screens, a heading can appear inside a modal, a person can jump to a later route without filling
+what the earlier one required, and two states can hold at once.
+
+| The screen the human left   | What happens                                                       |
+| --------------------------- | ------------------------------------------------------------------ |
+| the review screen           | the SUCCESS state -> validate outputs -> success, `human_assisted` |
+| the member record           | exactly one resume point -> continue from the step leaving it      |
+| a **partially** filled form | matches NOTHING -> back to the human                               |
+| a **different member**      | HARD FAILURE. Never continue on the wrong record                   |
+| two resume points match     | AMBIGUOUS -> back to the human                                     |
+| the blocker is still there  | the same question, asked again                                     |
+
+The partial-form row is the one worth reading twice. `subaccount-form` is not resume-eligible;
+`subaccount-form-complete` is, and it requires every value. A half-filled form matches neither, so it
+returns to the person - one more question, instead of a run that types over work somebody just did by
+hand.
+
+### Human acts are witnessed, because they cannot be gated
+
+The lease governs SOFTWARE-issued actions. A person typing on a real keyboard into a real window does
+not pass through `resolveAndPerform`, and nothing here can stop them. So listeners record click,
+input, change, submit and navigation during HUMAN_CONTROL, re-injected after every navigation.
+
+**Never a raw typed value.** `HumanActionEvidence` has nowhere to put one: `valueChanged: boolean` and
+an optional one-way `redactedValueToken` for correlating the same value across two events.
+
+An observation diff is kept as supplemental evidence. It records the NET result and cannot tell "the
+operator typed it" from "the application autofilled it".
+
+### How to check it
+
+```bash
+npx vitest run tests/escalation.handoff.test.ts          # no browser, ~0.1s
+npx vitest run tests/escalation.console.routes.test.ts   # no browser, ~1s
+npx vitest run tests/escalation.handoff.live.test.ts     # real Chromium, ~15s
+```
+
+| Claim                                                              | Test                                           |
+| ------------------------------------------------------------------ | ---------------------------------------------- |
+| the intervention carries every field a person needs                | schema, and `complete` will not parse          |
+| the lease moves; automation throws LEASE_VIOLATION                 | both the token AND the state refuse it         |
+| same session before and after                                      | plus a NEGATIVE control where it must be false |
+| all five resume cases above                                        | against recorded observations                  |
+| no `/complete`, no list endpoint, cookie required                  | route-level                                    |
+| the token is in no URL the page constructs                         | route-level                                    |
+| **end to end**: modal -> escalate -> operator -> resume -> success | real browser, asserts `sameSession`            |
+
+### The console is opened, not called
+
+```bash
+npx vitest run tests/escalation.console.page.live.test.ts   # real Chromium, ~1.5s
+```
+
+It drives a browser through what a person does: GET the banner URL with **no cookie** and require
+HTML and 200, type the token, require the HttpOnly SameSite=Strict cookie, require the operator view
+to render the reason and the step and the live masked screenshot, click Resume and require the run
+to be told.
+
+That file exists because the console shipped unopenable. The banner URL returned
+`{"error":"no valid console session"}` and there was nowhere to enter a token - while the route-level
+tests all passed, because every one of them asked the server a question and none of them did the
+first thing a person does. See DECISIONS.md D65 and D66.
+
+### Four defects this phase found in its own design
+
+1. **Escalate-reconcile was written straight-line.** When a resume failed to place the run, it
+   "carried on" - re-running a step from a screen the system had just said it could not place, which
+   fails as a locator error. It is a loop. D63.
+2. **`cede` could not be entered from `RESUME_VALIDATION`.** The second-question case threw an
+   illegal-transition error. The PHASE 2 state table had anticipated it; the code had not. D63.
+3. **Resuming while the blocker was still there resumed into it.** Found by pressing Resume without
+   fixing anything, which is the first thing any operator will do. D62.
+4. **The console could not be opened at all.** Two routes existed for one page - a PHASE 7
+   placeholder and the real one - the banner pointed at the placeholder, and the page was mounted
+   behind the very cookie it exists to obtain. There is now ONE `interventionPath()` shared by the
+   banner and the route. D65.
+
+---
+
 ## GATE 1 - the first real model against a live UI
 
 Two runs against a real model. Both found something; the second passed. Every model call in
@@ -1107,19 +1292,17 @@ capability in a given checkout is whatever that checkout's most recent approved 
 
 Not oversights. Each belongs to a later phase, and building it now would be building ahead.
 
-| Absent                                                                               | Phase |
-| ------------------------------------------------------------------------------------ | ----- |
-| The human handoff PROTOCOL (pause / cede / resume). Its secured console shell exists | 8     |
-| `README.md`, `REPORT.md`, `/evidence/README.md`                                      | 10    |
-| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then   | 11    |
+| Absent                                                                             | Phase |
+| ---------------------------------------------------------------------------------- | ----- |
+| `README.md`, `REPORT.md`, `/evidence/README.md`                                    | 10    |
+| Cross-tenant support and `tenants/tenant-b.ts`; `semanticKey` is unused until then | 11    |
 
-`npm run operator` currently exits 2 and names the phase that builds it. That is deliberate: a
-script that fails loudly beats one that is missing. `capability:approve`, `discover` and `replay`
-are real as of PHASES 3, 4 and 5.
+`capability:approve`, `discover` and `replay` are real as of PHASES 3, 4 and 5.
 
-The console's SECURITY layer is built and tested (`src/escalation/console-security.ts`, PHASE 7) -
-loopback binding, per-run token, scoped cookies, no enumeration endpoint. What PHASE 8 adds is what
-the console DOES: pausing the run, ceding the lease, and taking it back on the same live session.
+`npm run operator` still exits 2, and now names PHASE 12 rather than 8. The handoff shipped without
+it: `npm run replay` starts the console itself when a run actually stops and prints where to go, so
+a separate command would only be needed to ATTACH to a run that is already waiting - a convenience,
+not part of the mechanism. A script that fails loudly beats one that is missing.
 
 **Also disclosed - what screenshot masking does and does not claim.** Declared-sensitive regions and
 the record identity ARE masked: only the masked image is written, and a `.mask.json` manifest beside

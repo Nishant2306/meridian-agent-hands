@@ -451,11 +451,20 @@ export function maintenanceNoticeHtml(ctx: RenderContext, returnTo: string): str
 /**
  * A blocking modal the condition profile deliberately does NOT describe.
  *
- * It carries `role="dialog"` and `aria-modal`, so perception sees a blocking state even though no
+ * THE CODE IS ON SCREEN, and the server accepts any non-empty value. A demo that requires knowledge
+ * a reviewer does not have is a demo a reviewer cannot run, and the point being demonstrated is the
+ * HANDOFF, not a puzzle.
+ *
+ * A PERSON can clear it - that is what the attestation form does - and the automation cannot,
+ * because nothing in the profile describes it. That asymmetry is the whole point: it is the state
+ * that must reach a human, and a human must actually be able to resolve it, or the handoff demo
+ * would be a dead end.
+ *
+ * It carries `aria-modal` on a real `<dialog>`, so perception sees a blocking state even though no
  * detector names it. That combination - blocking, and unrecognised - is what must reach a human
  * instead of being guessed past, and it is the PHASE 8 trigger.
  */
-export function unknownModalHtml(ctx: RenderContext): string {
+export function unknownModalHtml(ctx: RenderContext, returnTo: string): string {
   const { obf } = ctx;
   // A REAL <dialog open>, not a div wearing role="dialog". Chrome's accessibility tree does not
   // expose the div form as a dialog, so perception saw the heading and the button and nothing that
@@ -464,7 +473,13 @@ export function unknownModalHtml(ctx: RenderContext): string {
     <dialog open class="${obf.cls('modalBox')}" aria-modal="true" aria-label="${escapeHtml(FAULT_TEXT.unknownModal)}">
       <h2>${escapeHtml(FAULT_TEXT.unknownModal)}</h2>
       <p>${escapeHtml(FAULT_TEXT.unknownModalBody)}</p>
-      <button type="button" name="ctl00$Main$btnAttest">Enter attestation code</button>
+      <p>Attestation code for this session: <strong>${escapeHtml(FAULT_TEXT.attestationCode)}</strong></p>
+      <form method="post" action="/__fixture__/attest">
+        <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}">
+        <label for="${obf.id('txtAttest')}">Attestation code</label>
+        <input id="${obf.id('txtAttest')}" name="ctl00$Main$txtAttest" size="12" value="">
+        <button type="submit" name="ctl00$Main$btnAttest">Submit attestation</button>
+      </form>
     </dialog>`;
 }
 
