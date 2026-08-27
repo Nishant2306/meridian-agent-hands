@@ -11,6 +11,7 @@ import {
 import { type SessionState } from '../../src/types/session.js';
 import { checkSessionChain, leasesAlternate } from './lib/session-chain.js';
 import { scanForValues } from './lib/leak-scan.js';
+import { markersIn } from './lib/readme.js';
 import { readManifest, type Manifest } from './lib/manifest.js';
 import { CONFIG_ROOT, EVIDENCE_ROOT, say } from './lib/runtime.js';
 
@@ -727,6 +728,53 @@ function verifyChain(manifest: Manifest): CapabilityArtifact | undefined {
   return approved;
 }
 
+/**
+ * ================================================================================================
+ * A PUBLISHED BUNDLE WITH A PLACEHOLDER IN IT IS A FAIL.
+ * ================================================================================================
+ *
+ * `evidence/README.md` was pushed with all 24 `<<FILL AFTER RUN>>` markers still in it. A reviewer
+ * opening the evidence directory saw placeholders where the run ids and results should be, and
+ * nothing had said so - the gate had caught four leaks by then and was silent about this.
+ *
+ * The second check is the one that matters more over time. Filling the README is now automatic, so
+ * the remaining failure mode is not an EMPTY readme but a STALE one: a bundle regenerated while its
+ * README still describes the previous run. So the README has to name the same discovery run as the
+ * manifest sitting beside it. That is the same defect class `docs.paths` exists for, applied to the
+ * one document a reviewer reads first.
+ */
+function verifyReadme(manifest: Manifest): void {
+  const withMarkers = markersIn(EVIDENCE_ROOT);
+  check({
+    id: 'readme-filled',
+    source: 'bundle',
+    claim: 'no published document still contains a <<FILL AFTER RUN>> placeholder',
+    ok: withMarkers.length === 0,
+    detail:
+      withMarkers.length === 0
+        ? '      README.md is generated from the run files by evidence:automated and' +
+          NL +
+          '      evidence:handoff. README.template.md keeps its markers and is the source.'
+        : withMarkers.map((file) => '      ' + file + ' still has placeholders').join(NL),
+  });
+
+  const readmePath = join(EVIDENCE_ROOT, 'README.md');
+  const readme = existsSync(readmePath) ? readFileSync(readmePath, 'utf8') : '';
+  check({
+    id: 'readme-current',
+    source: 'bundle',
+    claim: 'the README describes the run the manifest names, not a previous one',
+    ok: readme !== '' && readme.includes(manifest.discoveryRunId),
+    detail:
+      readme === ''
+        ? '      there is no evidence/README.md. Run evidence:automated.'
+        : '      manifest discovery run: ' +
+          manifest.discoveryRunId +
+          NL +
+          '      A README regenerated from a different run would not name this one.',
+  });
+}
+
 function verifyReplays(manifest: Manifest, artifact: CapabilityArtifact | undefined): void {
   const byScenario = new Map(manifest.scenarios.map((entry) => [entry.scenario, entry]));
 
@@ -960,6 +1008,7 @@ function main(): void {
   verifyReplays(manifest, artifact);
   verifyHandoff(manifest);
   verifyRedaction(manifest);
+  verifyReadme(manifest);
 
   say();
   say('EVIDENCE VERIFICATION');

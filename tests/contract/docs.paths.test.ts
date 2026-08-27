@@ -36,7 +36,10 @@ const DOCS = [
   'docs/TEST_MAP.md',
   'docs/DATA_HANDLING.md',
   'docs/SCHEMA.md',
-  'evidence/README.md',
+  // The TEMPLATE, not the generated README: the template is tracked and always present, while
+  // `evidence/README.md` is a bundle artifact that a clone which has never run anything may not
+  // have. Checking the source is what keeps the paths honest either way.
+  'evidence/README.template.md',
 ];
 
 /** Only the directories that hold code and configuration checked into the repository. */

@@ -18,6 +18,7 @@
     "capability:approve": "tsx src/cli/capability-approve.ts",
     "evidence:automated": "tsx scripts/evidence/automated.ts",
     "evidence:handoff": "tsx scripts/evidence/handoff.ts",
+    "evidence:readme": "tsx scripts/evidence/readme.ts",
     "evidence:verify": "tsx scripts/evidence/verify.ts",
     "test": "vitest run",
     "test:fast": "vitest run --exclude \"**/*.live.test.ts\"",

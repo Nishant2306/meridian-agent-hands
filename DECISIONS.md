@@ -2261,3 +2261,42 @@ containing sentences a model composed, and the only thing the NOTE is about.
 are separated by backslashes and the "basename" was the entire path - meaning nothing would ever match
 `transcript.jsonl` and the documented transcript limit would have been reported as a hard failure.
 It uses `basename` now.
+
+---
+
+## D96 - The bundle README is generated from the run files, and a placeholder is a gate failure
+
+**What shipped.** `evidence/README.md` was pushed with all 24 `<<FILL AFTER RUN>>` markers intact. A
+reviewer opening the evidence directory saw placeholders where the run ids and results should be, and
+nothing said so - the gate had caught four leaks by then and was silent about this one.
+
+**Filling them by hand was the wrong fix**, and worse than leaving them. A hand-filled README goes
+stale the next time the bundle is regenerated, and a document that confidently states the wrong run id
+is worse than one that admits it is a template. That is the class of rot `docs.paths` and D72 exist to
+prevent, applied to the document a reviewer opens first.
+
+**Decision.** `evidence:automated` and `evidence:handoff` render it, and `evidence:readme`
+regenerates it from a bundle that already exists - so a bundle produced before this existed can be
+brought up to date without paying for another discovery.
+
+**[MUST] EVERY VALUE COMES FROM A FILE IN THE BUNDLE.** Not from the orchestrator's memory of what it
+just did. The orchestrator knows what it ASKED for; the run files record what HAPPENED, and only the
+second is something a reviewer can check. The model comes from `completion.json`, the tiers from
+`steps.json`, the same-session claim from the `handoff_same_session` events, the elapsed time from
+`result.json`. `evidence:verify` re-derives its own claims from those same files, so the README and
+the gate cannot disagree about what the run did.
+
+**The `[manifest]` distinction applies here too.** Which member a run used cannot be re-derived: the
+run files are pseudonymized with a map that is random PER RUN. That line is rendered
+`[manifest] 10002, against discovery on 10001` rather than asserted, exactly as the verifier marks its
+own two.
+
+**The template stays in the repository with its markers.** `README.template.md` is the source and is
+what you edit; `README.md` is a bundle artifact like `manifest.json`, carrying a header naming the run
+and time it was generated from. A scenario that has not been run renders `(not run - ...)` rather than
+leaving a marker, because a leftover marker and an undriven handoff are different situations and one
+failure should not stand for both.
+
+**Two new gate checks.** Any published document still containing a marker is a FAIL. And the README
+must name the discovery run the manifest names - which is the check that matters over time, because
+once filling is automatic the remaining failure mode is not an empty README but a stale one.

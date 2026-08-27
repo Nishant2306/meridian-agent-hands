@@ -8,6 +8,7 @@ import { loadDiscoverySpec } from '../../src/config/spec.js';
 import { tenantA } from '../../fixtures/legacy-app/tenants/tenant-a.js';
 import type { Manifest } from './lib/manifest.js';
 import { writeManifest, writeRuntimeRef } from './lib/manifest.js';
+import { renderReadme } from './lib/readme.js';
 import { DISCOVERY_INPUTS, DISCOVERY_MEMBER, runReplaySweep } from './lib/replays.js';
 import {
   bootFixture,
@@ -305,6 +306,14 @@ async function main(options: Options): Promise<void> {
   };
 
   writeManifest(join(EVIDENCE_ROOT, 'manifest.json'), manifest);
+
+  // The bundle's README, rendered from the run files this sweep just wrote. Never from what this
+  // program remembers doing: the orchestrator knows what it ASKED for, the run files record what
+  // HAPPENED, and only the second is something a reviewer can check. See lib/readme.ts.
+  const readme = renderReadme({ manifest });
+  if (readme.unfilled.length > 0) {
+    say('  README placeholders still unfilled: ' + readme.unfilled.join(', '));
+  }
   // Not in the manifest and not in git: it is an absolute path under the system temp directory and
   // therefore contains a username. `evidence:handoff` reads it to find the same artifact store.
   writeRuntimeRef(join(EVIDENCE_ROOT, '.runtime.json'), {

@@ -737,3 +737,19 @@ tested, and the bundle exists once somebody with an API key runs it.
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 525 passing across
     55 files.
   - **Decisions recorded**: `DECISIONS.md` D91-D95.
+
+- **GATE 3, run 5** - 29 of 29. The bundle README is no longer a manual step.
+  - It shipped with all 24 `<<FILL AFTER RUN>>` markers. Filling them BY HAND would go stale on the
+    next regeneration, which is the rot `docs.paths` and D72 exist to prevent. It is generated
+    instead, by `evidence:automated`, `evidence:handoff`, and `evidence:readme` for a bundle that
+    already exists - no run, no model call. D96.
+  - **[MUST] Every value comes from a FILE IN THE BUNDLE**, never from the orchestrator's memory: the
+    same files `evidence:verify` re-derives its claims from, so the two cannot disagree. The one
+    value that cannot be re-derived - which member a run used, because the label map is random per
+    run - is rendered `[manifest] ...` exactly as the verifier marks its own.
+  - `README.template.md` keeps its markers and is the source; `README.md` is a bundle artifact with a
+    header naming the run it came from. A published document containing a marker is now a FAIL, and
+    so is a README naming a different run from the manifest beside it.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 531 passing across
+    56 files. `npm run evidence:verify` 29 of 29.
+  - **Decisions recorded**: `DECISIONS.md` D96.

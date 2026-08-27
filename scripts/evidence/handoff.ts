@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnvFile } from '../../src/config/env.js';
 import { readManifest, readRuntimeRef, writeManifest } from './lib/manifest.js';
+import { renderReadme } from './lib/readme.js';
 import {
   bootFixture,
   copyIntoBundle,
@@ -146,7 +147,7 @@ async function main(): Promise<void> {
 
   copyIntoBundle(runDir, 'handoff');
 
-  writeManifest(MANIFEST, {
+  const updated = {
     ...manifest,
     replayRunIds: { ...manifest.replayRunIds, handoff: runId },
     scenarios: [
@@ -163,7 +164,11 @@ async function main(): Promise<void> {
           'declares the run complete.',
       },
     ],
-  });
+  };
+  writeManifest(MANIFEST, updated);
+  // Regenerated, so the handoff section stops saying "not run". Same source as everything else: the
+  // files in the bundle.
+  renderReadme({ manifest: updated });
 
   say();
   say('handoff run:        ' + runId);

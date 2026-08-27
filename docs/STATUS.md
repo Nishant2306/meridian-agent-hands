@@ -21,7 +21,7 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, and **525 tests passing across 55 files**.
+Expect: no type errors, no lint errors, and **531 tests passing across 56 files**.
 
 **No test needs an API key.** Only `npm run discover` and `npm run evidence:automated` call a model.
 
@@ -1553,6 +1553,32 @@ anything else in the lenient transcript bucket. `observation-*.json` was new, so
 reported as a known limit. Everything is a system file now except `transcript.jsonl`. A second defect
 in the same three lines, caught by lint: the basename was computed with a regex that split on forward
 slashes only, so on Windows nothing would ever have matched the transcript at all.
+
+---
+
+### GATE 3, run 5 - 29 of 29, and the README stopped being a manual step
+
+The bundle shipped with all 24 `<<FILL AFTER RUN>>` markers in it. The gate had caught four leaks by
+then and said nothing about the one document a reviewer opens first.
+
+**Filling them by hand would have been the wrong fix** - a hand-filled README goes stale the next
+time the bundle is regenerated, and a document confidently stating the wrong run id is worse than one
+admitting it is a template. So it is generated: `evidence:automated` and `evidence:handoff` render it,
+and `npm run evidence:readme` regenerates it from a bundle that already exists, with no run and no
+model call.
+
+**Every value comes from a file in the bundle** - the model from `completion.json`, the tiers from
+`steps.json`, the same-session claim from the `handoff_same_session` events - never from the
+orchestrator's memory of what it asked for. `evidence:verify` re-derives its claims from those same
+files, so the README and the gate cannot disagree. The one value that cannot be re-derived, which
+member a run used, is rendered `[manifest] ...` exactly as the verifier marks its own.
+
+`README.template.md` keeps the markers and is the source; `README.md` is a bundle artifact carrying a
+header that names the run it came from. Two new checks: a published document with a marker in it is a
+FAIL, and the README must name the run the manifest names - which is what catches the real long-term
+failure, a bundle regenerated while its README still describes the previous one. D96.
+
+**29 of 29.**
 
 ---
 

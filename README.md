@@ -82,7 +82,7 @@ discovery is the part where a model is the point.
 npm test
 ```
 
-That is 525 tests across 55 files, browsers and CLIs included, and not one of them contacts a
+That is 531 tests across 56 files, browsers and CLIs included, and not one of them contacts a
 provider. It takes two to four minutes depending on the machine. `npm run test:fast` is the
 browser-free subset and finishes in about twelve seconds.
 
@@ -265,6 +265,9 @@ npm run evidence:handoff
 ```bash
 npm run evidence:verify
 ```
+
+`npm run evidence:readme` regenerates the bundle's README from the runs already in it, without
+running anything.
 
 The first makes one real discovery, approves the result, **restarts the fixture with a new seed**,
 and runs five replays; the second is the scenario that needs a person; the third is the gate and
