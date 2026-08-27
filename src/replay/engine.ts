@@ -6,7 +6,7 @@ import {
   effectiveDetectors,
   type EffectiveDetectors,
 } from '../artifact/detectors.js';
-import { extractDeclaredOutput } from '../artifact/outputs.js';
+import { comparableText, extractDeclaredOutput } from '../artifact/outputs.js';
 import type { ConditionProfile, Recovery } from '../artifact/profiles.js';
 import { stepApplies, type CapabilityArtifact, type Step } from '../artifact/schema.js';
 import { matchState } from '../artifact/validate.js';
@@ -19,6 +19,7 @@ import type { Outputs, RunMetrics, RunResult } from '../types/run.js';
 import type { LeaseToken } from '../types/session.js';
 import type { Surface, TargetResolver } from '../types/surface.js';
 import { validateInvocationParams } from '../artifact/params.js';
+import { bindDescriptor } from '../perception/bind.js';
 import { settle } from './observation-loop.js';
 import { decideResume } from '../escalation/resume.js';
 import type { HumanActionEvidence, Intervention, InterventionKind } from '../types/intervention.js';
@@ -490,6 +491,7 @@ export class ReplayEngine {
           const resolution = await this.#escalate({
             handler,
             artifact,
+            params,
             step,
             stepIndex: cursor - 1,
             observation: current,
@@ -797,8 +799,38 @@ export class ReplayEngine {
     surface: Surface;
     evidence: EvidenceWriter | undefined;
     runId: string;
+    /** Needed to bind an output descriptor that carries a row key before resolving it. */
+    params: Readonly<Record<string, string>>;
   }): Promise<EscalationOutcome> {
     const { artifact, step, observation } = input;
+
+    // ============================================================================================
+    // LEARN WHAT IS ON THIS SCREEN BEFORE PERSISTING A PICTURE OF IT.
+    // ============================================================================================
+    //
+    // A handoff stops the run part way through, and the screen it stopped on can display a
+    // declared-sensitive OUTPUT that the run had not read yet - the member's name is on the record
+    // screen long before the review screen the capability reads it from. The declaration made
+    // before the run names `memberName` and has no value for it, so neither the pseudonymizer nor
+    // the masker can act on it, and a real bundle carried a person's name into an
+    // `observation-*.json` because of it.
+    //
+    // The artifact says exactly where each output lives. Resolving those descriptors here uses only
+    // declared information, and it is the difference between "the system could not know" and "the
+    // system had not looked". Failures are ignored on purpose: an output that is not on this screen
+    // is the ordinary case, not a problem.
+    if (input.evidence !== undefined) {
+      for (const output of artifact.outputs) {
+        if (output.sensitivity !== 'pii' && output.sensitivity !== 'secret') continue;
+        const resolution = this.#deps.resolver.resolve(
+          observation,
+          bindDescriptor(output.source.target, input.params),
+        );
+        if (resolution.ok) {
+          input.evidence.learnSensitiveValue(output.name, comparableText(resolution.control));
+        }
+      }
+    }
 
     // The screenshot is MASKED before it is written - the evidence writer refuses to write an
     // unmasked one - so the console can poll it and a person can look at a live banking screen
@@ -842,14 +874,19 @@ export class ReplayEngine {
       status: 'open',
     };
 
-    input.evidence?.append({
-      type: 'session_transition',
-      at: new Date().toISOString(),
-      from: 'AUTOMATION_RUNNING',
-      to: 'PAUSING',
-      reason: 'intervention ' + intervention.id + ': ' + input.reason,
-    });
-
+    // ============================================================================================
+    // THE ENGINE DOES NOT RECORD SESSION TRANSITIONS. ONLY WHAT PERFORMS ONE MAY RECORD IT.
+    // ============================================================================================
+    //
+    // There used to be an append here claiming AUTOMATION_RUNNING -> PAUSING, with `from` hardcoded
+    // because the engine has no reference to the state machine. On the FIRST intervention it merely
+    // duplicated the coordinator's own event. On the SECOND it was false: the machine was in
+    // RESUME_VALIDATION, the coordinator correctly recorded RESUME_VALIDATION -> HUMAN_CONTROL, and
+    // the event log carried a transition that never happened.
+    //
+    // A component narrating a state change it does not own will eventually narrate a wrong one, and
+    // the evidence bundle is the last place that should contain fiction. The intervention id is
+    // carried by the coordinator's own transition reason instead. See DECISIONS.md D89.
     return await input.handler.escalate({ intervention, observation });
   }
 

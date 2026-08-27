@@ -1,0 +1,74 @@
+[
+  {
+    "stepId": "step-1-member-id",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 245
+  },
+  {
+    "stepId": "step-2-search",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 273
+  },
+  {
+    "stepId": "step-3-open",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T5_STRUCTURAL_ROW",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 293
+  },
+  {
+    "stepId": "step-4-new-sub-account",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 275
+  },
+  {
+    "stepId": "step-5-account-type",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 248
+  },
+  {
+    "stepId": "step-6-nickname-optional",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 203
+  },
+  {
+    "stepId": "step-7-initial-deposit",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 226
+  },
+  {
+    "stepId": "step-8-continue",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 267
+  }
+]

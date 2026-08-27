@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-08-27T23:26:30.681Z",
+  "specHash": "f0086a2dfe4cb892b257298ea5650859e5c336d66e5486a53ddb56ba4fe47ab0",
+  "artifactContentHash": "45100b1105cdd6c623c40356ded9208ecbb2e8ff458ea6eb6359b6ba50e3b03e",
+  "artifactFileHash": "c1e1ed81f9b92a034cb5b0a275dfa7c79c44b92e7a75d0c6587fc2bca5394721",
+  "artifactDraftFileHash": "f196ae845410fb38b7774cc1d96a7064624cd3a9e2bdc90720739832acb89c57",
+  "conditionProfileSha": "b8a8621cd45123a269bca0923cd08a75c5c952766318bd2a5c3aed066aba3168",
+  "safetyProfileSha": "ca1eb3230a6aa74c10c160e46acfb1cdff6656e95a87f846bf36dcf7df6291e9",
+  "capability": {
+    "id": "prepare_subaccount_review",
+    "version": "1.0.0",
+    "approvedBy": "evidence-run"
+  },
+  "discoveryRunId": "discover-1787873134736-96f8c64c",
+  "discovery": {
+    "model": "claude-sonnet-5",
+    "promptVersion": "v2",
+    "llmCalls": 10,
+    "steps": 8,
+    "memberId": "10001"
+  },
+  "fixtureSeeds": {
+    "discovery": 581429875,
+    "replay": 1160933555
+  },
+  "replayRunIds": {
+    "success": "replay-1787873170918",
+    "notFound": "replay-1787873175538",
+    "recovery": "replay-1787873178503",
+    "permissionDenied": "replay-1787873184150",
+    "unavailable": "replay-1787873187443",
+    "handoff": "replay-1787873228850"
+  },
+  "scenarios": [
+    {
+      "scenario": "success",
+      "runId": "replay-1787873170918",
+      "params": {
+        "memberId": "10002",
+        "accountType": "Savings",
+        "nickname": "Rainy Day",
+        "initialDeposit": "400.00"
+      },
+      "status": "success",
+      "exitCode": 0,
+      "proves": "The capability replays on a member the discovery run never saw, against a fixture booted with a different obfuscation seed, with zero model calls."
+    },
+    {
+      "scenario": "notFound",
+      "runId": "replay-1787873175538",
+      "params": {
+        "memberId": "99999",
+        "accountType": "Savings",
+        "initialDeposit": "100.00"
+      },
+      "status": "business_outcome",
+      "exitCode": 10,
+      "proves": "A negative answer is a BUSINESS OUTCOME with exit code 10, not a failure. There is no RECORD_NOT_FOUND error anywhere in the type system, so a caller cannot confuse the two."
+    },
+    {
+      "scenario": "recovery",
+      "runId": "replay-1787873178503",
+      "params": {
+        "memberId": "10004",
+        "accountType": "Checking",
+        "nickname": "Notice Case",
+        "initialDeposit": "75.00"
+      },
+      "status": "success",
+      "exitCode": 0,
+      "proves": "A known condition described by the pinned profile is cleared by the automation, once, and the interrupted click is NOT repeated: the recovery rechecks the effect instead."
+    },
+    {
+      "scenario": "permissionDenied",
+      "runId": "replay-1787873184150",
+      "params": {
+        "memberId": "10003",
+        "accountType": "Savings",
+        "initialDeposit": "100.00"
+      },
+      "status": "failed",
+      "exitCode": 30,
+      "proves": "A hard failure reports EXPECTED beside OBSERVED, because one half of a disagreement is not a diagnosis."
+    },
+    {
+      "scenario": "unavailable",
+      "runId": "replay-1787873187443",
+      "params": {
+        "memberId": "10002",
+        "accountType": "Savings",
+        "nickname": "Rainy Day",
+        "initialDeposit": "400.00"
+      },
+      "status": "failed",
+      "exitCode": 30,
+      "proves": "The application goes down part way through. The steps that completed are recorded, the condition is read off the page the application rendered rather than off a status code, and the run stops."
+    },
+    {
+      "scenario": "handoff",
+      "runId": "replay-1787873228850",
+      "params": {
+        "memberId": "20001",
+        "accountType": "Savings",
+        "initialDeposit": "125.00"
+      },
+      "status": "success",
+      "exitCode": 0,
+      "proves": "Control passes to a person and back on the SAME live session, evidenced by the browser context and page target ids recorded before and after. The system, not the operator, declares the run complete."
+    }
+  ]
+}

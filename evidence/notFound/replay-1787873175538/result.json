@@ -1,0 +1,14 @@
+{
+  "status": "business_outcome",
+  "outcome": "MEMBER_NOT_FOUND",
+  "detail": "No member exists with the supplied member id.",
+  "evidenceRef": "runs\\replay-1787873175538",
+  "metrics": {
+    "steps": 2,
+    "durationMs": 618,
+    "llmCalls": 0,
+    "recoveriesUsed": 0,
+    "locatorTierDowngrades": 0,
+    "humanInterventions": 0
+  }
+}

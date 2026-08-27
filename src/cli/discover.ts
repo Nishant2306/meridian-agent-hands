@@ -12,10 +12,12 @@ import { allowlistPath, loadAllowlist } from '../policy/allowlist.js';
 import { PolicyEngine } from '../policy/engine.js';
 import { installOriginBackstop } from '../policy/backstop.js';
 import { pseudonymizerFromEnv } from '../redaction/pseudonymize.js';
+import { declarationFor } from '../redaction/declaration.js';
 import { loadSafetyProfile, safetyProfilePath } from '../artifact/profiles.js';
 import { validateInvocationParams } from '../artifact/params.js';
 import { fixtureCredentials, MERIDIAN_SIGN_ON } from '../config/sign-on.js';
 import { loadDiscoverySpec } from '../config/spec.js';
+import { renderGoal } from '../types/spec.js';
 import { EvidenceWriter } from '../evidence/logger.js';
 import { DefaultTargetResolver } from '../perception/resolver.js';
 import { LeaseManager } from '../session/lease.js';
@@ -100,22 +102,24 @@ async function run(options: DiscoverOptions): Promise<void> {
     process.exitCode = 2;
     return;
   }
-  const goal = options.goal ?? loaded.spec.goalTemplate;
+  // RENDERED, not the raw template. See renderGoal in src/types/spec.ts for what shipping the
+  // template to a real model cost. `--goal` still overrides, and provenance still stores the
+  // template rather than this string.
+  const goal = options.goal ?? renderGoal(loaded.spec.goalTemplate, runtimeInputs);
   const runId = 'discover-' + Date.now() + '-' + randomUUID().slice(0, 8);
   // The model transcript is the file most likely to contain a member's name in prose, because it
   // is the one place a model writes sentences about what it is looking at. It is pseudonymized on
   // the way to disk like every other written artefact. The ARTIFACT is not rewritten - it is
   // scanned and rejected - and the caller's result is not redacted at all. Three mechanisms.
   const evidence = new EvidenceWriter({ runId, pseudonymizer: pseudonymizerFromEnv() });
-  evidence.declareSensitive({
-    sensitiveNames: new Set(
-      loaded.spec.inputs
-        .filter((input) => input.sensitivity === 'pii' || input.sensitivity === 'secret')
-        .map((input) => input.name),
-    ),
-    values: new Map(Object.entries(runtimeInputs)),
-    recordIdentityParam: loaded.spec.recordIdentity.param,
-  });
+  evidence.declareSensitive(
+    declarationFor({
+      inputs: loaded.spec.inputs,
+      outputs: loaded.spec.outputs,
+      recordIdentityParam: loaded.spec.recordIdentity.param,
+      params: runtimeInputs,
+    }),
+  );
 
   const conditionProfile = loadConditionProfile(
     conditionProfilePath(
@@ -215,13 +219,34 @@ async function run(options: DiscoverOptions): Promise<void> {
       evidence,
     });
 
+    // ============================================================================================
+    // COMPLETE THE DECLARATION BEFORE ANYTHING IS WRITTEN DOWN.
+    // ============================================================================================
+    //
+    // A declared-sensitive OUTPUT has no value until the run has read it. `memberName` is declared
+    // `pii` in the spec, and the only reason we know "Avery Lin" is sensitive is that a human said
+    // so beside the field it came from - no shape detector will ever catch a name.
+    //
+    // The replay CLI has done this since D73. Discovery did not, and the first successful evidence
+    // bundle had the member's name sitting in `discovery/.../result.json`. `evidence:verify` caught
+    // it, which is the gate doing its job, and the omission is mine.
+    if (result.status === 'success') {
+      evidence.declareSensitive(
+        declarationFor({
+          inputs: loaded.spec.inputs,
+          outputs: loaded.spec.outputs,
+          recordIdentityParam: loaded.spec.recordIdentity.param,
+          params: runtimeInputs,
+          read: result.outputs,
+        }),
+      );
+    }
+
     await surface.captureEvidence('screenshot');
-    writeFileSync(join(evidence.runDir, 'result.json'), JSON.stringify(result, null, 2), 'utf8');
-    writeFileSync(
-      join(evidence.runDir, 'metrics.json'),
-      JSON.stringify(record.metrics, null, 2),
-      'utf8',
-    );
+    // Pseudonymized on the way to disk, like every other persisted file. `run.json` below is the
+    // one deliberate exception and the comment there says why.
+    evidence.writeJson('result.json', result);
+    evidence.writeJson('metrics.json', record.metrics);
     // ============================================================================================
     // THE FULL RUN RECORD, so a distillation can be RE-DONE without paying for another run.
     // ============================================================================================
@@ -231,25 +256,80 @@ async function run(options: DiscoverOptions): Promise<void> {
     // against a fixed distiller to prove the fix. Evidence answered "what happened"; nothing
     // answered "what would this same run produce now".
     //
-    // It contains observations, so it contains screen text, which can contain PII. It is written
-    // under /runs, which is gitignored, alongside the screenshots that already have the same
-    // property. PHASE 7 pseudonymizes persisted evidence and this file is part of that scope.
+    // It contains observations, so it contains screen text, which can contain PII.
+    //
+    // [MUST] IT IS THE ONE PERSISTED FILE THAT IS NOT PSEUDONYMIZED, AND THAT IS DELIBERATE. It is
+    // an INPUT, not a report: the distiller's parameterization sweep works by looking for runtime
+    // values VERBATIM, and a run record whose member id had already been replaced with a label
+    // would sail straight through the sweep that exists to catch exactly that. Pseudonymizing it
+    // would disarm the guard while looking like an improvement.
+    //
+    // So it stays raw, it stays under /runs which is gitignored, and `npm run evidence:automated`
+    // does NOT copy it into the published bundle. evidence/README.md says so where a reviewer sees it.
     writeFileSync(join(evidence.runDir, 'run.json'), JSON.stringify(record, null, 2), 'utf8');
 
     // Conditions the run ENCOUNTERED live here and ONLY here. They never enter the artifact.
-    writeFileSync(
-      join(evidence.runDir, 'proposed-conditions.json'),
-      JSON.stringify(record.encounteredConditions, null, 2),
-      'utf8',
-    );
+    evidence.writeJson('proposed-conditions.json', record.encounteredConditions);
 
-    console.log('');
-    console.log('run:      ' + runId);
+    // ============================================================================================
+    // THE ONE FILE THAT SAYS A MODEL DROVE THIS AND THE SYSTEM AGREED IT WAS DONE.
+    // ============================================================================================
+    //
+    // `run.json` holds all of this and more, and `run.json` is never published - it is raw by
+    // design. So the two facts a reviewer most needs from a discovery run had nowhere to live in
+    // the evidence bundle:
+    //
+    //   the model was REAL and was called          model, promptVersion, llmCalls
+    //   completion was VERIFIED, not just proposed  successObservationId
+    //
+    // The second is the one worth naming. A model saying `goal_reached` sets nothing here. This id
+    // is written only after a FRESH observation, with every declared output extracted and validated
+    // against its declared type and the record identity checked by the system. A null means the
+    // model proposed completion and the system refused it.
+    //
+    // goalTemplate, never the rendered goal: the rendered goal has the member id in it, and D-NO-
+    // GOAL-DIGEST already settled that traceability comes from runId, specHash and the content hash.
+    evidence.writeJson('completion.json', {
+      runId,
+      model: record.model,
+      promptVersion: record.promptVersion,
+      specHash: loaded.specHash,
+      goalTemplate: loaded.spec.goalTemplate,
+      completionVerifiedBySystem: record.successObservationId !== null,
+      successObservationId: record.successObservationId,
+      observations: record.observations.length,
+      metrics: record.metrics,
+    });
+
+    // The human channel, pseudonymized like the files. The goal line is the one most likely to
+    // carry a member id, because the goal template renders the invocation inputs into prose.
+    const say = (line: string): void => {
+      console.log(evidence.redactText(line));
+    };
+    say('');
+    say('run:      ' + runId);
+    // ============================================================================================
+    // THE ONE LINE THAT IS NOT PSEUDONYMIZED, AND THE RULE BEHIND IT.
+    // ============================================================================================
+    //
+    // THE CLI DOES NOT REDACT THE INVOCATION BACK TO THE PERSON WHO TYPED IT. The goal is a
+    // human-authored instruction rendered from values that person passed in `--inputs` seconds
+    // earlier; printing it back as "find member [memberId:subject-01]" tells them nothing they do
+    // not know and destroys the only line that says what the run was actually asked to do.
+    //
+    // This does not weaken D73, which is about values the run READ off a screen - those still go
+    // through `say` and are still labelled, in this file and in the replay report. Input, not
+    // output, is the line.
+    //
+    // The MODEL always received the rendered goal with real values; only this console line and the
+    // transcript on disk were ever labelled. `tests/integration/agent.boundary.goal.live` asserts
+    // both halves, because reading a labelled transcript as "what the model saw" has now produced a
+    // wrong first diagnosis twice.
     console.log('goal:     ' + goal);
-    console.log('target:   ' + options.target);
-    console.log('status:   ' + result.status);
-    console.log('steps:    ' + record.metrics.steps + '   llm calls: ' + record.metrics.llmCalls);
-    console.log('evidence: ' + evidence.runDir);
+    say('target:   ' + options.target);
+    say('status:   ' + result.status);
+    say('steps:    ' + record.metrics.steps + '   llm calls: ' + record.metrics.llmCalls);
+    say('evidence: ' + evidence.runDir);
 
     if (result.status !== 'success') {
       process.exitCode = 1;
@@ -268,9 +348,9 @@ async function run(options: DiscoverOptions): Promise<void> {
     }
 
     await new FileCapabilityStore(options.artifacts).put(distilled.artifact);
-    console.log('');
-    for (const note of distilled.notes) console.log('  ' + note);
-    console.log(
+    say('');
+    for (const note of distilled.notes) say('  ' + note);
+    say(
       'artifact: ' +
         options.artifacts +
         '/' +

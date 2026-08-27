@@ -90,14 +90,18 @@ export class HandoffCoordinator {
     // nothing, and we are asking again - and routing it through PAUSING would be an illegal
     // transition. The state table anticipated this; the first version of this method did not.
     const from = session.state;
+    // The intervention id belongs in the reason of the transition that actually happened. It used
+    // to be attached to a separate event the ENGINE wrote, which was a duplicate on the first
+    // intervention and false on the second. D89.
+    const why = 'intervention ' + options.interventionId + ': ' + options.reason;
     if (from === 'AUTOMATION_RUNNING') {
-      session.transitionTo('PAUSING', options.reason);
+      session.transitionTo('PAUSING', why);
       evidence?.append({
         type: 'session_transition',
         at: new Date().toISOString(),
         from: 'AUTOMATION_RUNNING',
         to: 'PAUSING',
-        reason: options.reason,
+        reason: why,
       });
     }
 
@@ -189,6 +193,19 @@ export class HandoffCoordinator {
 
     options.lease.revoke();
     const token = options.lease.issue('AUTOMATION', options.automationLeaseTtlMs ?? 10 * 60 * 1000);
+
+    // RECORDED. It was not, so the lease trace of a two-intervention run read
+    // "AUTOMATION -> HUMAN -> HUMAN" - which looks like a human lease issued while a human already
+    // held one, and is really "the automation lease came back and nobody wrote it down". The
+    // handover to a person was evidenced and the handover BACK was not, which is the half a
+    // reviewer would doubt. D89.
+    options.evidence?.append({
+      type: 'lease_issued',
+      at: new Date().toISOString(),
+      leaseId: token.leaseId,
+      owner: 'AUTOMATION',
+      expiresAt: token.expiresAt,
+    });
 
     options.evidence?.append({
       type: 'handoff_session_identity',

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { renderForModel, ValueOriginTracker } from './boundary.js';
 import { verifyCompletion } from './completion.js';
+import { isIdentityReason, isOutputReason, OutstandingRefusal } from './outstanding.js';
 import { bindDescriptor } from '../perception/bind.js';
 import { convertProposal } from './proposal.js';
 import { buildSystemPrompt, PROMPT_VERSION } from './prompts/v1.js';
@@ -109,7 +110,18 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
   const stateProposals: StateProposal[] = [];
   const outputs: OutputBinding[] = [];
   const encountered: EncounteredCondition[] = [];
+  /**
+   * EVERY identity the model proposes, not just the latest.
+   *
+   * The completion check picks the one that resolves on the screen it is checking, because that is
+   * the only screen where the choice can be made correctly. Overwriting here threw away a good
+   * binding in a real run. See DECISIONS.md D80.
+   */
+  const recordIdentityCandidates: RecordIdentityBinding[] = [];
+  /** Set to the candidate that actually verified, so the artifact carries that one. */
   let recordIdentity: RecordIdentityBinding | null = null;
+  /** The reasons the LAST completion proposal was refused. See src/agent/outstanding.ts. */
+  const outstanding = new OutstandingRefusal();
   let successObservationId: string | null = null;
 
   const runtimeValues: string[] = Object.values(options.runtimeInputs).filter((v) => v !== '');
@@ -226,7 +238,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
 
   const say = (content: string): void => {
     turns.push({ role: 'user', content });
-    options.evidence?.transcriptRedacted({
+    options.evidence?.transcript({
       at: new Date().toISOString(),
       role: 'system-to-model',
       content,
@@ -345,6 +357,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
   let shown = current;
   const show = (observation: Observation, preamble: string): void => {
     shown = observation;
+    outstanding.observedScreen(observation.screenIdentity.canonicalScreenName);
     showScreen(observation, preamble);
   };
 
@@ -406,7 +419,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
     metrics.llmCalls += 1;
     const response = await options.client.complete({ system, turns });
     turns.push({ role: 'assistant', content: response.text, toolCalls: response.toolCalls });
-    options.evidence?.transcriptRedacted({
+    options.evidence?.transcript({
       at: new Date().toISOString(),
       role: 'model',
       content: response.text,
@@ -491,21 +504,25 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
           fresh,
           spec: options.spec,
           outputs,
-          recordIdentity,
+          recordIdentityCandidates,
           runtimeInputs: options.runtimeInputs,
           resolver: options.resolver,
         });
 
-        options.evidence?.transcriptRedacted({
+        options.evidence?.transcript({
           at: new Date().toISOString(),
           role: 'completion-check',
           observationId: fresh.observationId,
           verified: verdict.verified,
-          reasons: verdict.reasons,
+          reasons: verdict.reasons.map((reason) => reason.code + ': ' + reason.message),
         });
 
         if (verdict.verified) {
           successObservationId = fresh.observationId;
+          // The candidate that resolved and matched HERE, on the success screen. The artifact
+          // carries this one, so replay re-checks a descriptor already proven on this screen.
+          recordIdentity = verdict.recordIdentity;
+          outstanding.clear();
           current = fresh;
           terminal = {
             status: 'success',
@@ -524,7 +541,7 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
             'the system could not verify completion after ' +
               completionRounds +
               ' attempts: ' +
-              verdict.reasons.join('; '),
+              verdict.reasons.map((reason) => reason.message).join('; '),
           );
           continue;
         }
@@ -535,8 +552,9 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
           fresh,
           'The system re-observed the screen and could NOT confirm the goal was met:' +
             String.fromCharCode(10) +
-            verdict.reasons.map((reason) => '  - ' + reason).join(String.fromCharCode(10)),
+            verdict.reasons.map((reason) => '  - ' + reason.message).join(String.fromCharCode(10)),
         );
+        outstanding.set(verdict.reasons, fresh.screenIdentity.canonicalScreenName);
         continue;
       }
 
@@ -653,7 +671,12 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
         // A value we have now READ is a runtime value, and no later descriptor may embed it.
         if (!runtimeValues.includes(read.value)) runtimeValues.push(read.value);
         noProgress = 0;
-        feedback.push('Bound output "' + call.input.outputName + '".');
+        feedback.push(
+          'Bound output "' +
+            call.input.outputName +
+            '".' +
+            outstanding.resolve(isOutputReason(call.input.outputName)),
+        );
         continue;
       }
 
@@ -667,14 +690,23 @@ export async function runDiscovery(options: DiscoveryOptions): Promise<Discovery
           );
           continue;
         }
-        recordIdentity = {
+        const bound: RecordIdentityBinding = {
           param: options.spec.recordIdentity.param,
           observationId: fresh.observationId,
+          screenName: fresh.screenIdentity.canonicalScreenName,
           target: converted.descriptor,
           observedValue: read.value,
         };
+        // Appended, never overwritten. A duplicate of a descriptor already proposed adds nothing.
+        const already = recordIdentityCandidates.some(
+          (candidate) => JSON.stringify(candidate.target) === JSON.stringify(bound.target),
+        );
+        if (!already) recordIdentityCandidates.push(bound);
         noProgress = 0;
-        feedback.push('Bound the record identity. The system will check it, not you.');
+        feedback.push(
+          'Bound the record identity. The system will check it, not you.' +
+            outstanding.resolve(isIdentityReason),
+        );
         continue;
       }
 

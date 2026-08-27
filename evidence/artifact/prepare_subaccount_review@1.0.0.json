@@ -1,0 +1,1132 @@
+{
+  "schemaVersion": 2,
+  "capabilityId": "prepare_subaccount_review",
+  "name": "Prepare sub-account review",
+  "description": "Open a member record in MERIDIAN Core Servicing, complete the new sub-account form, and advance to the review screen. The request is NEVER submitted: the capability's whole purpose is to leave a fully prepared, human-reviewable request in place.",
+  "capabilityVersion": "1.0.0",
+  "status": "approved",
+  "target": {
+    "product": "MERIDIAN Core Servicing",
+    "surfaceKind": "legacy_web",
+    "entryPoint": "http://localhost:4180/",
+    "compatibility": {
+      "versionRange": ">=3.2.0 <4.0.0"
+    },
+    "fingerprint": [
+      {
+        "kind": "text",
+        "expected": "MERIDIAN Core v3.2"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "pattern": "^[0-9]{5}$",
+      "required": true,
+      "sensitivity": "pii",
+      "description": "Five-digit member identifier used to locate the member record.",
+      "example": "00000"
+    },
+    {
+      "name": "accountType",
+      "type": "enum",
+      "values": [
+        "Savings",
+        "Checking"
+      ],
+      "required": true,
+      "sensitivity": "public",
+      "description": "Which kind of sub-account to prepare.",
+      "example": "Savings"
+    },
+    {
+      "name": "nickname",
+      "type": "string",
+      "required": false,
+      "sensitivity": "pii",
+      "description": "Optional display label for the sub-account. Optional on purpose: assertions that reference it must be guarded with `when.paramPresent`, or every no-nickname invocation fails.",
+      "example": "EXAMPLE-NOT-REAL"
+    },
+    {
+      "name": "initialDeposit",
+      "type": "currency",
+      "required": true,
+      "sensitivity": "pii",
+      "description": "Opening deposit amount. Compared in minor units, never as a string.",
+      "example": "$1,234.56"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "memberName",
+      "type": "string",
+      "sensitivity": "pii",
+      "required": true,
+      "when": "success",
+      "description": "The member identity displayed on the prepared request, as shown by the application.",
+      "source": {
+        "stateId": "review-sub-account-request",
+        "target": {
+          "semantic": {
+            "role": "cell",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Member Name"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ]
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "parse": "text"
+      }
+    },
+    {
+      "name": "accountType",
+      "type": "enum",
+      "values": [
+        "Savings",
+        "Checking"
+      ],
+      "sensitivity": "public",
+      "required": true,
+      "when": "success",
+      "description": "The account type shown on the review screen, read back from the application.",
+      "source": {
+        "stateId": "review-sub-account-request",
+        "target": {
+          "semantic": {
+            "role": "cell",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Account Type"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ]
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "parse": "text"
+      }
+    },
+    {
+      "name": "reviewStatus",
+      "type": "enum",
+      "values": [
+        "PENDING REVIEW"
+      ],
+      "sensitivity": "public",
+      "required": true,
+      "when": "success",
+      "description": "The status the application reports for the prepared, unsubmitted request.",
+      "source": {
+        "stateId": "review-sub-account-request",
+        "target": {
+          "semantic": {
+            "role": "cell",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Status"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ]
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "parse": "text"
+      }
+    }
+  ],
+  "recordIdentity": {
+    "param": "memberId",
+    "target": {
+      "semantic": {
+        "role": "cell",
+        "nameMatch": "normalized",
+        "nearbyText": [
+          "Member ID"
+        ]
+      },
+      "adapterHints": {
+        "web": {
+          "contextPath": [
+            "contentFrame"
+          ]
+        }
+      },
+      "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+    }
+  },
+  "preconditions": [
+    {
+      "description": "The application is showing \"Member Search\" when the capability starts.",
+      "check": {
+        "id": "precondition.entry",
+        "kind": "screen_identity",
+        "expected": {
+          "kind": "literal",
+          "value": "Member Search"
+        },
+        "description": "the entry screen is \"Member Search\""
+      }
+    }
+  ],
+  "states": [
+    {
+      "id": "member-search",
+      "description": "The application is showing \"Member Search\".",
+      "screenAssertions": [
+        {
+          "id": "member-search.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Member Search"
+          },
+          "description": "the screen is \"Member Search\""
+        }
+      ],
+      "qualifiers": [],
+      "invariants": [],
+      "resumeEligible": false
+    },
+    {
+      "id": "member-search-complete",
+      "description": "The application is showing \"Member Search\" AND it is filled in with the values we were asked for. A half-filled screen matches this no better than any other resumable state, which is the point.",
+      "screenAssertions": [
+        {
+          "id": "member-search-complete.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Member Search"
+          },
+          "description": "the screen is \"Member Search\""
+        }
+      ],
+      "qualifiers": [
+        {
+          "id": "member-search-complete.memberId",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "name": "Member ID",
+              "nameMatch": "exact"
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtMemberId"
+                }
+              }
+            },
+            "recordedTier": "T1_EXACT_ROLE_NAME"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the field holds the requested memberId"
+        }
+      ],
+      "invariants": [],
+      "resumeEligible": true
+    },
+    {
+      "id": "member-record",
+      "description": "The application is showing \"Member Record\".",
+      "screenAssertions": [
+        {
+          "id": "member-record.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Member Record"
+          },
+          "description": "the screen is \"Member Record\""
+        }
+      ],
+      "qualifiers": [],
+      "invariants": [
+        {
+          "id": "member-record.identity",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "cell",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Member ID"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ]
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record shown is the record we were asked about"
+        }
+      ],
+      "resumeEligible": true
+    },
+    {
+      "id": "new-sub-account",
+      "description": "The application is showing \"New Sub-Account\".",
+      "screenAssertions": [
+        {
+          "id": "new-sub-account.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "New Sub-Account"
+          },
+          "description": "the screen is \"New Sub-Account\""
+        }
+      ],
+      "qualifiers": [],
+      "invariants": [
+        {
+          "id": "new-sub-account.identity-in-text",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "resumeEligible": false
+    },
+    {
+      "id": "new-sub-account-complete",
+      "description": "The application is showing \"New Sub-Account\" AND it is filled in with the values we were asked for. A half-filled screen matches this no better than any other resumable state, which is the point.",
+      "screenAssertions": [
+        {
+          "id": "new-sub-account-complete.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "New Sub-Account"
+          },
+          "description": "the screen is \"New Sub-Account\""
+        }
+      ],
+      "qualifiers": [
+        {
+          "id": "new-sub-account-complete.accountType",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "combobox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Account Type"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$ddlAccountType"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "accountType"
+          },
+          "description": "the field holds the requested accountType"
+        },
+        {
+          "id": "new-sub-account-complete.nickname",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Nickname (optional)"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtNickname"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "nickname"
+          },
+          "description": "the field holds the requested nickname",
+          "when": {
+            "paramPresent": "nickname"
+          }
+        },
+        {
+          "id": "new-sub-account-complete.initialDeposit",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Initial Deposit"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtInitialDeposit"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "initialDeposit"
+          },
+          "description": "the field holds the requested initialDeposit"
+        }
+      ],
+      "invariants": [
+        {
+          "id": "new-sub-account.identity-in-text",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "resumeEligible": true
+    },
+    {
+      "id": "review-sub-account-request",
+      "description": "The application is showing \"Review Sub-Account Request\".",
+      "screenAssertions": [
+        {
+          "id": "review-sub-account-request.screen",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Review Sub-Account Request"
+          },
+          "description": "the screen is \"Review Sub-Account Request\""
+        },
+        {
+          "id": "review-sub-account-request.text",
+          "kind": "text_present",
+          "expected": {
+            "kind": "literal",
+            "value": "Review Sub-Account Request"
+          },
+          "description": "the screen text carries \"Review Sub-Account Request\""
+        }
+      ],
+      "qualifiers": [],
+      "invariants": [
+        {
+          "id": "review-sub-account-request.identity",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "cell",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Member ID"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ]
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record shown is the record we were asked about"
+        }
+      ],
+      "resumeEligible": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-1-member-id",
+      "intent": "Type memberId into the Member ID search field to locate the target member record",
+      "action": {
+        "type": "type",
+        "target": {
+          "semantic": {
+            "role": "textbox",
+            "name": "Member ID",
+            "nameMatch": "exact"
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$txtMemberId"
+              }
+            }
+          },
+          "recordedTier": "T1_EXACT_ROLE_NAME"
+        },
+        "value": {
+          "kind": "param",
+          "name": "memberId"
+        }
+      },
+      "fromState": "member-search",
+      "expectedEffects": [
+        {
+          "id": "step-1-member-id.value-set",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "name": "Member ID",
+              "nameMatch": "exact"
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtMemberId"
+                }
+              }
+            },
+            "recordedTier": "T1_EXACT_ROLE_NAME"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the control now holds the requested memberId"
+        }
+      ],
+      "invariants": [],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by accessible name \"Member ID\", recorded at T1_EXACT_ROLE_NAME."
+    },
+    {
+      "id": "step-2-search",
+      "intent": "Click Search to find the member record matching memberId that was entered into the Member ID field",
+      "action": {
+        "type": "click",
+        "target": {
+          "semantic": {
+            "role": "button",
+            "name": "Search",
+            "nameMatch": "exact"
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$btnSearch"
+              }
+            }
+          },
+          "recordedTier": "T1_EXACT_ROLE_NAME"
+        }
+      },
+      "fromState": "member-search",
+      "expectedEffects": [
+        {
+          "id": "step-2-search.new-content",
+          "kind": "text_present",
+          "expected": {
+            "kind": "literal",
+            "value": "Search Results"
+          },
+          "description": "\"Search Results\" appeared, which was not on screen before the action"
+        }
+      ],
+      "invariants": [],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by accessible name \"Search\", recorded at T1_EXACT_ROLE_NAME."
+    },
+    {
+      "id": "step-3-open",
+      "intent": "Click Open in the row identified by memberId to open the member record.",
+      "action": {
+        "type": "click",
+        "target": {
+          "semantic": {
+            "role": "link",
+            "name": "Open",
+            "nameMatch": "exact",
+            "rowKey": {
+              "cellText": {
+                "kind": "param",
+                "name": "memberId"
+              }
+            }
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ]
+            }
+          },
+          "recordedTier": "T5_STRUCTURAL_ROW"
+        }
+      },
+      "fromState": "member-search-complete",
+      "toState": "member-record",
+      "expectedEffects": [
+        {
+          "id": "step-3-open.arrived",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Member Record"
+          },
+          "description": "the screen is now \"Member Record\""
+        }
+      ],
+      "invariants": [],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "try_recoveries_then_fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by accessible name \"Open\" within the row identified by {{memberId}}, recorded at T5_STRUCTURAL_ROW."
+    },
+    {
+      "id": "step-4-new-sub-account",
+      "intent": "Click New Sub-Account link on the Member Record screen to begin preparing a new sub-account request for the located member.",
+      "action": {
+        "type": "click",
+        "target": {
+          "semantic": {
+            "role": "link",
+            "name": "New Sub-Account",
+            "nameMatch": "exact"
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ]
+            }
+          },
+          "recordedTier": "T1_EXACT_ROLE_NAME"
+        }
+      },
+      "fromState": "member-record",
+      "toState": "new-sub-account",
+      "expectedEffects": [
+        {
+          "id": "step-4-new-sub-account.arrived",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "New Sub-Account"
+          },
+          "description": "the screen is now \"New Sub-Account\""
+        }
+      ],
+      "invariants": [
+        {
+          "id": "step-4-new-sub-account.identity",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "RISKY_REVERSIBLE",
+      "onFailure": "try_recoveries_then_fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by accessible name \"New Sub-Account\", recorded at T1_EXACT_ROLE_NAME."
+    },
+    {
+      "id": "step-5-account-type",
+      "intent": "Select the accountType parameter value in the Account Type dropdown to specify the sub-account type being requested.",
+      "action": {
+        "type": "select",
+        "target": {
+          "semantic": {
+            "role": "combobox",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Account Type"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$ddlAccountType"
+              }
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "value": {
+          "kind": "param",
+          "name": "accountType"
+        }
+      },
+      "fromState": "new-sub-account",
+      "expectedEffects": [
+        {
+          "id": "step-5-account-type.value-set",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "combobox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Account Type"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$ddlAccountType"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "accountType"
+          },
+          "description": "the control now holds the requested accountType"
+        }
+      ],
+      "invariants": [
+        {
+          "id": "step-5-account-type.identity",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by nearby label \"Account Type\", recorded at T3_EXTERNAL_LABEL_OR_NEARBY."
+    },
+    {
+      "id": "step-6-nickname-optional",
+      "intent": "Enter the nickname parameter into the Nickname (optional) field to label the new sub-account.",
+      "action": {
+        "type": "type",
+        "target": {
+          "semantic": {
+            "role": "textbox",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Nickname (optional)"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$txtNickname"
+              }
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "value": {
+          "kind": "param",
+          "name": "nickname"
+        }
+      },
+      "fromState": "new-sub-account",
+      "expectedEffects": [
+        {
+          "id": "step-6-nickname-optional.value-set",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Nickname (optional)"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtNickname"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "nickname"
+          },
+          "description": "the control now holds the requested nickname",
+          "when": {
+            "paramPresent": "nickname"
+          }
+        }
+      ],
+      "invariants": [
+        {
+          "id": "step-6-nickname-optional.identity",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by nearby label \"Nickname (optional)\", recorded at T3_EXTERNAL_LABEL_OR_NEARBY.",
+      "when": {
+        "paramPresent": "nickname"
+      }
+    },
+    {
+      "id": "step-7-initial-deposit",
+      "intent": "Enter the initialDeposit parameter into the Initial Deposit field to set the opening deposit amount.",
+      "action": {
+        "type": "type",
+        "target": {
+          "semantic": {
+            "role": "textbox",
+            "nameMatch": "normalized",
+            "nearbyText": [
+              "Initial Deposit"
+            ]
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$txtInitialDeposit"
+              }
+            }
+          },
+          "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+        },
+        "value": {
+          "kind": "param",
+          "name": "initialDeposit"
+        }
+      },
+      "fromState": "new-sub-account",
+      "expectedEffects": [
+        {
+          "id": "step-7-initial-deposit.value-set",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Initial Deposit"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtInitialDeposit"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "initialDeposit"
+          },
+          "description": "the control now holds the requested initialDeposit"
+        },
+        {
+          "id": "step-7-initial-deposit.matches-initialdeposit",
+          "kind": "value_matches_param",
+          "target": {
+            "semantic": {
+              "role": "textbox",
+              "nameMatch": "normalized",
+              "nearbyText": [
+                "Initial Deposit"
+              ]
+            },
+            "adapterHints": {
+              "web": {
+                "contextPath": [
+                  "contentFrame"
+                ],
+                "stableAttribute": {
+                  "name": "ctl00$Main$txtInitialDeposit"
+                }
+              }
+            },
+            "recordedTier": "T3_EXTERNAL_LABEL_OR_NEARBY"
+          },
+          "expected": {
+            "kind": "param",
+            "name": "initialDeposit"
+          },
+          "description": "Account Type combobox, Nickname textbox, and Initial Deposit textbox on the New Sub-Account form now hold accountType, nickname, and initialDeposit respectively."
+        }
+      ],
+      "invariants": [
+        {
+          "id": "step-7-initial-deposit.identity",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "SAFE_REVERSIBLE",
+      "onFailure": "fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by nearby label \"Initial Deposit\", recorded at T3_EXTERNAL_LABEL_OR_NEARBY."
+    },
+    {
+      "id": "step-8-continue",
+      "intent": "Click Continue on the New Sub-Account form to advance to the review screen after entering accountType, nickname, and initialDeposit.",
+      "action": {
+        "type": "click",
+        "target": {
+          "semantic": {
+            "role": "button",
+            "name": "Continue",
+            "nameMatch": "exact"
+          },
+          "adapterHints": {
+            "web": {
+              "contextPath": [
+                "contentFrame"
+              ],
+              "stableAttribute": {
+                "name": "ctl00$Main$btnContinue"
+              }
+            }
+          },
+          "recordedTier": "T1_EXACT_ROLE_NAME"
+        }
+      },
+      "fromState": "new-sub-account-complete",
+      "toState": "review-sub-account-request",
+      "expectedEffects": [
+        {
+          "id": "step-8-continue.arrived",
+          "kind": "screen_identity",
+          "expected": {
+            "kind": "literal",
+            "value": "Review Sub-Account Request"
+          },
+          "description": "the screen is now \"Review Sub-Account Request\""
+        }
+      ],
+      "invariants": [
+        {
+          "id": "step-8-continue.identity",
+          "kind": "text_present",
+          "expected": {
+            "kind": "param",
+            "name": "memberId"
+          },
+          "description": "the record identity appears in the screen text. This screen does not display it in an addressable field, so this is the strongest check available on it."
+        }
+      ],
+      "wait": {
+        "timeoutMs": 10000,
+        "pollMs": 100
+      },
+      "risk": "RISKY_REVERSIBLE",
+      "onFailure": "try_recoveries_then_fail",
+      "retries": {
+        "max": 1,
+        "backoffMs": [
+          250
+        ]
+      },
+      "notes": "Identified by accessible name \"Continue\", recorded at T1_EXACT_ROLE_NAME."
+    }
+  ],
+  "successState": "review-sub-account-request",
+  "profiles": {
+    "condition": {
+      "id": "meridian-subaccount",
+      "version": "1.0.0",
+      "sha256": "b8a8621cd45123a269bca0923cd08a75c5c952766318bd2a5c3aed066aba3168"
+    },
+    "safety": {
+      "id": "banking-default",
+      "version": "1.0.0",
+      "sha256": "ca1eb3230a6aa74c10c160e46acfb1cdff6656e95a87f846bf36dcf7df6291e9"
+    }
+  },
+  "policy": {
+    "maxRiskAllowed": "RISKY_REVERSIBLE",
+    "maxSteps": 20,
+    "maxDurationMs": 120000
+  },
+  "knownOutcomes": [],
+  "recoveries": [],
+  "hardFailures": [],
+  "provenance": {
+    "discoveryRunId": "discover-1787873134736-96f8c64c",
+    "model": "claude-sonnet-5",
+    "promptVersion": "v2",
+    "goalTemplate": "In MERIDIAN Core Servicing, find member {{memberId}} and prepare a new sub-account request for them of type {{accountType}} with nickname {{nickname}} and an initial deposit of {{initialDeposit}}. Advance to the review screen and stop there. Do not submit the request.",
+    "specHash": "f0086a2dfe4cb892b257298ea5650859e5c336d66e5486a53ddb56ba4fe47ab0",
+    "createdAt": "2026-08-27T23:26:08.977Z"
+  },
+  "approvedAt": "2026-08-27T23:26:09.814Z",
+  "approvedBy": "evidence-run"
+}

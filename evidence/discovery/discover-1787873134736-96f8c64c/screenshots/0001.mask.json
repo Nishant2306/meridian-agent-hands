@@ -1,0 +1,47 @@
+{
+  "sourceScreenshot": "0001.png",
+  "maskedRegions": [
+    {
+      "descriptorRef": "cell \"[memberName:subject-01]\" (mark 18)",
+      "reason": "pii",
+      "rect": {
+        "x": 357.2875061035156,
+        "y": 163.07500457763672,
+        "width": 120.9375,
+        "height": 26.399999618530273
+      }
+    },
+    {
+      "descriptorRef": "cell \"[memberId:subject-01]\" (mark 20)",
+      "reason": "record-identity",
+      "rect": {
+        "x": 357.2875061035156,
+        "y": 185.47500610351562,
+        "width": 120.9375,
+        "height": 26.399999618530273
+      }
+    },
+    {
+      "descriptorRef": "cell \"[nickname:subject-01]\" (mark 24)",
+      "reason": "pii",
+      "rect": {
+        "x": 357.2875061035156,
+        "y": 230.27500915527344,
+        "width": 120.9375,
+        "height": 26.399999618530273
+      }
+    },
+    {
+      "descriptorRef": "cell \"$[initialDeposit:subject-01]\" (mark 26)",
+      "reason": "pii",
+      "rect": {
+        "x": 357.2875061035156,
+        "y": 252.6750030517578,
+        "width": 120.9375,
+        "height": 26.399999618530273
+      }
+    }
+  ],
+  "refused": [],
+  "observationId": "49d688c0-e28c-4bcb-b7c6-32cbb1ba9a2c"
+}

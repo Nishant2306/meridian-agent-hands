@@ -57,6 +57,13 @@ export interface ScriptedRunOptions {
   limits?: Partial<DiscoveryLimits>;
   /** Supply one to write real run evidence. Tests leave it off; the dev command turns it on. */
   evidence?: EvidenceWriter;
+  /**
+   * The natural-language goal, as the CLI would render it.
+   *
+   * Overridable so a test can supply a goal that CONTAINS invocation values - which is what the real
+   * CLI sends - and check what crosses the model boundary against what reaches disk.
+   */
+  goal?: string;
   headless?: boolean;
 }
 
@@ -115,8 +122,9 @@ export async function runScriptedDiscovery(options: ScriptedRunOptions): Promise
       spec: loaded.spec,
       specHash: loaded.specHash,
       goal:
+        options.goal ??
         'Find the member identified by parameter memberId, prepare the requested sub-account, and ' +
-        'reach the review screen without submitting.',
+          'reach the review screen without submitting.',
       target: 'tenant-a',
       runtimeInputs: options.runtimeInputs,
       surface,

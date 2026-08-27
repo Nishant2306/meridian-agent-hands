@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import { conditionProfilePath, loadConditionProfile } from '../artifact/profiles.js';
 import { FileCapabilityStore } from '../artifact/store.js';
@@ -18,6 +17,7 @@ import type { Intervention } from '../types/intervention.js';
 import { allowlistPath, loadAllowlist } from '../policy/allowlist.js';
 import { PolicyEngine } from '../policy/engine.js';
 import { pseudonymizerFromEnv } from '../redaction/pseudonymize.js';
+import { declarationFor } from '../redaction/declaration.js';
 import type { SensitivityDeclaration } from '../redaction/masking.js';
 import { loadSafetyProfile, safetyProfilePath } from '../artifact/profiles.js';
 import type { CapabilityArtifact } from '../artifact/schema.js';
@@ -79,29 +79,34 @@ interface ReplayCliOptions {
 function sensitivityOf(
   artifact: CapabilityArtifact,
   params: Readonly<Record<string, string>>,
+  read?: Readonly<Record<string, unknown>>,
 ): SensitivityDeclaration {
-  const sensitiveNames = new Set<string>();
-  for (const input of artifact.inputs) {
-    if (input.sensitivity === 'pii' || input.sensitivity === 'secret')
-      sensitiveNames.add(input.name);
-  }
-  for (const output of artifact.outputs) {
-    if (output.sensitivity === 'pii' || output.sensitivity === 'secret') {
-      sensitiveNames.add(output.name);
-    }
-  }
-
-  return {
-    sensitiveNames,
-    values: new Map(Object.entries(params)),
+  return declarationFor({
+    inputs: artifact.inputs,
+    outputs: artifact.outputs,
     recordIdentityParam: artifact.recordIdentity.param,
-  };
+    params,
+    read,
+  });
 }
 
 async function run(options: ReplayCliOptions): Promise<void> {
-  // Every human-facing line goes to stderr. There is one write to stdout in this file.
+  // ==============================================================================================
+  // EVERY HUMAN-FACING LINE GOES TO STDERR, AND IT IS PSEUDONYMIZED.
+  // ==============================================================================================
+  //
+  // There is one write to stdout in this file and it carries the real typed outputs, because the
+  // caller asked what the review status is and a label is not an answer. Everything a PERSON reads
+  // is a different channel with a different rule, and it used to be the same rule by accident:
+  // `formatResultForHuman` prints the outputs the run read, and nothing redacted them.
+  //
+  // `redact` is a function rather than a captured pseudonymizer because the declaration is not
+  // complete until the run ends - the outputs are DISCOVERED, so the values to label are not known
+  // when the first line is logged. Until the evidence writer exists it is the identity, which
+  // covers only the four lines below that name the capability, the hash, the tenant and the origin.
+  let redact = (line: string): string => line;
   const log = (line: string): void => {
-    if (options.json !== true) process.stderr.write(line + String.fromCharCode(10));
+    if (options.json !== true) process.stderr.write(redact(line) + String.fromCharCode(10));
   };
 
   const separator = options.artifact.lastIndexOf('@');
@@ -170,6 +175,7 @@ async function run(options: ReplayCliOptions): Promise<void> {
   //                   answer is useless to it.
   const evidence = new EvidenceWriter({ runId, pseudonymizer: pseudonymizerFromEnv() });
   evidence.declareSensitive(sensitivityOf(artifact, validation.params));
+  redact = (line) => evidence.redactText(line);
   const origin = options.origin ?? new URL(artifact.target.entryPoint).origin;
   const resolver = new DefaultTargetResolver();
 
@@ -306,6 +312,15 @@ async function run(options: ReplayCliOptions): Promise<void> {
     surfaceId: 'playwright-web',
     allowedOrigin: origin,
   });
+  // Recorded so the evidence bundle can be checked without trusting whoever assembled it.
+  evidence.append({
+    type: 'capability_loaded',
+    at: new Date().toISOString(),
+    capabilityId,
+    capabilityVersion: version,
+    status: artifact.status,
+    contentHash: contentHash(artifact),
+  });
 
   // The configurable engine, ALONGSIDE the bootstrap minimum that the surface enforces first.
   // Supplying it also arms the browser-level origin backstop inside the broker.
@@ -339,16 +354,24 @@ async function run(options: ReplayCliOptions): Promise<void> {
       token: brokered.token,
     });
 
-    writeFileSync(
-      join(evidence.runDir, 'result.json'),
-      JSON.stringify(outcome.result, null, 2),
-      'utf8',
-    );
-    writeFileSync(
-      join(evidence.runDir, 'steps.json'),
-      JSON.stringify(outcome.steps, null, 2),
-      'utf8',
-    );
+    // ==========================================================================================
+    // THE DECLARATION IS COMPLETED BEFORE ANYTHING IS WRITTEN DOWN OR PRINTED.
+    // ==========================================================================================
+    //
+    // A declared-sensitive OUTPUT has no value until the run has read it. `memberName` is declared
+    // `pii` in the spec, and the only reason we know "Avery Lin" is sensitive is that a human said
+    // so beside the field it came from - no shape detector will ever catch a name. So the values
+    // the run discovered are added to the declaration here, and from this line onward the evidence
+    // files and the stderr report carry labels while stdout carries the real thing.
+    if (outcome.result.status === 'success' || outcome.result.status === 'business_outcome') {
+      evidence.declareSensitive(
+        sensitivityOf(artifact, validation.params, outcome.result.outputs ?? {}),
+      );
+    }
+
+    evidence.writeJson('result.json', outcome.result);
+    evidence.writeJson('steps.json', outcome.steps);
+    evidence.writeJson('metrics.json', outcome.result.metrics);
 
     log('');
     for (const step of outcome.steps) {

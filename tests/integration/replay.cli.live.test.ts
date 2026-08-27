@@ -58,6 +58,15 @@ describe('the replay CLI --json contract', () => {
    */
   const runCli = async (
     params: string,
+    /**
+     * `--json` is a PARAMETER here because it used not to be, and that hid a defect.
+     *
+     * Every call passed `--json`, which suppresses every stderr log line in the CLI. So the
+     * assertion "stderr does not contain Avery Lin" held for a reason that had nothing to do with
+     * redaction: there was no stderr output at all. The human channel was never pseudonymized, and
+     * a test that read as though it proved otherwise stood over it. See DECISIONS D73.
+     */
+    options: { json?: boolean } = { json: true },
   ): Promise<{ stdout: string; stderr: string; status: number | null }> => {
     const child = spawn(
       process.execPath,
@@ -73,7 +82,7 @@ describe('the replay CLI --json contract', () => {
         store,
         '--origin',
         origin,
-        '--json',
+        ...(options.json === false ? [] : ['--json']),
       ],
       { cwd: REPO, env: { ...process.env, HEADLESS: 'true' } },
     );
@@ -145,8 +154,42 @@ describe('the replay CLI --json contract', () => {
       expect(JSON.stringify(parsed.outputs)).not.toContain('subject-');
     }
 
-    // The human channel does not carry them.
+    // With --json there IS no human channel, so this alone proves nothing. The test below is the
+    // one that actually holds mechanism 2 up.
     expect(stderr).not.toContain('Avery Lin');
+  }, 180_000);
+
+  it('[MUST] the HUMAN channel is pseudonymized, with --json off and stderr actually populated', async () => {
+    // ==========================================================================================
+    // THE TEST THE ONE ABOVE ONLY LOOKED LIKE.
+    // ==========================================================================================
+    //
+    // Without --json the CLI writes its whole report to stderr, including `formatResultForHuman`,
+    // which prints every declared output beside its name. That is the channel the claim in
+    // docs/DATA_HANDLING.md is about, and it is the channel no test had ever produced.
+    //
+    // The first assertion is the guard on the test itself: if stderr is empty, the rest is vacuous,
+    // which is exactly how the defect survived.
+    const { stderr, stdout } = await runCli(
+      JSON.stringify({ memberId: '10001', accountType: 'Savings', initialDeposit: '250.00' }),
+      { json: false },
+    );
+
+    expect(stderr.length, 'stderr was empty, so nothing below is being tested').toBeGreaterThan(
+      200,
+    );
+    expect(stdout.trim()).toBe('');
+
+    // Unlike the tests above, this one REQUIRES the run to succeed - the outputs are only printed
+    // on the success form, and they are the thing being checked. A vacuous pass is what went wrong
+    // here the first time.
+    expect(stderr, 'the run did not succeed, so no outputs were printed').toContain('SUCCEEDED');
+
+    // `memberName` is declared `pii` in the spec. Its VALUE is not known until the run has read it,
+    // so labelling it means completing the declaration with what the run discovered before anything
+    // is printed or written. No shape detector would ever catch a person's name.
+    expect(stderr).not.toContain('Avery Lin');
+    expect(stderr).toContain('[memberName:');
   }, 180_000);
 
   it('keeps stdout clean even when the run fails before the browser opens', async () => {

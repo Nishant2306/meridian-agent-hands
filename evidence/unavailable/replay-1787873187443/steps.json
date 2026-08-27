@@ -1,0 +1,38 @@
+[
+  {
+    "stepId": "step-1-member-id",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 249
+  },
+  {
+    "stepId": "step-2-search",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 264
+  },
+  {
+    "stepId": "step-3-open",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T5_STRUCTURAL_ROW",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 289
+  },
+  {
+    "stepId": "step-4-new-sub-account",
+    "status": "failed",
+    "detail": "The application answered, and what it said was that it is not currently able to serve the request. Distinct from SURFACE_UNAVAILABLE, which means the browser itself died.",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 218
+  }
+]

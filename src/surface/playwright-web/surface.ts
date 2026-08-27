@@ -637,7 +637,7 @@ export class PlaywrightWebSurface implements Surface {
     }
 
     const observation = this.#lastObservation ?? (await this.observe());
-    return this.#evidence.writeJson(
+    return this.#evidence.writeObservation(
       'observation-' + observation.observationId + '.json',
       observation,
     );

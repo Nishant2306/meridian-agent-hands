@@ -1,0 +1,18 @@
+{
+  "runId": "discover-1787873134736-96f8c64c",
+  "model": "claude-sonnet-5",
+  "promptVersion": "v2",
+  "specHash": "f0086a2dfe4cb892b257298ea5650859e5c336d66e5486a53ddb56ba4fe47ab0",
+  "goalTemplate": "In MERIDIAN Core Servicing, find member {{memberId}} and prepare a new sub-account request for them of type {{accountType}} with nickname {{nickname}} and an initial deposit of {{initialDeposit}}. Advance to the review screen and stop there. Do not submit the request.",
+  "completionVerifiedBySystem": true,
+  "successObservationId": "728eafbf-7824-41b8-a027-4e9ab4e032c7",
+  "observations": 23,
+  "metrics": {
+    "steps": 8,
+    "durationMs": 32154,
+    "llmCalls": 10,
+    "recoveriesUsed": 0,
+    "locatorTierDowngrades": 0,
+    "humanInterventions": 0
+  }
+}

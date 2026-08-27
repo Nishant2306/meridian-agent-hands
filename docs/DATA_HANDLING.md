@@ -23,7 +23,18 @@ applying one where another belongs breaks something.
 ### 1. Persistence pseudonymization
 
 `src/redaction/pseudonymize.ts`, applied at one seam: `redactForPersistence` in the evidence writer,
-which every event passes through, plus the model transcript and the human-readable CLI output.
+which every event passes through, plus the model transcript, the run-output files
+(`EvidenceWriter.writeRedactedJson`) and the human-readable CLI output (`EvidenceWriter.redactText`).
+
+**The last two were claimed here before they were true.** `formatResultForHuman` prints every declared
+output beside its name and the replay CLI wrote those lines straight to stderr, while `result.json`
+was written with a bare `writeFileSync`. Both now go through the same pseudonymizer holding the same
+declared map - one seam, not a second redaction path. See DECISIONS.md D73.
+
+**The declaration is completed before anything is written or printed.** A declared-sensitive OUTPUT has
+no value until the run has read it: the only reason we know a member's name is sensitive is that a
+human wrote `sensitivity: pii` beside the field it comes from. So the values the run bound are added
+to the declaration at the end of the run, before the report and the run files are produced.
 
 **The default is a per-run random map held in memory.** `10001` becomes `[memberId:subject-01]`, the
 mapping is never written to disk, and it dies with the process.
@@ -69,6 +80,10 @@ replay --json   stdout   real typed outputs        the machine channel
                 stderr   pseudonymized             the human channel
                 /runs    pseudonymized + masked    the persisted channel
 ```
+
+`tests/integration/replay.cli.live.test.ts` asserts the first with `--json` on and the second with
+`--json` OFF, because with it on there is no human channel to check - which is exactly how the second
+claim went untested while looking covered.
 
 An agent that asked for the review status and got `[reviewStatus:subject-01]` has been given
 nothing. Redacting the return channel would make the capability useless to its caller, so the three
@@ -123,6 +138,14 @@ This section is the point of the document. Every item is a real gap, not a hypot
 nickname, a free-text note and a date of birth in an unusual format all sail through. The DECLARED
 sensitivity on the spec is the primary mechanism and the shape detectors are a net under it - if a
 human did not declare a field sensitive, only luck protects it.
+
+**A declared-sensitive value can still reach the model transcript.** Pseudonymization replaces values
+the system KNOWS: the ones it was invoked with, and the declared outputs once they have been bound.
+A person's name written into model prose while the model was reading a screen was neither at the
+moment the line was written. `npm run evidence:verify` reports that case as a `NOTE` with a count
+rather than folding it into a pass, and the file is not scrubbed afterwards - evidence is never
+rewritten. The two ways to close it properly are a pseudonymizer for read-only sensitive nodes at the
+model boundary (designed, not built - see below) and binding outputs earlier in the loop.
 
 **Screenshots may capture data outside declared sensitive regions, and we do not OCR.** We mask
 declared regions. We do **not** claim the value is absent from the pixels. The same member id

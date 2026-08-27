@@ -1,0 +1,8 @@
+{
+  "steps": 7,
+  "durationMs": 18763,
+  "llmCalls": 0,
+  "recoveriesUsed": 0,
+  "locatorTierDowngrades": 0,
+  "humanInterventions": 1
+}

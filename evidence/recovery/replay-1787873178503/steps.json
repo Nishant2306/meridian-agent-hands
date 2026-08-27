@@ -1,0 +1,77 @@
+[
+  {
+    "stepId": "step-1-member-id",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 229
+  },
+  {
+    "stepId": "step-2-search",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 284
+  },
+  {
+    "stepId": "step-3-open",
+    "status": "performed",
+    "detail": "recovery DISMISS_MAINTENANCE_NOTICE cleared the way and the expected effect then held; the action was NOT repeated",
+    "tierUsed": "T5_STRUCTURAL_ROW",
+    "downgraded": false,
+    "attempts": 1,
+    "recoveriesAttempted": [
+      "DISMISS_MAINTENANCE_NOTICE"
+    ],
+    "ms": 594
+  },
+  {
+    "stepId": "step-4-new-sub-account",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 343
+  },
+  {
+    "stepId": "step-5-account-type",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 291
+  },
+  {
+    "stepId": "step-6-nickname-optional",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 275
+  },
+  {
+    "stepId": "step-7-initial-deposit",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T3_EXTERNAL_LABEL_OR_NEARBY",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 250
+  },
+  {
+    "stepId": "step-8-continue",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 269
+  }
+]

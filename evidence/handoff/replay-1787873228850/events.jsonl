@@ -1,0 +1,97 @@
+{"type":"run_started","at":"2026-08-27T23:27:08.863Z","runId":"replay-1787873228850","surfaceId":"playwright-web","allowedOrigin":"http://127.0.0.1:54522"}
+{"type":"capability_loaded","at":"2026-08-27T23:27:08.864Z","capabilityId":"prepare_subaccount_review","capabilityVersion":"1.0.0","status":"approved","contentHash":"45100b1105cdd6c623c40356ded9208ecbb2e8ff458ea6eb6359b6ba50e3b03e"}
+{"type":"lease_issued","at":"2026-08-27T23:27:09.376Z","leaseId":"0d0e9a2b-93a0-48e2-9aef-6ccab1f084db","owner":"AUTOMATION","expiresAt":1787873829376}
+{"type":"action_attempt","at":"2026-08-27T23:27:09.377Z","actionType":"navigate","target":"navigate"}
+{"type":"action_performed","at":"2026-08-27T23:27:09.415Z","actionType":"navigate","tierUsed":null,"downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:09.416Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorId"}
+{"type":"observation","at":"2026-08-27T23:27:09.507Z","observationId":"9452775f-84df-4584-b986-79c92de04185","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:27:09.541Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:09.542Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorPasscode"}
+{"type":"observation","at":"2026-08-27T23:27:09.604Z","observationId":"cb6875fb-b248-4ac9-9a1a-3aae0ac51396","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:27:09.617Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:09.618Z","actionType":"click","target":"button \"Log In\""}
+{"type":"observation","at":"2026-08-27T23:27:09.672Z","observationId":"6814864b-0623-4cf6-a5fa-dc6ce3fb8698","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:27:09.739Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"bounded_backoff","at":"2026-08-27T23:27:09.755Z","ms":100,"reason":"polling for text_present:Member Search"}
+{"type":"wait","at":"2026-08-27T23:27:09.864Z","condition":"text_present:Member Search","satisfied":true,"ms":124}
+{"type":"observation","at":"2026-08-27T23:27:10.006Z","observationId":"34e5ad78-e6a1-40e9-8d75-f6d6fedf6bfd","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"observation","at":"2026-08-27T23:27:10.006Z","observationId":"34e5ad78-e6a1-40e9-8d75-f6d6fedf6bfd","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_attempt","at":"2026-08-27T23:27:10.008Z","actionType":"type","target":"textbox \"Member ID\"","valueBinding":"param:memberId"}
+{"type":"observation","at":"2026-08-27T23:27:10.135Z","observationId":"151ed1bf-5f4f-46f5-ba4f-40ba8492e0bf","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:27:10.167Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:10.273Z","observationId":"8e71cb4d-7c1c-422e-b43f-ec5098bbf68d","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:27:10.274Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:10.275Z","actionType":"click","target":"button \"Search\""}
+{"type":"observation","at":"2026-08-27T23:27:10.377Z","observationId":"c0f5ad07-e823-417c-862e-9d398bc99e83","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:27:10.420Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:10.566Z","observationId":"e2dc58b2-3bfc-4945-8de0-401c0a4ecfa7","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:27:10.566Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:10.567Z","actionType":"click","target":"link \"Open\""}
+{"type":"observation","at":"2026-08-27T23:27:10.686Z","observationId":"78740bd1-1091-4b7a-8e59-5edc016d121a","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:27:10.743Z","actionType":"click","tierUsed":"T5_STRUCTURAL_ROW","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:10.897Z","observationId":"c4502fee-c9ae-47d0-8c34-fbd070b463bf","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"observation","at":"2026-08-27T23:27:11.016Z","observationId":"fef1f171-bf94-4398-9f60-8bd15e1e0f6a","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:11.153Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0001.png"}
+{"type":"evidence_captured","at":"2026-08-27T23:27:11.162Z","kind":"ax","ref":"runs/replay-1787873228850/observation-fef1f171-bf94-4398-9f60-8bd15e1e0f6a.json"}
+{"type":"session_transition","at":"2026-08-27T23:27:11.169Z","from":"AUTOMATION_RUNNING","to":"PAUSING","reason":"intervention iv_0e329cd1917b4c6bae26df: a blocking dialog (\"Compliance attestation required\") is displayed, and no condition in the profile describes it. An unrecognised blocking state is a human decision, not something to guess past."}
+{"type":"session_transition","at":"2026-08-27T23:27:11.172Z","from":"PAUSING","to":"HUMAN_CONTROL","reason":"operator has control: a blocking dialog (\"Compliance attestation required\") is displayed, and no condition in the profile describes it. An unrecognised blocking state is a human decision, not something to guess past."}
+{"type":"lease_issued","at":"2026-08-27T23:27:11.172Z","leaseId":"5521c7cc-ee13-4a8b-b1b9-0f9251189b67","owner":"HUMAN","expiresAt":1787875031171}
+{"type":"handoff_session_identity","at":"2026-08-27T23:27:11.172Z","phase":"before","interventionId":"iv_0e329cd1917b4c6bae26df","browserContextId":"837B954782497E8B91DAB4AB6E926160","targetId":"26E942E6A52231C84BB30EB89E91BF97","url":"http://127.0.0.1:54522/app"}
+{"type":"observation","at":"2026-08-27T23:27:18.845Z","observationId":"090ab3a0-627c-47f9-bb0f-aff45f02f3b9","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:19.011Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0002.png"}
+{"type":"observation","at":"2026-08-27T23:27:19.846Z","observationId":"87eb4f73-349b-4d03-9c28-73e911a41ccf","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:19.942Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0003.png"}
+{"type":"observation","at":"2026-08-27T23:27:20.866Z","observationId":"9866852d-7d6d-4d97-a3de-219ec86f4b7b","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:20.973Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0004.png"}
+{"type":"observation","at":"2026-08-27T23:27:21.851Z","observationId":"4a596b69-6fe6-420b-80c5-741d33e3c8a5","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:21.941Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0005.png"}
+{"type":"observation","at":"2026-08-27T23:27:22.847Z","observationId":"c3e94b56-68b1-4216-b883-aa00786a1ee6","screen":"Member Record","perceptionPath":"cdp_ax","controls":36,"perceived":36}
+{"type":"evidence_captured","at":"2026-08-27T23:27:22.949Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0006.png"}
+{"type":"observation","at":"2026-08-27T23:27:23.817Z","observationId":"6f342598-d2a5-4f89-adf1-01385fdc52e2","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"evidence_captured","at":"2026-08-27T23:27:23.913Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0007.png"}
+{"type":"observation","at":"2026-08-27T23:27:24.830Z","observationId":"eba47f14-a934-4b7d-8a2a-d915a2f19672","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"evidence_captured","at":"2026-08-27T23:27:24.906Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0008.png"}
+{"type":"observation","at":"2026-08-27T23:27:25.855Z","observationId":"731a555a-ee40-4990-8352-d857ca7210e6","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"evidence_captured","at":"2026-08-27T23:27:25.942Z","kind":"screenshot","ref":"runs/replay-1787873228850/screenshots/0009.png"}
+{"type":"session_transition","at":"2026-08-27T23:27:26.849Z","from":"HUMAN_CONTROL","to":"RESUME_VALIDATION","reason":"operator released control"}
+{"type":"lease_issued","at":"2026-08-27T23:27:26.851Z","leaseId":"a86d3570-cc99-4664-a2a2-4883fcdbc515","owner":"AUTOMATION","expiresAt":1787873846851}
+{"type":"handoff_session_identity","at":"2026-08-27T23:27:26.852Z","phase":"after","interventionId":"iv_0e329cd1917b4c6bae26df","browserContextId":"837B954782497E8B91DAB4AB6E926160","targetId":"26E942E6A52231C84BB30EB89E91BF97","url":"http://127.0.0.1:54522/app"}
+{"type":"handoff_same_session","at":"2026-08-27T23:27:26.852Z","interventionId":"iv_0e329cd1917b4c6bae26df","same":true,"beforeTargetId":"26E942E6A52231C84BB30EB89E91BF97","afterTargetId":"26E942E6A52231C84BB30EB89E91BF97"}
+{"type":"human_action","at":"2026-08-27T23:27:20.781Z","kind":"click","role":"textbox","name":"Attestation code","valueChanged":false}
+{"type":"human_action","at":"2026-08-27T23:27:21.282Z","kind":"input","role":"textbox","name":"Attestation code","valueChanged":true,"redactedValueToken":"[redacted:redactedValueToken]"}
+{"type":"human_action","at":"2026-08-27T23:27:21.421Z","kind":"input","role":"textbox","name":"Attestation code","valueChanged":true,"redactedValueToken":"[redacted:redactedValueToken]"}
+{"type":"human_action","at":"2026-08-27T23:27:21.651Z","kind":"input","role":"textbox","name":"Attestation code","valueChanged":true,"redactedValueToken":"[redacted:redactedValueToken]"}
+{"type":"human_action","at":"2026-08-27T23:27:21.952Z","kind":"input","role":"textbox","name":"Attestation code","valueChanged":true,"redactedValueToken":"[redacted:redactedValueToken]"}
+{"type":"human_action","at":"2026-08-27T23:27:23.023Z","kind":"change","role":"textbox","name":"Attestation code","valueChanged":true,"redactedValueToken":"[redacted:redactedValueToken]"}
+{"type":"human_action","at":"2026-08-27T23:27:23.074Z","kind":"click","role":"button","name":"Submit attestation","valueChanged":false}
+{"type":"human_action","at":"2026-08-27T23:27:23.075Z","kind":"submit","role":"unknown","name":"Attestation code  Submit attestation","valueChanged":false}
+{"type":"human_action","at":"2026-08-27T23:27:23.076Z","kind":"navigation","role":"unknown","name":"/member/[memberId:subject-01]"}
+{"type":"observation","at":"2026-08-27T23:27:27.067Z","observationId":"cb5a94d2-8220-4ce8-97ab-70bb0f88d152","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"observation","at":"2026-08-27T23:27:27.067Z","observationId":"cb5a94d2-8220-4ce8-97ab-70bb0f88d152","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"action_attempt","at":"2026-08-27T23:27:27.069Z","actionType":"click","target":"link \"New Sub-Account\""}
+{"type":"observation","at":"2026-08-27T23:27:27.193Z","observationId":"da27ac38-6e80-470a-a5b3-c23d874fd184","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"action_performed","at":"2026-08-27T23:27:27.250Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:27.433Z","observationId":"8daf4b3f-1ef8-4dc2-a365-dcca4f133c21","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:27.434Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:27.434Z","actionType":"select","target":"combobox \"(unnamed)\"","valueBinding":"param:accountType"}
+{"type":"observation","at":"2026-08-27T23:27:27.555Z","observationId":"5f1ecebd-6a7a-49e3-87e5-b2f68583d96e","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:27.579Z","actionType":"select","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:27.700Z","observationId":"f23bd1d2-a3f7-4d07-a765-60ee422e6a2d","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:27.700Z","actionType":"select","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:27.701Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"param:nickname"}
+{"type":"observation","at":"2026-08-27T23:27:27.815Z","observationId":"c731db3b-d4e1-42cb-b6ad-f5a9ac1c92c1","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:27.831Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:27.957Z","observationId":"21efa07f-c2f2-4b9e-a687-1625f964db1d","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:27.958Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:27.959Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"param:initialDeposit"}
+{"type":"observation","at":"2026-08-27T23:27:28.067Z","observationId":"be5baa3f-bd51-46ab-a505-0221a7ee81c2","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:28.082Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:28.219Z","observationId":"0d12c397-ab66-4c96-9b90-23b24384f106","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:28.219Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:27:28.220Z","actionType":"click","target":"button \"Continue\""}
+{"type":"observation","at":"2026-08-27T23:27:28.348Z","observationId":"fc5ac08a-0717-4651-aa37-6776846a1a6c","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:27:28.386Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:28.524Z","observationId":"428de4ad-44e4-4d12-9331-271d83cbbb96","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}
+{"type":"action_performed","at":"2026-08-27T23:27:28.524Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:27:28.627Z","observationId":"5a31d54d-ba85-45a1-858f-2f6d0ddda7be","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}
+{"type":"observation","at":"2026-08-27T23:27:28.627Z","observationId":"5a31d54d-ba85-45a1-858f-2f6d0ddda7be","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}

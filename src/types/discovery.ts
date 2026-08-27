@@ -92,6 +92,15 @@ export interface OutputBinding {
 export interface RecordIdentityBinding {
   param: string;
   observationId: string;
+  /**
+   * The screen this binding was made on.
+   *
+   * Redundant with `observationId` and worth the redundancy: the completion check re-resolves the
+   * binding against a LATER screen, and when it fails the only useful thing to say is which screen
+   * the control it is looking for came from. Threading the whole observation list into the verifier
+   * to recover a name it could have carried would be worse.
+   */
+  screenName: string;
   target: TargetDescriptor;
   observedValue: string;
 }

@@ -1,0 +1,1651 @@
+{
+  "observationId": "fef1f171-bf94-4398-9f60-8bd15e1e0f6a",
+  "surfaceId": "playwright-web",
+  "capturedAt": "2026-08-27T23:27:11.016Z",
+  "perceptionPath": "cdp_ax",
+  "screenIdentity": {
+    "title": "MERIDIAN Core Servicing - MERIDIAN Core Servicing",
+    "canonicalScreenName": "Member Record",
+    "contextPaths": [
+      [],
+      [
+        "navFrame"
+      ],
+      [
+        "contentFrame"
+      ]
+    ],
+    "headings": [
+      "Servicing",
+      "Member Record",
+      "Compliance attestation required",
+      "Accounts"
+    ],
+    "versionMarker": "MERIDIAN Core v3.2.1",
+    "url": "http://127.0.0.1:54522/app"
+  },
+  "controls": [
+    {
+      "markId": 1,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.4000000059604645,
+        "y": 0.4000000059604645,
+        "width": 1279.2000732421875,
+        "height": 19.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 2,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.4000000059604645,
+        "y": 20,
+        "width": 1279.2000732421875,
+        "height": 24
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 3,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 0.4000000059604645,
+        "y": 690,
+        "width": 1279.2000732421875,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 4,
+      "role": "cell",
+      "name": "Navigation",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 10.800000190734863,
+        "y": 54,
+        "width": 193.1999969482422,
+        "height": 625.6000366210938
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 5,
+      "role": "cell",
+      "name": "Content",
+      "enabled": true,
+      "contextPath": [],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 204,
+        "y": 54,
+        "width": 783.2000122070312,
+        "height": 625.6000366210938
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": []
+    },
+    {
+      "markId": 6,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.200000196695328,
+        "y": 54.400000005960464,
+        "width": 189.60000610351562,
+        "height": 32.400001525878906
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 7,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.200000196695328,
+        "y": 86.79999923706055,
+        "width": 189.60000610351562,
+        "height": 24
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 8,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 11.200000196695328,
+        "y": 212.47500610351562,
+        "width": 189.60000610351562,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 9,
+      "role": "heading",
+      "name": "Servicing",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [],
+      "stableAttributes": {},
+      "box": {
+        "x": 21.600000381469727,
+        "y": 135.5374984741211,
+        "width": 126.5625,
+        "height": 27.200000762939453
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 10,
+      "role": "link",
+      "name": "Member Search",
+      "enabled": true,
+      "contextPath": [
+        "navFrame"
+      ],
+      "nearbyText": [
+        "Servicing"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 61.59999942779541,
+        "y": 177.4749984741211,
+        "width": 86.5625,
+        "height": 13.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "listitem"
+        },
+        {
+          "role": "list"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Servicing Member Search"
+      ]
+    },
+    {
+      "markId": 11,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL · fixture only",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 204.40000000596046,
+        "y": 54.400000005960464,
+        "width": 779.2000122070312,
+        "height": 19.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "DUMMY DATA - NOT REAL · fixture only"
+      ]
+    },
+    {
+      "markId": 12,
+      "role": "cell",
+      "name": "MERIDIAN Core Servicing",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 204.40000000596046,
+        "y": 74,
+        "width": 779.2000122070312,
+        "height": 24
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core Servicing"
+      ]
+    },
+    {
+      "markId": 13,
+      "role": "cell",
+      "name": "MERIDIAN Core v3.2.1",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 204.40000000596046,
+        "y": 390.0500183105469,
+        "width": 779.2000122070312,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "MERIDIAN Core v3.2.1"
+      ]
+    },
+    {
+      "markId": 14,
+      "role": "heading",
+      "name": "Member Record",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 122.73750305175781,
+        "width": 252.66250610351562,
+        "height": 27.200000762939453
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 15,
+      "role": "dialog",
+      "name": "Compliance attestation required",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 404,
+        "y": 134,
+        "width": 407.20001220703125,
+        "height": 158.5749969482422
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 16,
+      "role": "heading",
+      "name": "Accounts",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 264.7624969482422,
+        "width": 252.66250610351562,
+        "height": 20
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 17,
+      "role": "heading",
+      "name": "Compliance attestation required",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Member Record"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 417.6000061035156,
+        "y": 161.2874984741211,
+        "width": 380,
+        "height": 20
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "dialog",
+          "name": "Compliance attestation required"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 18,
+      "role": "text",
+      "name": "Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code.",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 417.6000061035156,
+        "y": 194.97500610351562,
+        "width": 380,
+        "height": 27.200000762939453
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "dialog",
+          "name": "Compliance attestation required"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 19,
+      "role": "text",
+      "name": "Attestation code for this session: 4417",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 417.6000061035156,
+        "y": 233.1750030517578,
+        "width": 380,
+        "height": 13.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "dialog",
+          "name": "Compliance attestation required"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 20,
+      "role": "link",
+      "name": "New Sub-Account",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 355.0500183105469,
+        "width": 97.625,
+        "height": 13.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 21,
+      "role": "textbox",
+      "name": "Attestation code",
+      "value": "",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Attestation code",
+        "Account Number",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$txtAttest"
+      },
+      "box": {
+        "x": 511.4624938964844,
+        "y": 257.77500915527344,
+        "width": 116,
+        "height": 21.200000762939453
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "region"
+        },
+        {
+          "role": "dialog",
+          "name": "Compliance attestation required"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 22,
+      "role": "button",
+      "name": "Submit attestation",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {
+        "name": "ctl00$Main$btnAttest"
+      },
+      "box": {
+        "x": 631.3374938964844,
+        "y": 257.77500915527344,
+        "width": 121.88750457763672,
+        "height": 21.200000762939453
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "region"
+        },
+        {
+          "role": "dialog",
+          "name": "Compliance attestation required"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Record Compliance attestation required Compliance attestation required before this record may be serviced. Contact your supervisor for the attestation code."
+      ]
+    },
+    {
+      "markId": 23,
+      "role": "cell",
+      "name": "Member ID",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 164.6750030517578,
+        "width": 90.5875015258789,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "[memberId:subject-01]"
+      ]
+    },
+    {
+      "markId": 24,
+      "role": "cell",
+      "name": "[memberId:subject-01]",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member ID",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 305.3875045776367,
+        "y": 164.6750030517578,
+        "width": 142.9499969482422,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member ID",
+        "[memberId:subject-01]"
+      ]
+    },
+    {
+      "markId": 25,
+      "role": "cell",
+      "name": "Member Name",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 186.27500915527344,
+        "width": 90.5875015258789,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "[memberName:subject-01]"
+      ]
+    },
+    {
+      "markId": 26,
+      "role": "cell",
+      "name": "[memberName:subject-01]",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Member Name",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 305.3875045776367,
+        "y": 186.27500915527344,
+        "width": 142.9499969482422,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Member Name",
+        "[memberName:subject-01]"
+      ]
+    },
+    {
+      "markId": 27,
+      "role": "cell",
+      "name": "Status",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 207.875,
+        "width": 90.5875015258789,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "Active"
+      ]
+    },
+    {
+      "markId": 28,
+      "role": "cell",
+      "name": "Active",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Status",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 305.3875045776367,
+        "y": 207.875,
+        "width": 142.9499969482422,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Status",
+        "Active"
+      ]
+    },
+    {
+      "markId": 29,
+      "role": "cell",
+      "name": "Data Class",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 214.80000019073486,
+        "y": 229.47500610351562,
+        "width": 90.5875015258789,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Data Class",
+        "DUMMY DATA - NOT REAL"
+      ]
+    },
+    {
+      "markId": 30,
+      "role": "cell",
+      "name": "DUMMY DATA - NOT REAL",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Data Class",
+        "Compliance attestation required"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 305.3875045776367,
+        "y": 229.47500610351562,
+        "width": 142.9499969482422,
+        "height": 21.600000381469727
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Data Class",
+        "DUMMY DATA - NOT REAL"
+      ]
+    },
+    {
+      "markId": 31,
+      "role": "cell",
+      "name": "[memberId:subject-01]-01",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 215.19999980926514,
+        "y": 321.25,
+        "width": 119.5374984741211,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "[memberId:subject-01]-01",
+        "Checking",
+        "$882.50"
+      ]
+    },
+    {
+      "markId": 32,
+      "role": "cell",
+      "name": "Checking",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "[memberId:subject-01]-01",
+        "Type",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 334.7375030517578,
+        "y": 321.25,
+        "width": 67.07500457763672,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "[memberId:subject-01]-01",
+        "Checking",
+        "$882.50"
+      ]
+    },
+    {
+      "markId": 33,
+      "role": "cell",
+      "name": "$882.50",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Checking",
+        "Balance",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 401.8125,
+        "y": 321.25,
+        "width": 65.25,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "[memberId:subject-01]-01",
+        "Checking",
+        "$882.50"
+      ]
+    },
+    {
+      "markId": 34,
+      "role": "cell",
+      "name": "Account Number",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 215.19999980926514,
+        "y": 298.8500061035156,
+        "width": 119.5374984741211,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    },
+    {
+      "markId": 35,
+      "role": "cell",
+      "name": "Type",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Account Number",
+        "Type",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 334.7375030517578,
+        "y": 298.8500061035156,
+        "width": 67.07500457763672,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    },
+    {
+      "markId": 36,
+      "role": "cell",
+      "name": "Balance",
+      "enabled": true,
+      "contextPath": [
+        "contentFrame"
+      ],
+      "nearbyText": [
+        "Type",
+        "Balance",
+        "Accounts"
+      ],
+      "stableAttributes": {},
+      "box": {
+        "x": 401.8125,
+        "y": 298.8500061035156,
+        "width": 65.25,
+        "height": 22.399999618530273
+      },
+      "boxSpace": "page",
+      "containers": [
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        },
+        {
+          "role": "cell"
+        },
+        {
+          "role": "row"
+        },
+        {
+          "role": "table"
+        }
+      ],
+      "rowCellTexts": [
+        "Account Number",
+        "Type",
+        "Balance"
+      ]
+    }
+  ],
+  "truncation": {
+    "perceived": 36,
+    "kept": 36,
+    "droppedByPriority": []
+  }
+}

@@ -24,3 +24,7 @@ playwright-report
 # env variants (keep the example)
 .env.*
 !.env.example
+
+# The evidence bundle IS a deliverable and is tracked. This one file is not: it records the
+# absolute path of the temp runtime the evidence run used, which contains a username.
+/evidence/.runtime.json

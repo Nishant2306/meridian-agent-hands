@@ -355,7 +355,7 @@ in the step list would be executed for a value the engine is going to read from 
 
 **Cost, stated plainly.** The distiller's read-step handling - no transition required, exempt from
 the discriminating-effect rule - is therefore not exercised by the happy path. It is tested
-directly in `tests/artifact.distill.test.ts` instead. The rule has to exist because `Step` admits a
+directly in `tests/unit/artifact.distill.test.ts` instead. The rule has to exist because `Step` admits a
 `read` action and replay must handle one; it is simply not what THIS capability produces.
 
 ---
@@ -663,7 +663,7 @@ could not distinguish four different problems: neither variable set, one of two 
 empty, and the file never read at all. It was the last of those, and the message sent the reader to
 look at the first. Each variable now reports its own state, and the footer says either
 `Read .env from: <path>` or `No .env file was read. Looked for: <path>`. Pinned by
-`tests/config.env.test.ts`.
+`tests/unit/config.env.test.ts`.
 
 ---
 
@@ -691,7 +691,7 @@ replay-specific left in it, and leaving it in `/replay` would have meant `/agent
 vocabulary both already depend on. The replay import boundary is unaffected: the file imports only
 from `src/types/`, and `src/replay/index.ts` still re-exports it.
 
-**Tested with both stubs hostile.** `tests/agent.loop.inputs.test.ts` passes a surface and a client
+**Tested with both stubs hostile.** `tests/unit/agent.loop.inputs.test.ts` passes a surface and a client
 whose every method throws, and asserts neither is reached. It carries a negative control: a fully
 valid invocation must get PAST the gate and reach the surface, which the untouchable stub then
 proves by throwing. Without that, a gate that rejected everything would pass every other assertion
@@ -768,14 +768,14 @@ business outcome comes from. It would have failed the same way.
 control must resolve back to that control, in the observation it was built from. Violating it
 throws `DescriptorSynthesisError` naming the control AND the descriptor, rather than travelling
 onward as `CONTROL_NOT_FOUND` - which is a claim about the screen, and sends the reader (and the
-model) to look for a problem that is not there. `tests/agent.descriptors.invariant.test.ts` checks
+model) to look for a problem that is not there. `tests/unit/agent.descriptors.invariant.test.ts` checks
 it for every control of every recorded observation, with no browser.
 
 **It would not have caught the GATE 1 defect, and saying so is the point.** The paragraph descriptor
 resolved back to its own control perfectly. The break was in ADDRESSING, and a Playwright locator is
 only real against a live page.
 
-**So the addressing invariant is separate** (`tests/perception.addressing.live.test.ts`): every
+**So the addressing invariant is separate** (`tests/integration/perception.addressing.live.test.ts`): every
 perceived control on every screen is `read` through the REAL input path - resolve, address,
 revalidate. `read` is the only action that can touch everything without changing anything. Reverting
 the D36 fix makes this test fail with the exact GATE 1 message, which is how we know it tests what
@@ -914,7 +914,7 @@ used. Without the header that fault cannot be tested, and the temptation would b
 **Why not a global flag, concretely.** The suite runs vitest files in parallel against one fixture
 module. A global flag lets the file testing SESSION_EXPIRED break the file testing a slow load,
 intermittently, and the failure moves when tests are reordered - so it reads as flaky
-infrastructure rather than a design mistake. `tests/fixture.faults.test.ts` pins the isolation with
+infrastructure rather than a design mistake. `tests/integration/fixture.faults.test.ts` pins the isolation with
 two sessions against one app instance.
 
 **Seeded members are the more honest subject.** 10003 (`restricted`) returns PERMISSION_DENIED and
@@ -932,7 +932,7 @@ applications actually do.
 ## D43 - The fixture was changed to match the profile, twice, and the profile was not touched
 
 **The rule from PHASE 3, applied.** Every detector phrase is rendered by the fixture verbatim, and
-`tests/fixture.faults.test.ts` reads the REAL profile and checks its detectors against the REAL
+`tests/integration/fixture.faults.test.ts` reads the REAL profile and checks its detectors against the REAL
 HTML. It never hard-codes a phrase: a test comparing two copies of a string would pass while the
 page said something else.
 
@@ -989,7 +989,7 @@ this action twice"; it must not also mean "do not look at whether the recovery w
 **Only `retry_action` repeats the action.** The maintenance notice appears AFTER the "New
 Sub-Account" click, on the screen that click navigated TO - the click worked. "The overlay swallowed
 my click" and "the overlay appeared because my click worked" look identical from the screen, and
-only one of them is safe to retry. `tests/replay.outcomes.live.test.ts` asserts `attempts === 1`.
+only one of them is safe to retry. `tests/integration/replay.outcomes.live.test.ts` asserts `attempts === 1`.
 
 **The continuation type was widened; the profile file was not touched.** Adding `retry_action`,
 `continue_next_step` and `{ gotoStep }` to the zod union leaves the YAML bytes unchanged, so every
@@ -1062,7 +1062,7 @@ because nobody needs a diagnosis of something that worked.
 ## D49 - The bootstrap minimum stays, and a test proves it rather than a comment
 
 **Decision.** The PHASE 2 minimum runs FIRST at both enforcement points and the configurable engine
-runs SECOND. Neither is removed. `tests/policy.engine.test.ts` asserts both independently: an
+runs SECOND. Neither is removed. `tests/unit/policy.engine.test.ts` asserts both independently: an
 off-origin navigate and every action type on "Submit Request" are refused by the minimum AND by the
 engine.
 
@@ -1097,7 +1097,7 @@ minimum only knows about one. The browser-level backstop is armed from the same 
 
 ## D51 - The input-path lint test is itself the deliverable
 
-**Decision.** `tests/policy.input-path.lint.test.ts` walks `src`, `tests`, `scripts` and `fixtures`
+**Decision.** `tests/contract/policy.input-path.lint.test.ts` walks `src`, `tests`, `scripts` and `fixtures`
 and fails if `page.click`, `page.fill`, `page.goto`, `page.type` or their relatives appear outside
 `src/surface/playwright-web/`.
 
@@ -1127,7 +1127,7 @@ distiller has a bug. A scrubbed artifact also LOOKS reviewed, which is what make
 **(3) Caller results are not redacted at all.** The brief requires replay to RETURN what it read. An
 agent that asked for the review status and got `[reviewStatus:subject-01]` has been given nothing.
 `replay --json` writes real typed outputs to stdout; stderr and `/runs` are pseudonymized.
-`tests/replay.cli.live.test.ts` asserts both halves in one test, because either alone would let the
+`tests/integration/replay.cli.live.test.ts` asserts both halves in one test, because either alone would let the
 other regress.
 
 **[MUST] The pseudonym map is per-run and random.** A truncated hash of a five-digit member id is
@@ -1189,7 +1189,7 @@ the one approved at GATE 1, and editing a comment in it would invalidate every p
 replay refuse to run with PROFILE_INTEGRITY_FAILURE.
 
 **Decision: leave it, document it, and record the fix as a new profile VERSION.** Nothing in this
-capability touches such a control, so nothing is broken today. `tests/policy.engine.test.ts` asserts
+capability touches such a control, so nothing is broken today. `tests/unit/policy.engine.test.ts` asserts
 the false positive OUT LOUD rather than hiding it, and separately asserts that the layer this phase
 does control is contextual. A `banking-default 2.0.0` with phrase-level rules is the real fix, and
 it belongs with the artifact migration story rather than smuggled in here.
@@ -1470,7 +1470,7 @@ it therefore works. The route-level tests were not wrong - `/complete` really di
 did require a cookie, the token really was in no URL. They were all asking the server questions. The
 first thing a person does is a GET on the URL in the banner, and no test did that.
 
-**Decision.** `tests/escalation.console.page.live.test.ts` drives a REAL BROWSER through the REAL
+**Decision.** `tests/integration/escalation.console.page.live.test.ts` drives a REAL BROWSER through the REAL
 SEQUENCE: GET the banner URL with no cookie and require HTML and 200, type the token, require the
 HttpOnly SameSite=Strict cookie to be set, require the operator view to render the reason and the
 step and the live screenshot, click Resume and require the run to be told.
@@ -1520,7 +1520,7 @@ human does_ - and it had been applied to the operator console only. The applicat
 handed control of has human-facing controls too, and nothing clicked them: every test POSTed to the
 route, so the ROUTE was proven and the CONTROL was not.
 
-**Decision.** `tests/fixture.human-controls.live.test.ts` drives a real browser and clicks:
+**Decision.** `tests/integration/fixture.human-controls.live.test.ts` drives a real browser and clicks:
 attestation (and asserts the modal is GONE and the record stays servable across three revisits),
 Dismiss on the maintenance notice, and the entire happy path from search to the review screen.
 Asserting a 303 would have passed throughout the outage.
@@ -1631,3 +1631,633 @@ caught. Masking covers declared regions only. The downgrade claim is proven by o
 `agent.discovery.test.ts` and `agent.verification.test.ts`, whose real names carry `.live`. They had
 been wrong since PHASE 4 and no one had followed them. Every documented path now resolves, checked
 mechanically rather than by eye.
+
+---
+
+## D73 - The human-readable channel was never pseudonymized, and the test that covered it could not fail
+
+**Found while reading the code for PHASE 10's leak-clean assertion**, not by a failing test.
+
+Three places said the human channel was pseudonymized: the header of `src/redaction/pseudonymize.ts`,
+`docs/DATA_HANDLING.md`, and the comment on the test written to prove it. All three were wrong.
+`formatResultForHuman` prints every declared output beside its name, the replay CLI wrote those lines
+straight to stderr, and nothing redacted them.
+
+**Why the test passed anyway.** `tests/integration/replay.cli.live.test.ts` asserted
+`expect(stderr).not.toContain('Avery Lin')` - and every call in the file passed `--json`, which
+suppresses the entire stderr report. The assertion held because there was no output at all. It is the
+purest form of the failure this project keeps finding: a test that reads as though it proves
+something, standing over a thing that does not work.
+
+**Decision.** Fix it at the existing seam rather than adding a second redaction path.
+`EvidenceWriter.redactText` and `EvidenceWriter.writeRedactedJson` run the ONE pseudonymizer, holding
+the ONE declared map. The replay CLI routes every stderr line through the first and writes
+`result.json`, `steps.json` and `metrics.json` through the second; the discovery CLI does the same for
+its console output and its own run files.
+
+**The declaration is completed before anything is written or printed.** A declared-sensitive OUTPUT
+has no value until the run has read it: `memberName` is declared `pii` in the spec, and the only
+reason we know "Avery Lin" is sensitive is that a human said so beside the field. So the values the
+run bound are added to the declaration at the end of the run, and from that line onward the files and
+the report carry labels while stdout carries the real thing.
+
+**The test now runs with `--json` OFF**, asserts stderr is actually populated before asserting
+anything about its content, and requires the run to have SUCCEEDED - because the outputs are only
+printed on the success form, and a vacuous pass is what went wrong the first time. Mutation-tested:
+removing the one line that installs the redactor fails it, with `Avery Lin` visible in the diff.
+
+---
+
+## D74 - The evidence orchestrator is a Node program, and `--reuse` exists because discovery costs money
+
+**Decision.** `npm run evidence:automated` is `scripts/evidence/automated.ts`, not a shell script.
+
+**Why not a shell script.** Every step has state a re-run has to reason about rather than re-execute:
+the capability store REFUSES to overwrite a published version, approval MUTATES an artifact in place
+and must happen exactly once, the fixture has to be restarted between discovery and replay so the two
+see different obfuscation seeds, and one scenario needs a fault armed on a dedicated boot. `set -e`
+and a list of npm commands cannot express any of that, and the failure mode of trying is a
+half-written evidence bundle that looks complete.
+
+**It refuses to run without `ANTHROPIC_API_KEY`** and does not fall back to the scripted client.
+Evidence that MIGHT be fabricated is worth less than no evidence, because a reviewer cannot tell which
+kind they are holding.
+
+**`--reuse <dir>` skips the discovery.** Discovery is the only step that costs money and it happens
+first; everything after it is free. Without a resume path, a bug in approval or in the replay sweep
+means paying a second time for a model call that already succeeded. The runtime directory is printed
+on every run, and the failure message names the exact command to resume with.
+
+---
+
+## D75 - A fault is armed by pinning ONE session key onto ONE dedicated boot
+
+**The problem.** Four of the five unattended scenarios are properties of the SEEDED RECORD - member
+10003 is refused, 10004 raises the notice, 99999 does not exist - so nothing has to be armed, which is
+also the more honest test. `unavailable` is not: it needs `http500OnRoute` armed for the session the
+replay CLI's browser creates, and that session id is a `randomUUID` the orchestrator cannot predict.
+
+**Rejected: a server-wide fault flag.** D42 refused one and the reason still holds - vitest runs files
+in parallel against one fixture module, and a global switch lets one file break another
+intermittently.
+
+**Rejected: a `--fault` flag on the replay CLI.** That puts a test hook in the command a bank would
+actually run.
+
+**Decision.** The orchestrator mounts the unmodified fixture app under a parent Express app whose only
+middleware stamps `X-Fault-Session: evidence-orchestrator` on every request, and boots a DEDICATED
+instance for that one scenario. `createLegacyApp` is untouched and still keys faults by session; this
+just means every request of that boot shares one key. An unarmed boot never has the key in the store,
+so the lookup falls through to the cookie exactly as before.
+
+**Asserted, not assumed.** `evidence.sweep.live` runs `unavailable` and `success` with IDENTICAL
+parameters against different boots. If the fault leaked between them the two would be
+indistinguishable; one succeeds and one fails.
+
+---
+
+## D76 - The verifier separates what it PROVED from what it was TOLD, and scopes "leak-clean"
+
+**Decision.** Every check `npm run evidence:verify` prints is labelled `[manifest]` or nothing.
+`[manifest]` means the fact cannot be re-derived from the bundle and the verifier is repeating what
+the orchestrator recorded.
+
+Exactly two checks carry it. Which member each run used cannot be recovered, because persisted files
+are pseudonymized with a map that is RANDOM PER RUN - so `[memberId:subject-01]` in two runs are not
+comparable. That is the pseudonymizer working correctly and cross-run correlation is precisely what it
+costs. The fixture seed cannot be recovered either: it is a property of a process that has exited.
+
+Everything else reads the run's own files. Marking the difference is the point: a gate that quietly
+mixed re-derived facts with reported ones would be a gate that could be satisfied by editing one JSON
+file.
+
+**"Leak-clean" is scoped, in two tiers.** A `[MUST]` failure if any value a run was INVOKED with, or
+any declared-sensitive value the system had BOUND by write time, appears verbatim in a published text
+file. A `[NOTE]` with a count for the model transcript, which can carry a person's name written into
+prose while the model was reading a screen - a value the system did not know at the moment the line
+was written, and one no shape detector will ever catch.
+
+**The NOTE is not a loophole and the file is not scrubbed.** Evidence is not rewritten, ever. The
+alternative was to exclude the transcript from the bundle, which would remove the single most
+compelling piece of evidence that a model discovered this, to make the report look cleaner.
+
+---
+
+## D77 - `run.json` stays raw and unpublished; `completion.json` is what the bundle carries instead
+
+**Decision.** The full discovery record is the ONE persisted file that is not pseudonymized, and it
+never enters `/evidence`.
+
+**Why it must stay raw.** It is an INPUT, not a report: it exists so a distillation can be redone
+without paying for another run. The parameterization sweep finds runtime values by looking for them
+VERBATIM, so a record whose member id had already been replaced with a label would sail straight
+through the guard that exists to catch leaks. Pseudonymizing it would disarm the guard while looking
+like an improvement.
+
+**Why it must not be published.** It contains every observation, which means screen text.
+
+**What replaces it.** `completion.json`, written through the redacting seam, carrying the two facts a
+reviewer most needs from a discovery run: that the model was real and was called (`model`,
+`promptVersion`, `llmCalls`) and that completion was VERIFIED rather than proposed
+(`successObservationId`, which is set only after a fresh observation with every declared output
+extracted and the record identity checked). It carries `goalTemplate` and never the rendered goal,
+which has the member id in it.
+
+---
+
+## D78 - The evidence machinery is tested for free, and that test is the verifier's negative control
+
+**The risk.** `evidence:automated` pays for a model call and then does everything else. A bug in
+"everything else" surfaces only AFTER the paid step.
+
+**Decision.** `tests/integration/evidence.sweep.live.test.ts` drives the same replay sweep, the same
+fault-pinned boot, the same bundle copying and the REAL verifier against the tracked example
+capability, which needs no model. It took 17 seconds and it found a bug on its first run: `--import
+tsx` is a bare specifier that Node resolves from the CHILD's working directory, and every CLI here
+runs with its cwd set to an isolated runtime outside the repository. Every spawn would have failed
+with `ERR_MODULE_NOT_FOUND` immediately after a paid discovery.
+
+**The better half is that it is also the negative control.** The example artifact's provenance says
+`HAND-AUTHORED-EXAMPLE-NO-MODEL-WAS-CALLED` and there is no discovery run behind it. The verifier must
+REFUSE that bundle, by name, while still passing every check about the replays - which really did
+happen. A gate that passed on a bundle with no discovery in it would pass on anything.
+
+**Two smaller things the same run surfaced.** An ordinary replay recorded no `lease_issued` event at
+all, so "one actor at a time, enforced by lease tokens" had evidence only in runs that reached a
+handoff - the case nobody doubted; `SessionBroker` now records it. And nothing in a run said WHICH
+artifact it had loaded, so "the artifact replay loaded is the one distillation produced" rested on the
+orchestrator's word; there is now a `capability_loaded` event carrying the content hash, and an
+orchestrator is the last thing that should be the sole witness to its own output.
+
+---
+
+## D79 - The published manifest carries no local path
+
+**Decision.** `evidence/manifest.json` holds ids, hashes, seeds and counts, and nothing else. Where
+the run happened goes in `evidence/.runtime.json`, which is gitignored.
+
+**Why.** `evidence:handoff` needs the artifact store the automated run wrote to, and that lives under
+the system temp directory - so the path contains a home directory and a username. The manifest is a
+deliverable and gets read by a stranger. Splitting them costs one file and keeps somebody's account
+name out of a submitted repository.
+
+---
+
+## D80 - The record identity is chosen at COMPLETION, not at bind time
+
+**The failure.** The first GATE 3 discovery run reached the review screen with every step performed,
+every output bound and the identity displayed on screen, and was refused. It then spent four turns
+re-binding the same control and ended on the repeated-action rule: 8 steps, 14 model calls, nothing
+distilled.
+
+**The cause was last-write-wins.** The model bound the record identity three times:
+
+| turn | screen                                                                            | descriptor                                      |
+| ---- | --------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 7    | Member Record                                                                     | `{role:'cell', nearbyText:['Member ID']}`       |
+| 10   | New Sub-Account                                                                   | `{role:'text', nearbyText:['New Sub-Account']}` |
+| 25   | proposes completion; the check re-resolves the LAST one against the REVIEW screen |
+
+Reproduced offline from recorded observations, no browser and no model:
+
+```
+turn-10 descriptor -> form screen    ok T3_EXTERNAL_LABEL_OR_NEARBY
+turn-10 descriptor -> review screen  CONTROL_NOT_FOUND: no text matched
+turn-7  descriptor -> review screen  ok T3_EXTERNAL_LABEL_OR_NEARBY
+```
+
+The run HAD a binding that verifies and threw it away for a worse one on a transient screen.
+
+**Decision.** Every proposal is kept as a candidate. `verifyCompletion` resolves them all against the
+FRESH observation and uses one that resolves and matches. The binding that verified is what the run
+record keeps, so the artifact carries a descriptor already proven on the success screen - which is
+also the screen replay re-checks it on.
+
+**The obvious alternative does not work, and that is why the choice is deferred.** "Refuse a
+replacement that does not resolve where the first one did" fixes nothing here: the turn-7 binding does
+not resolve on the New Sub-Account screen either, so the replacement would have been accepted on its
+merits. **The screen a binding is CHECKED on is not the screen it is MADE on, and nothing at bind time
+knows which screen that will be.** The test asserts both directions of that, because the alternative
+is the design a reviewer will reach for first.
+
+**One match is enough, and that is not guessing.** A designated control that resolves here and shows
+the requested value under the declared type's own comparison is positive proof. A candidate that
+resolves and does not match, while another does, is not treated as counter-evidence: the question is
+"is this screen about the requested record", and a control elsewhere showing a different id is not an
+answer to it. When NOTHING matches, the mismatch is a hard failure and lists every control that
+resolved. `WRONG RECORD` is untouched and still tested.
+
+**A thing I had wrong.** I expected to need a special case for a control that shows the id inside a
+sentence - "Member Name: Avery Lin (10001)". There is none: `memberId` is declared with a digits-only
+pattern, so the typed comparison strips non-digits and re-checks the pattern. The sentence normalizes
+to `10001` and matches, while `100011` fails the pattern after stripping and is compared as text, so
+it does not. The comparison was already right; my worry was not.
+
+---
+
+## D81 - "Stale", not "absent", and it names the screen
+
+**The old message.** `the record identity is not visible on the current screen: no text matched`.
+
+The identity was on screen the entire time, in the cell the model had designated two screens earlier.
+"Not visible" sent it looking for something missing. It is now:
+
+> the record identity binding is STALE, not missing. It was bound on screen "New Sub-Account" and
+> that control is not on "Review Sub-Account Request". The identity may well be displayed here in a
+> different control: call propose_record_identity again on the control that shows memberId ON THIS
+> SCREEN.
+
+**Cost.** `RecordIdentityBinding` carries a `screenName` that is redundant with its `observationId`.
+Threading the whole observation list into the verifier to recover a name the binding could simply
+carry would be the worse trade.
+
+---
+
+## D82 - Feedback on SUCCESS, but only when success changes what to do next
+
+**The second half of the same failure, and the more general defect.** After the refusal the model did
+exactly the right thing - rebound the identity to the review screen's Member ID cell, which resolves.
+What it got back was:
+
+> Bound the record identity. The system will check it, not you.
+
+The same line it had already received twice. Nothing said "that was the blocker". It never proposed
+completion again. `noProgress` resets on a successful bind, so the loop's own stall detector stayed
+quiet, and the repeated-action rule was the only thing left to stop it - correct, but last.
+
+This is the GATE 1 run-1 shape a second time: the mechanism worked and the model was told something
+that gave it nothing to act on. Every other piece of feedback in the loop speaks on FAILURE.
+
+**Decision.** `src/agent/outstanding.ts` keeps the reasons of the last refusal. When an action
+addresses a NAMED reason, the acknowledgement says so, and when the last one goes it says
+`propose_goal_reached again`. Completion reasons are typed with codes rather than only prose, so the
+match is on `IDENTITY_STALE` and not on a sentence somebody may improve.
+
+**Reason-specific rather than generic, deliberately.** Appending "you have an outstanding refusal" to
+every acknowledgement turns completion into polling: the model re-proposes after each action and each
+refusal is another call against the step budget. This fires once, when a named reason actually becomes
+false.
+
+**A refusal does not survive a navigation.** It is about a screen; announcing on a different page that
+the last blocker is gone would be false, and would send the model into a refusal.
+
+**Tested at both levels, on purpose.** `unit/agent.outstanding` covers the tracker including its
+silence, and `integration/agent.stale-identity.live` drives the whole sequence through the real loop
+and a real browser and asserts the sentence reaches the EVIDENCE TRANSCRIPT. Two unit tests passing
+while the loop failed to wire them together is exactly the failure this project has now made four
+times.
+
+---
+
+## D83 - The model is given the RENDERED goal
+
+**My defect, in the evidence orchestrator.** It never passed `--goal`, and `src/cli/discover.ts`
+defaults to `spec.goalTemplate`. So a real model was told, literally:
+
+> find member {{memberId}} and prepare a new sub-account request ... of type {{accountType}}
+
+The flow still worked, because values reach the screen through typed parameter bindings rather than
+through the goal. What it broke is subtler: the model was asked to confirm it was looking at the right
+record while never being told which record that was. Not proven to be the cause of the identity
+thrash, and a plausible contributor to it.
+
+**Decision.** `renderGoal` in `src/types/spec.ts`, and the CLI defaults to rendering. `--goal` still
+overrides.
+
+**`provenance.goalTemplate` stays UNRENDERED**, and that is not the same oversight in reverse: a
+rendered goal carries the member id, and the reason there is no goalDigest is that a hash of one is
+brute-forceable over 100,000 five-digit ids. The template is the traceable artefact; the rendered
+string is for the model and for the run evidence.
+
+An optional input that was not supplied renders as `(not provided)`. Leaving `{{nickname}}` would
+reintroduce exactly this defect, and dropping the clause around it cannot be done mechanically without
+rewriting somebody's sentence.
+
+---
+
+## D84 - `transcript.jsonl` cannot answer "what did the model see"
+
+**Recorded because diagnosing D80 started with the wrong conclusion from it, and a reviewer will
+reach for it first.**
+
+The transcript is pseudonymized ON THE WAY TO DISK. A declared invocation value appears in it as
+`[memberId:subject-01]`, and that substitution happened when the line was written, not when the model
+was shown the screen. Read as a record of what the model saw, it suggests the model was handed a
+placeholder where a value should have been and may have concluded its read failed. It was not: it saw
+`10001`, which `run.json` confirms.
+
+Two label formats appear and they are different mechanisms:
+
+| Looks like              | Written by                       | Means                                       |
+| ----------------------- | -------------------------------- | ------------------------------------------- |
+| `[memberId:subject-01]` | the pseudonymizer, at write time | the model saw the real value                |
+| `[PARAM:accountType]`   | the model boundary, at send time | the model really was shown this placeholder |
+
+**`run.json` is the raw record and the only thing that answers the question.** It is unpublished for
+the same reason it is unpseudonymized (D77). `evidence/README.md` now says all of this where somebody
+holding the bundle will see it.
+
+---
+
+## D85 - The goal is INPUT, and the CLI does not redact the invocation back to the person who typed it
+
+**What was reported.** The second evidence run succeeded, and its console line read:
+
+```
+goal:  find member [memberId:subject-01] ... nickname [nickname:subject-01]
+```
+
+Read as a record of what the model was sent, that says the model was told to find a member whose id
+it had never been given - which would mean the render from D83 was being undone at send time.
+
+**It was not.** Demonstrated rather than reasoned: `run.json` (raw) carries
+`"find member 10001 ..."`, `say()` pushes content into `turns` VERBATIM and writes a SEPARATE
+pseudonymized copy to the transcript, and the provider client sends `turn.content` unchanged.
+`tests/integration/agent.boundary.goal.live.test.ts` asserts both halves in one run: the outbound
+message contains `find member 10001` and no label, the transcript on disk contains the label and not
+the value. Either assertion alone would let the other regress - an outbound message that started
+carrying labels would be a real defect, and a transcript that started carrying values a real leak.
+
+**Decision, and it is a rule rather than an exception.** THE CLI DOES NOT REDACT THE INVOCATION BACK
+TO THE CALLER WHO SUPPLIED IT. The goal is a human-authored instruction rendered from values that
+person passed in `--inputs` seconds earlier. Printing it back as `[memberId:subject-01]` tells them
+nothing they do not know and destroys the only line that says what the run was asked to do.
+
+This does not weaken D73, and the line between them is INPUT versus OUTPUT. Values the run READ off a
+screen still go through the redacting writer, in both CLIs, in the console report and on disk. The
+goal is not one of them.
+
+**The bundle still carries `goalTemplate`, unrendered.** A rendered goal contains the member id, and
+the reason there is no goalDigest is that a hash of one is brute-forceable. Console at run time, and
+the raw record; not the published bundle.
+
+---
+
+## D86 - Two leaks the gate caught in its own first bundle
+
+`npm run evidence:verify` failed two checks on the first successful evidence run. Both were mine, and
+both are the D73 shape again: a persisted file written around the one seam.
+
+**`discovery/.../result.json` carried "Avery Lin".** The replay CLI has completed its declaration with
+the values a run READ since D73; the discovery CLI never did. `memberName` is declared `pii`, but a
+declared-sensitive OUTPUT has no value until the run has read it, so a declaration made before the
+run can name it and cannot protect it.
+
+**`discovery/.../0001.mask.json` carried "10001".** `MaskRegion.descriptorRef` describes the control
+that was covered, and the natural way to describe a control showing a member id is to quote the
+member id. So the file that RECORDS the masking was leaking the value the mask exists to hide, in
+text, beside the image where it had been correctly painted over. It is written through the
+pseudonymizer now.
+
+**The real cause of the first one was duplication**, so the fix is `src/redaction/declaration.ts`:
+one `declarationFor()` used by both CLIs. Two near-identical blocks in two files is how one of them
+ends up a version behind.
+
+**The existing bundle is NOT scrubbed.** Evidence is never rewritten, so it keeps both leaks and
+`evidence:verify` keeps reporting them until a new evidence run is made. A bundle quietly edited to
+pass its own gate would be worth nothing.
+
+---
+
+## D87 - The raw discovery record is preserved outside the temp runtime
+
+**The gap, and it contradicted a [MUST] section I had just written.** `evidence/README.md` says
+`run.json` is the only file that answers "what did the model SEE", because every other persisted file
+is pseudonymized. It also is not published - it is raw screen text, and it must STAY raw or the
+distiller's parameterization sweep loses the values it exists to search for (D77).
+
+Which left it only in an OS temp directory that the next cleanup deletes. The document pointed at a
+file that would not be there, so the pseudonymized transcript was all a reviewer would have - the
+exact trap that section warns about.
+
+**Decision.** `npm run evidence:automated` copies it to `runs/evidence-raw/<runId>/run.json`:
+gitignored, in the repository, durable on the machine that ran it. The path is recorded in
+`evidence/.runtime.json` and printed at the end of the run. It is still never published.
+
+**And the limit is now stated rather than left to be discovered.** A reviewer who has only this
+repository CANNOT answer "what did the model see", and the bundle deliberately cannot carry that.
+What it does carry is what was ASKED and DECIDED - the transcript for the turns, `completion.json`
+for whether the system verified completion - which is enough for every claim the bundle makes.
+
+`rawDiscoveryRecord` is optional in the side-car schema so a bundle written before this field existed
+still parses. `evidence:handoff` reads that file to find the artifact store, and a schema change that
+made an existing bundle un-runnable would be a worse bug than the one it fixed.
+
+---
+
+## D88 - The redaction seam was per-writer, so a new writer could miss it. Three times.
+
+**The instance.** `evidence:verify` found `20001` verbatim in two published files:
+`handoff/<run>/observation-*.json`. The handoff path calls `captureEvidence('ax')`, which the
+unattended path never does, so those files reached a bundle without anything having looked at them.
+
+**But the instance is not the finding.** This was the third time in two phases, and never the same
+way twice:
+
+| Where                                | How it bypassed the seam          |
+| ------------------------------------ | --------------------------------- |
+| the CLIs writing `result.json` (D73) | a bare `writeFileSync`            |
+| the screenshot mask manifest (D86)   | a bare `writeFileSync`            |
+| `captureEvidence('ax')` (this one)   | `writeJson`, which did not redact |
+
+Each was fixed as an instance. Fixing the third one the same way would have been a mistake.
+
+**The shape was the defect.** `EvidenceWriter` had PAIRS: `writeJson` beside `writeRedactedJson`,
+`transcript` beside `transcriptRedacted`. Redaction was a variant you had to remember to choose, and
+the unsafe half held the shorter, more obvious name. That is not carelessness on anybody's part; it
+is autocomplete. A rule that has to be re-obeyed at every new call site will eventually not be.
+
+**Decision.** One private `#write` is the only place this class puts a file into a run directory, and
+it redacts. `writeJson` and `transcript` are the only public writers and both go through it. The
+unredacted twins are gone - not renamed, gone. There is nothing left to choose between.
+
+**And a lint test, because the class is not the only thing that can write.**
+`tests/contract/evidence.seam.lint.test.ts` fails on any `writeFileSync` / `appendFileSync` / `cpSync`
+in `src/` whose statement mentions a run directory, outside the writer. One named exemption carries
+its reason (`run.json`, D77), and a negative control asserts the exemption is still needed - otherwise
+the list becomes a way to silence the check. Mutation-tested. Same tactic as the PHASE 7 input-path
+lint, for the same reason: the rule is now mechanical rather than remembered.
+
+**It immediately found a FOURTH instance.** `writeScreenshot` had a branch that wrote the raw PNG
+when no observation or declaration was supplied - "the honest behaviour for the browser-free tests".
+No production caller ever took it, and D56 says plainly that only the masked image is ever written.
+The branch is gone: `observation` is required, and an absent declaration masks nothing rather than
+skipping the masker, so the manifest still records that nothing was declared. "Nothing was sensitive"
+and "the masker never ran" must not look the same.
+
+**What this costs.** Captured accessibility dumps are no longer byte-exact; declared values in them
+are labelled. A debugging aid being slightly less faithful does not outrank a member id in a
+published file.
+
+---
+
+## D89 - Only the component that performs a transition may record it
+
+**Found by a verifier failure I initially expected to be a verifier bug.** The handoff bundle's
+session trace read:
+
+```
+AUTOMATION_RUNNING -> PAUSING -> PAUSING -> HUMAN_CONTROL -> RESUME_VALIDATION
+                   -> PAUSING -> HUMAN_CONTROL -> RESUME_VALIDATION
+```
+
+Two of those events were written by `src/replay/engine.ts`, which has no reference to the session
+state machine and hardcoded `from: 'AUTOMATION_RUNNING'`. On the FIRST intervention that merely
+duplicated the coordinator's own event. On the SECOND it was **false**: the machine was in
+RESUME_VALIDATION, the coordinator correctly recorded `RESUME_VALIDATION -> HUMAN_CONTROL`, and the
+event log carried a transition that never happened.
+
+**Every edge the machine actually took is legal**, and it has to be: `transitionTo` throws otherwise.
+`AUTOMATION_RUNNING -> PAUSING -> HUMAN_CONTROL -> RESUME_VALIDATION -> HUMAN_CONTROL ->
+RESUME_VALIDATION` is exactly the D62/D63 path - the operator pressed Resume while the blocker was
+still on screen, the run said so and handed control back rather than resuming into it. The only
+illegal-looking thing in the log was an event describing something that never occurred.
+
+**Decision.** The engine records no session transitions. The intervention id, which was the one thing
+that event carried and the coordinator's did not, now goes into the reason of the transition the
+coordinator actually performs. A component narrating a state change it does not own will eventually
+narrate a wrong one, and an evidence bundle is the last place that should contain fiction.
+
+**Also recorded now: the AUTOMATION lease coming back.** `reclaim` re-issued it and never wrote a
+`lease_issued` event, so a two-intervention run read `AUTOMATION -> HUMAN -> HUMAN` - which looks like
+a human lease issued while a human already held one. The handover TO a person was evidenced and the
+handover BACK was not, which is the half a reviewer would doubt.
+
+---
+
+## D90 - The handoff check accepts N interventions
+
+**The verifier was also wrong, and this is the smaller half.** It expected one clean
+`AUTOMATION -> HUMAN -> AUTOMATION` and reported a "gap" for anything else - so a run capturing the
+D62 path, which is the most interesting handoff evidence the project can produce, failed its own
+gate. A gate that rejects its best evidence teaches people to ignore it.
+
+**Decision.** The check is now about a CHAIN rather than a count: the run starts in
+AUTOMATION_RUNNING, every recorded edge is legal per `SESSION_TRANSITIONS`, and each edge starts
+where the previous one ended. Any number of interventions satisfies that. The lease sequence must
+alternate strictly from AUTOMATION, which is what catches a human lease issued while a human already
+holds one.
+
+**The contiguity rule is what survives from the old check, and it is the valuable part**: it is
+exactly what caught D89's fabricated event. Loosening the count while keeping the chain means the
+verifier now accepts every real sequence and still rejects an invented one.
+
+---
+
+## D91 - A bundle holds ONE run of each scenario, and the handoff is cleared with the rest
+
+**The state it got into.** After three evidence runs, `/evidence` held three discovery directories,
+three of every replay scenario and two handoffs. The manifest is overwritten each time and named one
+of each; the directories were never cleared. A reviewer grepping `evidence/` was reading files from
+runs nobody was claiming anything about - and did: a leak reported against the bundle came from a
+superseded run.
+
+A bundle that contains more than it claims is not a bundle, it is a directory.
+
+**Decision.** `evidence:automated` clears every scenario directory before it writes the first one.
+Not at the start of the run: a discovery that FAILS leaves the previous bundle intact, because a
+failed attempt should not cost you the evidence you already had. The clear happens once discovery has
+succeeded and been approved, which is the point at which the old bundle is genuinely superseded.
+
+**[MUST] THE HANDOFF IS CLEARED TOO.** `evidence:automated` does not write it, so leaving it would
+look like kindness. But the handoff REPLAYS THE ARTIFACT THE DISCOVERY PRODUCED, and a new discovery
+produces a new artifact with a new content hash. A fresh discovery paired with a stale handoff is a
+bundle that lies about which capability the person operated - and the manifest would state the new
+artifact's hash beside handoff evidence for the old one.
+
+So it goes, `replayRunIds.handoff` resets to empty, and `evidence:verify` fails with "not run" until
+somebody drives it again. **Failing loudly for a true reason beats passing on evidence about a
+different artifact.** The cost is real: every `evidence:automated` now obliges a person to re-drive
+the handoff before the gate can pass.
+
+---
+
+## D92 - The leak scan reported a float as a member id, and a false FAIL is the worst thing a gate can do
+
+**What happened.** `evidence:verify` reported `20001` leaked into a handoff observation file. It had
+not. All five hits were substrings of floating-point box measurements - `783.2000122070312` contains
+`20001` - and the member id was correctly labelled in all eight places it genuinely appeared.
+
+The scan read each file as one blob and called `includes`.
+
+**Why this is worth its own entry.** A false FAIL is indistinguishable from a real one until somebody
+spends an afternoon on it, and what it teaches is to stop believing the gate. This one cost exactly
+that afternoon and sent the first diagnosis after a walker bug that was not there.
+
+**Decision.** The scan parses JSON and searches STRINGS. A number cannot be an invocation value here,
+because every one of them is a string by the time it reaches a run. Files that are not JSON fall back
+to a raw text scan, which is the honest thing to do when there is no structure to use.
+
+**Keys are searched as well as values**, deliberately, so the scan can see a case the walker was
+missing rather than share its blind spot. See D93.
+
+---
+
+## D93 - The pseudonymizer walked into every value and left keys alone
+
+**Found by writing the test for a defect that turned out not to exist.** Chasing D92's phantom leak,
+the walker was probed with a deeply nested structure. Arrays, nested arrays, object values and
+arrays-of-objects were all covered. A value in KEY position - `{ "20001": { ... } }` - was not:
+`output[key] = ...` reused the original key.
+
+Nothing in the current evidence is shaped that way, which is precisely why it survived. The hole was
+real and nothing had stepped in it yet.
+
+**Decision.** Keys go through the same `text()` call with the same declared map, so a value gets the
+SAME label whether it appeared as a key or a value and a reviewer can still correlate the two within
+one run. A key matching the SECRET pattern is still replaced wholesale rather than labelled: a token
+is not a subject to be labelled consistently.
+
+---
+
+## D94 - "The system could not know" and "the system had not looked" are different, and only one is a limit
+
+**The real leak in the handoff bundle** was not the member id. It was `Dana Whitfield`, the member's
+NAME, verbatim in `observation-*.json`.
+
+The tempting classification is the transcript NOTE: a value the system did not know when the line was
+written, which `docs/DATA_HANDLING.md` documents as a limit. **It is not that case**, and checking
+before accepting it is the whole point of this entry.
+
+`memberName` is a declared OUTPUT with `sensitivity: pii`. The artifact says exactly which control
+displays it. The run stopped at the compliance modal on step 3, and the capability reads that output
+from the review screen at step 8 - so at the moment the escalation persisted an observation, the
+declaration NAMED `memberName` and carried no value for it. Neither the pseudonymizer nor the masker
+could act.
+
+The system knew the field was sensitive. It knew where it lived. It had not looked yet.
+
+**Decision.** Before persisting anything at an escalation, the engine resolves each declared-sensitive
+output's descriptor against the observation it is about to write and tells the evidence writer what it
+found. That uses only declared information - the artifact's own `source.target` - and it is the
+difference between a limit and a bug.
+
+`learnSensitiveValue` accepts only names ALREADY declared sensitive, so it cannot be used to invent a
+secret at runtime and quietly change what the human contract said.
+
+**The transcript NOTE is unaffected and is still a genuine limit**: a name a model wrote into prose
+was never a declared field with a known location, and no mechanism here will catch it.
+
+---
+
+## D95 - The leak classifier defaulted to lenient, so a real leak was reported as a known limit
+
+**The reason D94's leak was a NOTE rather than a FAIL.** The verifier held a LIST of "files the system
+writes" - `result.json`, `steps.json`, `metrics.json`, `completion.json`, `events.jsonl` - and put
+anything else in the transcript bucket, which is only a NOTE.
+
+When the handoff path started writing `observation-*.json` - composed by the system from its own
+perception, containing no model prose anywhere - a real leak landed in the lenient bucket and was
+reported as the transcript's documented limit.
+
+**The default was the wrong way round**, which is the same shape as D73, D86 and D88: a new writer
+taking the permissive path because the permissive path was the default.
+
+**Decision.** Everything is a file the system wrote EXCEPT `transcript.jsonl`, which is the only one
+containing sentences a model composed, and the only thing the NOTE is about.
+
+**A second defect in the same three lines**, caught by lint rather than by a test:
+`file.split(/[\/]/)` splits on forward slashes only. The paths come from `join`, so on Windows they
+are separated by backslashes and the "basename" was the entire path - meaning nothing would ever match
+`transcript.jsonl` and the documented transcript limit would have been reported as a hard failure.
+It uses `basename` now.

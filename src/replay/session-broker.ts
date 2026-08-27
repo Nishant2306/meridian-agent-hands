@@ -103,6 +103,17 @@ export class SessionBroker {
     });
 
     const token = lease.issue('AUTOMATION', options.leaseTtlMs ?? 10 * 60 * 1000);
+    // Recorded, because "one actor at a time, enforced by lease tokens" is a claim the evidence
+    // bundle should carry for an ORDINARY run and not only for one that reached a handoff. Without
+    // this the lease appears in the event log only when a person takes over, which is the case
+    // where nobody doubted it.
+    options.evidence?.append({
+      type: 'lease_issued',
+      at: new Date().toISOString(),
+      leaseId: token.leaseId,
+      owner: token.owner,
+      expiresAt: token.expiresAt,
+    });
     const close = async (): Promise<void> => {
       await browser.close();
     };

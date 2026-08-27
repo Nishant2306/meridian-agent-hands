@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "completionMode": "automation",
+  "outputs": {
+    "memberName": "[memberName:subject-01]",
+    "accountType": "[accountType:subject-01]",
+    "reviewStatus": "PENDING REVIEW"
+  },
+  "evidenceRef": "runs\\replay-1787873178503",
+  "metrics": {
+    "steps": 8,
+    "durationMs": 2768,
+    "llmCalls": 0,
+    "recoveriesUsed": 1,
+    "locatorTierDowngrades": 0,
+    "humanInterventions": 0
+  }
+}

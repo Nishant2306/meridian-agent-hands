@@ -31,6 +31,32 @@ export function goalTemplatePlaceholders(template: string): string[] {
   return [...found];
 }
 
+/**
+ * The goal as a PERSON would state it, with the invocation's values in it.
+ *
+ * [MUST] THE MODEL IS GIVEN THE RENDERED GOAL, NOT THE TEMPLATE. An evidence run shipped
+ * "find member {{memberId}}" to a real model, which then had to confirm it was looking at the right
+ * record without ever being told which record that was. The flow still worked - values reach the
+ * screen through typed parameter bindings, not through the goal - but "is this the right record"
+ * became a guess, and the model guessed three different ways.
+ *
+ * `provenance.goalTemplate` keeps the UNRENDERED template. That is not an oversight either: a
+ * rendered goal carries the member id, and the reason there is no goalDigest is that a hash of one
+ * is brute-forceable over 100,000 five-digit ids. The template is the traceable artefact; the
+ * rendered string is for the model and for the run evidence.
+ *
+ * An optional input that was not supplied renders as "(not provided)". Leaving `{{nickname}}` in
+ * place would reintroduce exactly the defect this exists to fix, and dropping the clause around it
+ * cannot be done mechanically without rewriting somebody's sentence.
+ */
+export function renderGoal(template: string, inputs: Readonly<Record<string, string>>): string {
+  return template.replace(GOAL_PLACEHOLDER_PATTERN, (_whole, name: string) => {
+    const value = inputs[name];
+    if (value === undefined || value === '') return '(not provided)';
+    return value;
+  });
+}
+
 export const InputDefinitionSchema = z
   .object({
     name: z.string().min(1),

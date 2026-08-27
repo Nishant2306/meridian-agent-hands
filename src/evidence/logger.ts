@@ -30,6 +30,22 @@ const LF = String.fromCharCode(10);
 
 export type EvidenceEvent =
   | { type: 'run_started'; at: string; runId: string; surfaceId: string; allowedOrigin: string }
+  /**
+   * Which capability this run executed, and the content hash it had when it was loaded.
+   *
+   * PHASE 10 needs the evidence bundle to stand on its own: "the artifact replay loaded is the one
+   * distillation produced" is checkable only if the run says which artifact it loaded. Without this
+   * the claim rests on the orchestrator's word, and an orchestrator is the last thing that should
+   * be the sole witness to its own output.
+   */
+  | {
+      type: 'capability_loaded';
+      at: string;
+      capabilityId: string;
+      capabilityVersion: string;
+      status: string;
+      contentHash: string;
+    }
   | { type: 'lease_issued'; at: string; leaseId: string; owner: LeaseOwner; expiresAt: number }
   | { type: 'lease_violation'; at: string; reason: string }
   | { type: 'session_transition'; at: string; from: SessionState; to: SessionState; reason: string }
@@ -167,6 +183,92 @@ export class EvidenceWriter {
     return this.#pseudonymizer;
   }
 
+  /**
+   * ============================================================================================
+   * A DECLARED-SENSITIVE VALUE THE RUN HAS JUST SEEN, BEFORE ANYTHING IS WRITTEN DOWN.
+   * ============================================================================================
+   *
+   * `declareSensitive` is called once, before the run, from the invocation parameters. That names
+   * every sensitive OUTPUT but cannot carry a value for one, because an output has no value until
+   * the run reads it.
+   *
+   * For a run that finishes, completing the declaration at the end is enough. For one that STOPS -
+   * a handoff - it is not: the escalation persists an observation of the screen the run stopped on,
+   * and that screen can display a declared-sensitive output the run had not reached yet. A real
+   * bundle carried a member's NAME into `observation-*.json` that way. It was not a walker gap and
+   * it was not the transcript's "the system never knew this value" case: the system knew the field
+   * was `sensitivity: pii`, knew from the artifact exactly which control displays it, and simply had
+   * not looked yet.
+   *
+   * So the caller resolves those descriptors against the observation it is about to persist and
+   * tells the writer what it found, FIRST. Only names already declared sensitive are accepted; this
+   * cannot be used to invent a new secret at runtime.
+   */
+  learnSensitiveValue(name: string, value: string): void {
+    const declaration = this.#declaration;
+    if (declaration === undefined || value === '') return;
+    if (!declaration.sensitiveNames.has(name)) return;
+    if (this.#declared.get(name) === value) return;
+
+    const values = new Map(declaration.values);
+    values.set(name, value);
+    this.declareSensitive({ ...declaration, values });
+  }
+
+  /**
+   * ============================================================================================
+   * THE SAME SEAM, FOR THE TWO CHANNELS THAT WERE WRITING AROUND IT.
+   * ============================================================================================
+   *
+   * `append`, `transcriptRedacted` and `writeScreenshot` all went through the pseudonymizer. Two
+   * things did not, and both were claimed to:
+   *
+   *   - the human-readable CLI output on stderr, which `formatResultForHuman` fills with the
+   *     outputs the run read
+   *   - `result.json` / `steps.json` / `metrics.json`, which the CLIs wrote with a bare
+   *     `writeFileSync`
+   *
+   * The header of `src/redaction/pseudonymize.ts`, `docs/DATA_HANDLING.md` and the comment on the
+   * test that was supposed to cover it all said the human channel was pseudonymized. It was not.
+   * These two methods exist so that fixing it did not mean a SECOND redaction path: everything
+   * still goes through one pseudonymizer holding one declared map.
+   */
+  redactText(line: string): string {
+    return this.#pseudonymizer === undefined ? line : this.#pseudonymizer.text(line, this.#declared);
+  }
+
+  /**
+   * ============================================================================================
+   * [MUST] THE ONLY PLACE ANYTHING IN THIS CLASS WRITES A FILE INTO A RUN DIRECTORY.
+   * ============================================================================================
+   *
+   * Everything public funnels through here and everything here is pseudonymized. That shape is the
+   * fix for a defect that happened THREE TIMES in two phases, each time the same way: somebody adds
+   * a writer, picks the shortest available method, and the shortest available method was the unsafe
+   * one.
+   *
+   *   the CLIs wrote result.json with a bare writeFileSync                    (D73)
+   *   the mask manifest was written with a bare writeFileSync                 (D86)
+   *   captureEvidence('ax') used writeJson, which did not redact              (D88)
+   *
+   * There used to be two of each writer - `writeJson` beside `writeRedactedJson`, `transcript`
+   * beside `transcriptRedacted` - so redaction was a variant you had to remember to choose, with
+   * the unsafe one holding the more obvious name. Choosing correctly every time is not a property
+   * anybody can hold; there is now nothing to choose. See DECISIONS.md D88.
+   */
+  #write(name: string, value: unknown): string {
+    const written =
+      this.#pseudonymizer === undefined ? value : this.#pseudonymizer.value(value, this.#declared);
+    const path = join(this.runDir, name);
+    writeFileSync(path, JSON.stringify(written, null, 2), 'utf8');
+    return toPosix(relative(process.cwd(), path));
+  }
+
+  /** A run-output file. Pseudonymized, because every file this class writes is. */
+  writeJson(name: string, value: unknown): string {
+    return this.#write(name, value);
+  }
+
   append(event: EvidenceEvent): void {
     const written = redactForPersistence(event, this.#pseudonymizer, this.#declared);
     appendFileSync(this.#eventsPath, JSON.stringify(written) + LF, 'utf8');
@@ -203,17 +305,14 @@ export class EvidenceWriter {
    * shown and what it asked for. A reviewer auditing a decision needs the second; a reviewer
    * auditing a guardrail needs the first, and mixing them buries each in the other.
    */
-  transcript(entry: Record<string, unknown>): void {
-    appendFileSync(join(this.runDir, 'transcript.jsonl'), JSON.stringify(entry) + LF, 'utf8');
-  }
-
   /**
-   * The transcript is pseudonymized too.
+   * The conversation. Pseudonymized, like everything else written here.
    *
    * It is the file most likely to contain a member's name in prose, because it is the one place a
-   * model writes sentences about what it is looking at.
+   * model writes sentences about what it is looking at. There was an unredacted `transcript()`
+   * beside this one until D88; nothing called it, and it was one autocomplete away from being used.
    */
-  transcriptRedacted(entry: Record<string, unknown>): void {
+  transcript(entry: Record<string, unknown>): void {
     const written =
       this.#pseudonymizer === undefined
         ? entry
@@ -233,15 +332,30 @@ export class EvidenceWriter {
    * behaviour for the browser-free tests that exercise the writer's SHAPE. Every path that runs
    * against a live screen supplies both.
    */
-  writeScreenshot(data: Buffer, observation?: Observation): string {
-    const declaration = this.#declaration;
+  writeScreenshot(data: Buffer, observation: Observation): string {
+    // ============================================================================================
+    // THERE IS NO BRANCH THAT WRITES THE RAW BYTES. THAT IS THE POINT OF D56.
+    // ============================================================================================
+    //
+    // There used to be one, for a caller with no observation or no declaration - "the honest
+    // behaviour for the browser-free tests". No production caller ever took it, and it was the
+    // fourth instance of the shape this class has now been restructured to make impossible: a
+    // convenient path that skips the protection. Found by `contract/evidence.seam.lint`, which
+    // counts the file-writing call sites in this file, on the run it was written.
+    //
+    // `observation` is REQUIRED, so the coordinates always describe the image. An absent DECLARATION
+    // masks nothing rather than bypassing the masker, and the manifest beside the image says so -
+    // "nothing was declared sensitive" and "the masker never ran" must not look the same.
+    const declaration = this.#declaration ?? {
+      sensitiveNames: new Set<string>(),
+      values: new Map<string, string>(),
+      recordIdentityParam: '',
+    };
     this.#sequence += 1;
     const name = String(this.#sequence).padStart(4, '0') + '.png';
     const path = join(this.runDir, 'screenshots', name);
 
-    if (observation === undefined || declaration === undefined) {
-      writeFileSync(path, data);
-    } else {
+    {
       const masked = maskScreenshot({
         png: data,
         observation,
@@ -249,14 +363,16 @@ export class EvidenceWriter {
         sourceName: name,
       });
       writeFileSync(path, masked.png);
-      // The manifest is what the PHASE 10 verifier reads to check that every declared-sensitive
-      // visible target has a mask region. It also records what could NOT be masked, so "nothing
-      // was sensitive" and "something was and we could not cover it" never look the same.
-      writeFileSync(
-        join(this.runDir, 'screenshots', name.replace(/\.png$/, '.mask.json')),
-        JSON.stringify(masked.manifest, null, 2),
-        'utf8',
-      );
+      // The manifest is what the verifier reads to check that every declared-sensitive visible
+      // target has a mask region. It also records what could NOT be masked, so "nothing was
+      // sensitive" and "something was and we could not cover it" never look the same.
+      //
+      // [MUST] IT GOES THROUGH THE PSEUDONYMIZER. `descriptorRef` describes the control that was
+      // covered, and the most natural way to describe a control showing a member id is to quote the
+      // member id - so the file that records the masking was leaking the value the mask exists to
+      // hide. Caught by `evidence:verify` on the first successful evidence bundle. Same class of
+      // defect as D73: a persisted file written around the one seam.
+      this.#write(join('screenshots', name.replace(/\.png$/, '.mask.json')), masked.manifest);
     }
 
     const ref = toPosix(relative(process.cwd(), path));
@@ -269,10 +385,16 @@ export class EvidenceWriter {
     return ref;
   }
 
-  writeJson(name: string, value: unknown): string {
-    const path = join(this.runDir, name);
-    writeFileSync(path, JSON.stringify(value, null, 2), 'utf8');
-    const ref = toPosix(relative(process.cwd(), path));
+  /**
+   * A captured accessibility dump.
+   *
+   * It USED to be written verbatim, on the reasoning that a reviewer wants it byte-exact. That cost
+   * a real leak: the handoff path captures observations that the unattended path never does, so two
+   * `observation-*.json` files carrying a member id reached a published bundle and nothing had ever
+   * looked at them. Byte-exactness of a debugging aid does not outrank a value in a published file.
+   */
+  writeObservation(name: string, value: unknown): string {
+    const ref = this.#write(name, value);
     this.append({ type: 'evidence_captured', at: new Date().toISOString(), kind: 'ax', ref });
     return ref;
   }

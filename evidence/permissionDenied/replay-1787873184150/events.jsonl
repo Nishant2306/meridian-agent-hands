@@ -1,0 +1,32 @@
+{"type":"run_started","at":"2026-08-27T23:26:24.158Z","runId":"replay-1787873184150","surfaceId":"playwright-web","allowedOrigin":"http://127.0.0.1:56380"}
+{"type":"capability_loaded","at":"2026-08-27T23:26:24.159Z","capabilityId":"prepare_subaccount_review","capabilityVersion":"1.0.0","status":"approved","contentHash":"45100b1105cdd6c623c40356ded9208ecbb2e8ff458ea6eb6359b6ba50e3b03e"}
+{"type":"lease_issued","at":"2026-08-27T23:26:24.707Z","leaseId":"98f65796-e9fe-413b-b3cb-892b3c2eed3a","owner":"AUTOMATION","expiresAt":1787873784707}
+{"type":"action_attempt","at":"2026-08-27T23:26:24.708Z","actionType":"navigate","target":"navigate"}
+{"type":"action_performed","at":"2026-08-27T23:26:24.742Z","actionType":"navigate","tierUsed":null,"downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:24.743Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorId"}
+{"type":"observation","at":"2026-08-27T23:26:24.866Z","observationId":"0b90a448-2c9d-4c43-ad51-99d4da35e351","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:24.895Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:24.896Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorPasscode"}
+{"type":"observation","at":"2026-08-27T23:26:24.944Z","observationId":"2160c504-5072-4872-9438-dee5e96477e7","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:24.958Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:24.958Z","actionType":"click","target":"button \"Log In\""}
+{"type":"observation","at":"2026-08-27T23:26:25.027Z","observationId":"5f858846-6261-4461-bbfb-bfe9391eea20","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:25.115Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"bounded_backoff","at":"2026-08-27T23:26:25.130Z","ms":100,"reason":"polling for text_present:Member Search"}
+{"type":"wait","at":"2026-08-27T23:26:25.254Z","condition":"text_present:Member Search","satisfied":true,"ms":139}
+{"type":"observation","at":"2026-08-27T23:26:25.392Z","observationId":"b6e45212-f0c7-4671-b65c-b0a78da2df1c","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"observation","at":"2026-08-27T23:26:25.392Z","observationId":"b6e45212-f0c7-4671-b65c-b0a78da2df1c","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_attempt","at":"2026-08-27T23:26:25.393Z","actionType":"type","target":"textbox \"Member ID\"","valueBinding":"param:memberId"}
+{"type":"observation","at":"2026-08-27T23:26:25.484Z","observationId":"ee1a0b4e-7968-4f1f-9996-c91cf144a8cc","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:25.515Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:25.622Z","observationId":"a523d45c-42ef-4b5b-bdc4-5bcd0fa9a622","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:25.624Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:25.625Z","actionType":"click","target":"button \"Search\""}
+{"type":"observation","at":"2026-08-27T23:26:25.724Z","observationId":"6695c81c-185b-4410-b7ce-b04309ea54fa","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:25.775Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:25.893Z","observationId":"3bc4c5f2-a428-4bfe-bd6f-8f512edd5fa6","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:26:25.894Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:25.894Z","actionType":"click","target":"link \"Open\""}
+{"type":"observation","at":"2026-08-27T23:26:25.986Z","observationId":"ff245011-f14e-4794-8d6c-4a42ffed460a","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:26:26.031Z","actionType":"click","tierUsed":"T5_STRUCTURAL_ROW","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:26.122Z","observationId":"5a90456a-4233-4519-863f-5e2440014a1b","screen":"Member Record","perceptionPath":"cdp_ax","controls":16,"perceived":16}

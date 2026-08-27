@@ -1,0 +1,37 @@
+{
+  "sourceScreenshot": "0009.png",
+  "maskedRegions": [
+    {
+      "descriptorRef": "cell \"[memberId:subject-01]\" (mark 18)",
+      "reason": "record-identity",
+      "rect": {
+        "x": 303.3875045776367,
+        "y": 162.6750030517578,
+        "width": 146.9499969482422,
+        "height": 25.600000381469727
+      }
+    },
+    {
+      "descriptorRef": "cell \"[memberName:subject-01]\" (mark 20)",
+      "reason": "pii",
+      "rect": {
+        "x": 303.3875045776367,
+        "y": 184.27500915527344,
+        "width": 146.9499969482422,
+        "height": 25.600000381469727
+      }
+    },
+    {
+      "descriptorRef": "cell \"[memberId:subject-01]-01\" (mark 25)",
+      "reason": "record-identity",
+      "rect": {
+        "x": 213.19999980926514,
+        "y": 319.25,
+        "width": 123.5374984741211,
+        "height": 26.399999618530273
+      }
+    }
+  ],
+  "refused": [],
+  "observationId": "731a555a-ee40-4990-8352-d857ca7210e6"
+}

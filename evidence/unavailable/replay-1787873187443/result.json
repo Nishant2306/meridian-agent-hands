@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "error": "APPLICATION_UNAVAILABLE",
+  "stepId": "step-4-new-sub-account",
+  "expected": "the screen is now \"New Sub-Account\"",
+  "observed": "The application answered, and what it said was that it is not currently able to serve the request. Distinct from SURFACE_UNAVAILABLE, which means the browser itself died.",
+  "attempts": 1,
+  "evidenceRef": "runs\\replay-1787873187443",
+  "metrics": {
+    "steps": 3,
+    "durationMs": 1165,
+    "llmCalls": 0,
+    "recoveriesUsed": 0,
+    "locatorTierDowngrades": 0,
+    "humanInterventions": 0
+  }
+}

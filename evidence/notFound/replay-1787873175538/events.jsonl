@@ -1,0 +1,27 @@
+{"type":"run_started","at":"2026-08-27T23:26:15.554Z","runId":"replay-1787873175538","surfaceId":"playwright-web","allowedOrigin":"http://127.0.0.1:56380"}
+{"type":"capability_loaded","at":"2026-08-27T23:26:15.555Z","capabilityId":"prepare_subaccount_review","capabilityVersion":"1.0.0","status":"approved","contentHash":"45100b1105cdd6c623c40356ded9208ecbb2e8ff458ea6eb6359b6ba50e3b03e"}
+{"type":"lease_issued","at":"2026-08-27T23:26:16.011Z","leaseId":"7a1233e3-1cfa-4fd7-a2b9-f6fe536dfffa","owner":"AUTOMATION","expiresAt":1787873776011}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.012Z","actionType":"navigate","target":"navigate"}
+{"type":"action_performed","at":"2026-08-27T23:26:16.045Z","actionType":"navigate","tierUsed":null,"downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.047Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorId"}
+{"type":"observation","at":"2026-08-27T23:26:16.150Z","observationId":"c44ae02c-4b91-4805-9e2c-157f22d3dc96","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:16.179Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.180Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorPasscode"}
+{"type":"observation","at":"2026-08-27T23:26:16.246Z","observationId":"b9a5de86-0eea-4e8f-89f0-93d7581b483f","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:16.257Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.258Z","actionType":"click","target":"button \"Log In\""}
+{"type":"observation","at":"2026-08-27T23:26:16.313Z","observationId":"d29901ed-2572-4b1a-a329-2dd7b64a5d0e","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:16.366Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"bounded_backoff","at":"2026-08-27T23:26:16.381Z","ms":100,"reason":"polling for text_present:Member Search"}
+{"type":"wait","at":"2026-08-27T23:26:16.501Z","condition":"text_present:Member Search","satisfied":true,"ms":134}
+{"type":"observation","at":"2026-08-27T23:26:16.630Z","observationId":"cfbd80bf-b88d-4556-b8f7-d4637c16ac49","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"observation","at":"2026-08-27T23:26:16.630Z","observationId":"cfbd80bf-b88d-4556-b8f7-d4637c16ac49","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.631Z","actionType":"type","target":"textbox \"Member ID\"","valueBinding":"param:memberId"}
+{"type":"observation","at":"2026-08-27T23:26:16.741Z","observationId":"f97f8861-05d7-4f68-b1ad-70bd38494c44","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:16.769Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:16.869Z","observationId":"1d7683bf-f5e4-4017-8528-bdf6752bdab2","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:16.870Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:16.870Z","actionType":"click","target":"button \"Search\""}
+{"type":"observation","at":"2026-08-27T23:26:16.978Z","observationId":"279fc32f-60bb-419c-bf5b-59ef725949b8","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:17.007Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:17.118Z","observationId":"1da4bd57-1855-403c-93b3-d4cbe37220fd","screen":"Member Search","perceptionPath":"cdp_ax","controls":19,"perceived":19}

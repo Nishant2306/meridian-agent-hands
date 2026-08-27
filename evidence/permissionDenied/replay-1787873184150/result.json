@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "error": "PERMISSION_DENIED",
+  "stepId": "step-3-open",
+  "expected": "the screen is now \"Member Record\"",
+  "observed": "The signed-on operator is not entitled to view this member. Remediation is an entitlement change, not a retry.",
+  "attempts": 1,
+  "evidenceRef": "runs\\replay-1787873184150",
+  "metrics": {
+    "steps": 2,
+    "durationMs": 867,
+    "llmCalls": 0,
+    "recoveriesUsed": 0,
+    "locatorTierDowngrades": 0,
+    "humanInterventions": 0
+  }
+}

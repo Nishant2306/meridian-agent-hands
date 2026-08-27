@@ -1,0 +1,20 @@
+[
+  {
+    "stepId": "step-1-member-id",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 239
+  },
+  {
+    "stepId": "step-2-search",
+    "status": "performed",
+    "detail": "business outcome: MEMBER_NOT_FOUND",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 248
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "stepId": "step-1-member-id",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 231
+  },
+  {
+    "stepId": "step-2-search",
+    "status": "performed",
+    "detail": "",
+    "tierUsed": "T1_EXACT_ROLE_NAME",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 269
+  },
+  {
+    "stepId": "step-3-open",
+    "status": "failed",
+    "detail": "The signed-on operator is not entitled to view this member. Remediation is an entitlement change, not a retry.",
+    "tierUsed": "T5_STRUCTURAL_ROW",
+    "downgraded": false,
+    "attempts": 1,
+    "ms": 228
+  }
+]

@@ -1,0 +1,60 @@
+{"type":"run_started","at":"2026-08-27T23:26:10.928Z","runId":"replay-1787873170918","surfaceId":"playwright-web","allowedOrigin":"http://127.0.0.1:56380"}
+{"type":"capability_loaded","at":"2026-08-27T23:26:10.929Z","capabilityId":"prepare_subaccount_review","capabilityVersion":"1.0.0","status":"approved","contentHash":"45100b1105cdd6c623c40356ded9208ecbb2e8ff458ea6eb6359b6ba50e3b03e"}
+{"type":"lease_issued","at":"2026-08-27T23:26:11.388Z","leaseId":"48c17b3e-8cd3-40bd-acad-b82004db8486","owner":"AUTOMATION","expiresAt":1787873771388}
+{"type":"action_attempt","at":"2026-08-27T23:26:11.389Z","actionType":"navigate","target":"navigate"}
+{"type":"action_performed","at":"2026-08-27T23:26:11.458Z","actionType":"navigate","tierUsed":null,"downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:11.458Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorId"}
+{"type":"observation","at":"2026-08-27T23:26:11.582Z","observationId":"9b6394f5-7a0b-4153-b1cc-76a8e10bb959","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:11.615Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:11.615Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"secret:operatorPasscode"}
+{"type":"observation","at":"2026-08-27T23:26:11.688Z","observationId":"f65f590b-80f8-4bb4-8599-c808ce07de54","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:11.702Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:11.702Z","actionType":"click","target":"button \"Log In\""}
+{"type":"observation","at":"2026-08-27T23:26:11.753Z","observationId":"709e55cd-d950-4909-bd67-f715ddb36c33","screen":"Core Servicing Sign On","perceptionPath":"cdp_ax","controls":10,"perceived":10}
+{"type":"action_performed","at":"2026-08-27T23:26:11.816Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"bounded_backoff","at":"2026-08-27T23:26:11.832Z","ms":100,"reason":"polling for text_present:Member Search"}
+{"type":"wait","at":"2026-08-27T23:26:11.937Z","condition":"text_present:Member Search","satisfied":true,"ms":120}
+{"type":"observation","at":"2026-08-27T23:26:12.079Z","observationId":"b3f4353f-641d-49a4-bb09-83a498dac38c","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"observation","at":"2026-08-27T23:26:12.079Z","observationId":"b3f4353f-641d-49a4-bb09-83a498dac38c","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_attempt","at":"2026-08-27T23:26:12.081Z","actionType":"type","target":"textbox \"Member ID\"","valueBinding":"param:memberId"}
+{"type":"observation","at":"2026-08-27T23:26:12.180Z","observationId":"a3392059-5d39-42af-a0ba-b5d1df4138bb","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:12.210Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:12.325Z","observationId":"e64b1edc-1772-4a0b-b6fc-718bb3a245eb","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:12.326Z","actionType":"type","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:12.327Z","actionType":"click","target":"button \"Search\""}
+{"type":"observation","at":"2026-08-27T23:26:12.429Z","observationId":"98251567-4527-4eb6-ab02-fe01587a0a38","screen":"Member Search","perceptionPath":"cdp_ax","controls":17,"perceived":17}
+{"type":"action_performed","at":"2026-08-27T23:26:12.474Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:12.599Z","observationId":"e4d8f54e-9333-4f9f-9940-407cf5aee0ac","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:26:12.599Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:12.600Z","actionType":"click","target":"link \"Open\""}
+{"type":"observation","at":"2026-08-27T23:26:12.713Z","observationId":"49dfc645-9ea6-4723-b2ea-47bb7d39a32a","screen":"Member Search","perceptionPath":"cdp_ax","controls":26,"perceived":26}
+{"type":"action_performed","at":"2026-08-27T23:26:12.764Z","actionType":"click","tierUsed":"T5_STRUCTURAL_ROW","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:12.892Z","observationId":"d3214ee3-ce2f-41b1-b0cf-e6a61d74eff1","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"action_performed","at":"2026-08-27T23:26:12.893Z","actionType":"click","tierUsed":"T5_STRUCTURAL_ROW","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:12.893Z","actionType":"click","target":"link \"New Sub-Account\""}
+{"type":"observation","at":"2026-08-27T23:26:12.992Z","observationId":"fa3691d9-a06c-4532-8e0e-c2bbc8a6ced2","screen":"Member Record","perceptionPath":"cdp_ax","controls":30,"perceived":30}
+{"type":"action_performed","at":"2026-08-27T23:26:13.041Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:13.168Z","observationId":"b41a87c1-26d9-41a9-b856-15769eed2bdb","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.168Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:13.169Z","actionType":"select","target":"combobox \"(unnamed)\"","valueBinding":"param:accountType"}
+{"type":"observation","at":"2026-08-27T23:26:13.269Z","observationId":"88e99186-f28d-48f3-bc49-9eadc7b7ab2d","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.288Z","actionType":"select","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:13.415Z","observationId":"9d540222-c650-4eac-9e93-6c44bdaed10c","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.416Z","actionType":"select","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:13.417Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"param:nickname"}
+{"type":"observation","at":"2026-08-27T23:26:13.506Z","observationId":"edb2a8a8-9561-4077-b11c-affe86c06de2","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.526Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:13.619Z","observationId":"4f8f45e1-d132-49a1-babf-cdaa95268bf7","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.620Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:13.620Z","actionType":"type","target":"textbox \"(unnamed)\"","valueBinding":"param:initialDeposit"}
+{"type":"observation","at":"2026-08-27T23:26:13.716Z","observationId":"1292d18b-cfd8-4b00-b56f-b001fa381435","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.735Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:13.845Z","observationId":"5a01b44d-8500-4ad6-8d0b-a155b3993761","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.846Z","actionType":"type","tierUsed":"T3_EXTERNAL_LABEL_OR_NEARBY","downgraded":false,"conflicts":0}
+{"type":"action_attempt","at":"2026-08-27T23:26:13.846Z","actionType":"click","target":"button \"Continue\""}
+{"type":"observation","at":"2026-08-27T23:26:13.947Z","observationId":"801f8aca-86d8-4f9d-ab39-c6a7a38430ab","screen":"New Sub-Account","perceptionPath":"cdp_ax","controls":22,"perceived":22}
+{"type":"action_performed","at":"2026-08-27T23:26:13.987Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:14.112Z","observationId":"ca8364d2-b6b7-4119-aafa-fc91d17c6631","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}
+{"type":"action_performed","at":"2026-08-27T23:26:14.113Z","actionType":"click","tierUsed":"T1_EXACT_ROLE_NAME","downgraded":false,"conflicts":0}
+{"type":"observation","at":"2026-08-27T23:26:14.206Z","observationId":"f4b327ef-c1b7-4be5-8c9c-1e9b4a1faca0","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}
+{"type":"observation","at":"2026-08-27T23:26:14.206Z","observationId":"f4b327ef-c1b7-4be5-8c9c-1e9b4a1faca0","screen":"Review Sub-Account Request","perceptionPath":"cdp_ax","controls":28,"perceived":28}
