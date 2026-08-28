@@ -1,21 +1,42 @@
 # EVIDENCE
 
-**This is the TEMPLATE. The bundle's own `README.md` is generated from it.**
+<!-- template-only -->
+
+**You are reading the TEMPLATE.** The bundle's own `README.md` is generated from this file, and the
+two say different things on purpose: this one explains the mechanism to whoever is editing it, and
+the generated one describes an actual bundle to whoever is reading it. Prose that belongs to one of
+them does not belong in the other, so it goes inside a `template-only` or `artifact-only` block.
 
 Every placeholder below - written `FILL AFTER RUN` with a key, in angle brackets - is a run
 identifier or a result line that only a real run can produce, and every one is filled from a FILE IN
-THE BUNDLE: the same files
-`npm run evidence:verify` re-derives its claims from. Nothing here is typed by hand and nothing in
-this repository invents one: a fabricated run id in a document that looks like a report is worse than
-an empty template, because a reviewer cannot tell the two apart.
+THE BUNDLE: the same files `npm run evidence:verify` re-derives its claims from. Nothing is typed by
+hand and nothing here invents one, because a fabricated run id in a document that looks like a report
+is worse than an empty template - a reviewer cannot tell the two apart.
 
 A value that can only come from the manifest is rendered `[manifest] ...`, exactly as the verifier
-marks its own. Which member a run used is the case - the run files are pseudonymized with a map that
+marks its own. Which member a run used is that case: the run files are pseudonymized with a map that
 is random per run, so the bundle genuinely cannot tell you.
 
-`npm run evidence:automated` and `npm run evidence:handoff` regenerate `README.md`. A published
-bundle that still contains a marker is a FAIL, and so is one whose README names a different run from
-its manifest.
+`evidence:automated`, `evidence:handoff` and `evidence:readme` all regenerate `README.md`. A
+published bundle that still contains a marker is a gate FAIL, so is one whose README names a
+different run from its manifest, and so is one whose README claims to be this file.
+
+<!-- /template-only -->
+
+<!-- artifact-only -->
+
+Generated <<FILL AFTER RUN: generated.at>> from discovery run
+`<<FILL AFTER RUN: generated.run>>`.
+
+This is the evidence for one real discovery run and the replays derived from it. **Every value below
+was read from a file in this bundle** - the same files `npm run evidence:verify` re-derives its
+claims from - so nothing here is a caption somebody wrote over the top of a run. Where a value could
+only come from the manifest it says `[manifest]` rather than asserting it.
+
+Each scenario below says what it proves, which requirement it maps to, and which files to read. The
+last section says what this bundle does **not** prove, which is the part worth reading twice.
+
+<!-- /artifact-only -->
 
 ```bash
 npm run evidence:automated

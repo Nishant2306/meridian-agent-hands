@@ -11,7 +11,7 @@ import {
 import { type SessionState } from '../../src/types/session.js';
 import { checkSessionChain, leasesAlternate } from './lib/session-chain.js';
 import { scanForValues } from './lib/leak-scan.js';
-import { markersIn } from './lib/readme.js';
+import { markersIn, templateProseIn } from './lib/readme.js';
 import { readManifest, type Manifest } from './lib/manifest.js';
 import { CONFIG_ROOT, EVIDENCE_ROOT, say } from './lib/runtime.js';
 
@@ -756,6 +756,20 @@ function verifyReadme(manifest: Manifest): void {
           NL +
           '      evidence:handoff. README.template.md keeps its markers and is the source.'
         : withMarkers.map((file) => '      ' + file + ' still has placeholders').join(NL),
+  });
+
+  const tells = templateProseIn(EVIDENCE_ROOT);
+  check({
+    id: 'readme-not-a-template',
+    source: 'bundle',
+    claim: 'the published README describes THIS bundle, and does not claim to be the template',
+    ok: tells.length === 0,
+    detail:
+      tells.length === 0
+        ? '      the two documents have separate prose: the template explains the mechanism to' +
+          NL +
+          '      whoever edits it, the artifact describes this bundle to whoever reads it.'
+        : tells.map((tell) => '      template prose reached the artifact: "' + tell + '"').join(NL),
   });
 
   const readmePath = join(EVIDENCE_ROOT, 'README.md');

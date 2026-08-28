@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { markersIn, renderReadme } from '../../scripts/evidence/lib/readme.js';
+import { markersIn, renderReadme, templateProseIn } from '../../scripts/evidence/lib/readme.js';
 import type { Manifest } from '../../scripts/evidence/lib/manifest.js';
 
 const HASH = 'a'.repeat(64);
@@ -30,6 +30,13 @@ function bundle(): { root: string; manifest: Manifest } {
     join(root, 'README.template.md'),
     [
       '# EVIDENCE',
+      '',
+      '<!-- template-only -->',
+      'You are reading the TEMPLATE. This paragraph is for whoever edits this file.',
+      '<!-- /template-only -->',
+      '<!-- artifact-only -->',
+      'This bundle is the evidence for one real run.',
+      '<!-- /artifact-only -->',
       '',
       'discovery: <<FILL AFTER RUN: discovery.runId>>',
       'model:     <<FILL AFTER RUN: discovery.model>>',
@@ -158,6 +165,35 @@ describe('the bundle README is rendered from the run files', () => {
 
     expect(readFileSync(join(root, 'README.template.md'), 'utf8')).toContain('<<FILL AFTER RUN');
     expect(markersIn(root)).toEqual([]);
+  });
+
+  it('[MUST] template prose does not reach the artifact', () => {
+    // The generated README opened with "This is the TEMPLATE" and three paragraphs about how
+    // placeholders get filled, because the renderer substituted values and shipped everything else
+    // verbatim. A reviewer opening the evidence bundle was told the document was not the real one.
+    const { root, manifest } = bundle();
+    renderReadme({ manifest, root });
+    const text = readFileSync(join(root, 'README.md'), 'utf8');
+
+    expect(text).not.toContain('You are reading the TEMPLATE');
+    expect(text).not.toContain('template-only');
+    expect(text).not.toContain('artifact-only');
+    // And the prose written FOR the artifact survives, unwrapped.
+    expect(text).toContain('This bundle is the evidence for one real run.');
+    expect(templateProseIn(root)).toEqual([]);
+  });
+
+  it('[MUST] the gate reports template prose that reaches the artifact', () => {
+    // The negative control. Without it the check above only proves the current template is fine.
+    const { root, manifest } = bundle();
+    renderReadme({ manifest, root });
+    writeFileSync(
+      join(root, 'README.md'),
+      'This is the TEMPLATE. The bundle README is generated from it.',
+      'utf8',
+    );
+
+    expect(templateProseIn(root)).toContain('This is the TEMPLATE');
   });
 
   it('[MUST] a published document that still has a placeholder is reported', () => {
