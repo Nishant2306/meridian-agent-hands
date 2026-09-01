@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -78,6 +78,38 @@ describe('documents point at files that exist', () => {
       }
 
       expect(broken, doc + ' points at files that do not exist').toEqual([]);
+    });
+
+    it(doc + ' has no dead markdown link', () => {
+      // ========================================================================================
+      // LINKS ARE THE REFERENCES A REVIEWER ACTUALLY CLICKS.
+      // ========================================================================================
+      //
+      // The backtick check above covers code paths. A cold read of the repository asked about a
+      // dead `docs/adr/README.md` link; no such reference existed, but nothing MECHANICAL could
+      // say so - the honest answer to "are there dead links" was a hand-run grep. Now it is this
+      // test, and the next dead link fails the build instead of waiting for a reviewer.
+      //
+      // Resolution rules match how the documents are written: a leading `/` is the repo root
+      // (`/evidence/manifest.json` is this project's convention throughout), and anything else is
+      // relative to the document's own directory. Only targets that look like paths are checked -
+      // a slash or a known extension - so prose in parentheses is not mistaken for a link.
+      const text = readFileSync(join(REPO, doc), 'utf8');
+      const dead: string[] = [];
+      const LINK = /\]\((?!https?:\/\/|mailto:|#)([^)\s]+?)(?:#[^)\s]*)?\)/g;
+
+      for (const match of text.matchAll(LINK)) {
+        const target = match[1];
+        if (target === undefined) continue;
+        if (!/[/\\]|\.(md|ts|yaml|json|jsonl|png)$/.test(target)) continue;
+
+        const resolved = target.startsWith('/')
+          ? join(REPO, target.slice(1))
+          : join(REPO, dirname(doc), target);
+        if (!existsSync(resolved)) dead.push(target);
+      }
+
+      expect(dead, doc + ' links to files that do not exist').toEqual([]);
     });
   }
 

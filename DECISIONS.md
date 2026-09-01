@@ -2300,3 +2300,89 @@ failure should not stand for both.
 **Two new gate checks.** Any published document still containing a marker is a FAIL. And the README
 must name the discovery run the manifest names - which is the check that matters over time, because
 once filling is automatic the remaining failure mode is not an empty README but a stale one.
+
+---
+
+## D97 - A second capability needs no code. What is single-capability is the evidence harness.
+
+**The question it answers.** The artifact schema had been demonstrated exactly once, so a reviewer's
+natural doubt is whether it is a capability FORMAT or a schema fitted to one flow. The only honest
+way to settle that is to build a second one and report what it cost.
+
+**`config/specs/lookup_member_savings_balance.yaml`** is a read-only lookup: sign on, search by
+member id, open the record, read the member's name and their Savings balance. It reuses the first
+capability's first steps and adds nothing to the mechanism, which is the point.
+
+**It cost a spec file. No schema change, no engine change.** Driven through the same scripted
+pipeline, the same distiller, the same validator and the same replay engine
+(`tests/integration/agent.second-capability.live.test.ts`): discovery, distillation and validation
+take the new spec unchanged, replay on a fresh fixture boot succeeds with `llmCalls: 0`, and
+MEMBER_NOT_FOUND still fires from the SAME pinned condition profile. Nothing in `src/` had to learn
+the capability's name; the only harness change was an optional `specPath` on the test helper, since
+the CLI has taken `--spec` since PHASE 4.
+
+**It also exercised two shapes the first capability structurally could not.** A capability whose last
+steps are pure READS - `read_value` binds an output and emits no step (D19), so this artifact has
+three steps and the read-step exemption is on the happy path rather than only in its own test. And a
+currency OUTPUT, where the first capability had only a currency input.
+
+**WHAT IS SINGLE-CAPABILITY IS THE EVIDENCE HARNESS, and that is the more precise claim.** Eight
+hardcoded sites across five files, rooted in the manifest schema:
+
+| Where                              | What assumes one capability                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/evidence/lib/manifest.ts` | `capability`, `discoveryRunId`, `discovery`, `fixtureSeeds` are singular; `replayRunIds` is a strictObject of six FIXED scenario names |
+| `scripts/evidence/lib/runtime.ts`  | `SPEC` names one spec; `clearScenarios` has a fixed directory list                                                                     |
+| `scripts/evidence/lib/replays.ts`  | `REPLAY_SCENARIOS` is a module constant, not per-capability data                                                                       |
+| `scripts/evidence/verify.ts`       | `EXPECTED_TIERS`; `bundleDir(scenario, runId)` is a flat layout                                                                        |
+| `scripts/evidence/lib/readme.ts`   | flat per-scenario marker keys                                                                                                          |
+
+The scenario set is the crux, not the loop: the second capability is read-only, so it has no
+`recovery` and no `unavailable` - both live on the sub-account form. And `EXPECTED_TIERS` requires
+all three control kinds to be exercised, while this capability never drives a table-labelled field,
+because its T3 reads are OUTPUTS and reads emit no steps. Per-capability expectations are DATA the
+harness does not currently have a place for.
+
+Of the 30 required gate checks, **22 are per-capability** (the chain, the replays, the handoff) and
+**8 are bundle-wide** (redaction and README already walk the whole bundle).
+
+**THE SPEC FILE SHIPS, AND SAYS SO ITSELF.** It is in the repository and there is no artifact for it
+in any store, no seeding by `demo:store`, and no scenario in the evidence bundle. A spec a reviewer
+finds and cannot run is worse than one that is not there, so the file carries a STATUS header naming
+the one command that exercises it and the one that would produce an artifact; `README.md`'s
+real-versus-mocked table and `docs/STATUS.md` say the same. `npm run replay` reporting it is not in
+the store is the store refusing to pretend, not a broken demo path.
+
+**Decision: STOPPED HERE.** Generalising is an afternoon - six to seven hours, dominated by the README
+renderer, whose flat markdown template has no seam for repetition, and by threading a capability
+through 1,062 lines of verifier - plus two paid discovery runs and a bundle migration. Weighed
+against a bundle that passes 30 of 30 from a clean clone, it does not earn its cost. `REPORT.md`
+section 7 states the finding instead, naming the manifest schema so the claim is checkable.
+
+---
+
+## D98 - A declared `currency` OUTPUT comes back as display text. Open defect, recorded not fixed.
+
+**Found by the second capability, which is what a second capability is for.**
+
+`src/types/run.ts` states the contract in a comment on the type itself - _"Currency outputs are Money,
+never a float or a string"_ - and `OutputValueSchema` is `string | Money`. But
+`extractDeclaredOutput` in `src/artifact/outputs.ts` returns `{ ok: true; value: string }`
+unconditionally: for a `currency` output it calls `parseMoney` purely as a validity check, DISCARDS
+the result, and returns the normalized display text. `savingsBalance` comes back as `"$18,750.00"`.
+Nothing in `src/` ever constructs a Money into an outputs record, so the Money half of that union has
+no producer at all.
+
+**Why nothing caught it.** The first capability has a currency INPUT (`initialDeposit`) and no
+currency OUTPUT. Typed comparison was exercised on the way in and never on the way out.
+
+**Scope.** This is not the schema being fitted to one flow: the schema, distiller and store are
+general, and the distilled artifact correctly records `parse: "currency"`. It is one missing
+conversion at the extraction seam - the single place discovery's completion check and replay already
+share, which is where it belongs and why the fix is small.
+
+**Not fixed, deliberately.** The call is a real one and it is the user's: returning Money honours the
+stated contract and spares every caller a locale-sensitive parse, while returning display text is what
+the application showed and changes an output shape the first capability's callers already see.
+`tests/integration/agent.second-capability.live.test.ts` asserts the behaviour AS IT IS, with the
+discrepancy named in the test, so the suite stays honest rather than green by omission.

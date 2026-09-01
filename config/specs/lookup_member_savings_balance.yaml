@@ -1,0 +1,108 @@
+# DiscoverySpec - the DECLARED half of the capability contract.
+#
+# ------------------------------------------------------------------------------------------------
+# STATUS: SPECIFIED AND DEMONSTRATED IN A TEST. THERE IS NO ARTIFACT FOR IT IN ANY STORE.
+# ------------------------------------------------------------------------------------------------
+# A spec file a reviewer finds and cannot run is worse than one that is not there, so read this
+# before reaching for a replay command.
+#
+#   `tests/integration/agent.second-capability.live.test.ts` drives this spec end to end - scripted
+#   discovery, distillation, validation, replay on a fresh fixture boot - and needs no API key:
+#
+#       npx vitest run tests/integration/agent.second-capability.live.test.ts
+#
+#   There is NO approved artifact in `/artifacts`, none in `examples/artifacts/`, and `npm run
+#   demo:store` seeds only the first capability. `npm run replay --artifact
+#   lookup_member_savings_balance@1.0.0` will therefore tell you it is not in the store, correctly.
+#
+#   There is NO scenario for it in the evidence bundle. The bundle is single-capability by
+#   construction; see DECISIONS.md D97 for the eight hardcoded sites and why generalising the
+#   HARNESS was not taken.
+#
+#   To produce an artifact yourself, with an API key, one real model call:
+#
+#       npm run discover -- --spec config/specs/lookup_member_savings_balance.yaml
+#         --target tenant-a --inputs '{"memberId":"10001"}'
+#
+# ------------------------------------------------------------------------------------------------
+#
+# THE SECOND CAPABILITY, and its reason for existing is the question it answers: is the artifact
+# schema a capability FORMAT, or a schema fitted to one flow? This spec deliberately adds nothing
+# new to the mechanism - it reuses the first capability's search-and-open path and stops where that
+# one keeps going. If the schema is general, this costs a YAML file and a discovery run and no code.
+#
+# READ-ONLY on purpose. The capability navigates and reads; it fills no form and its success screen
+# is the member record itself. That exercises two things the first capability could not:
+#   - a flow whose last steps are pure reads (the distiller's read-step exemption, D19, on the
+#     happy path rather than only in its own test)
+#   - a currency OUTPUT, where the first capability only had a currency INPUT
+#
+# The profiles are the SAME pinned files as the first capability. The condition profile's id says
+# "subaccount" and its detectors are screen-level facts about MERIDIAN - member not found, session
+# expired, permission denied, the maintenance notice - none of which is specific to sub-accounts.
+# Profiles are immutable (CLAUDE.md clarification 1), so reusing them unchanged is not convenience,
+# it is the claim that they were written about the application rather than about one flow.
+#
+# NOTE: every `example` below is obviously synthetic and is deliberately chosen NOT to collide with
+# any value used in an evidence run (member 00000 does not exist in the fixture seed data).
+
+capabilityId: lookup_member_savings_balance
+name: Look up member savings balance
+description: >-
+  Open a member record in MERIDIAN Core Servicing and read the member's name and the balance of
+  their savings account. Nothing is entered, changed, or prepared: the capability is a typed
+  read-only query over a UI that has no API.
+
+goalTemplate: >-
+  In MERIDIAN Core Servicing, find member {{memberId}}, open their member record, and read the
+  member's name and the balance of their Savings account. Do not change anything.
+
+target:
+  product: MERIDIAN Core Servicing
+  entryPoint: http://localhost:4180/
+  compatibility:
+    versionRange: '>=3.2.0 <4.0.0'
+
+inputs:
+  - name: memberId
+    type: string
+    pattern: '^[0-9]{5}$'
+    required: true
+    sensitivity: pii
+    description: Five-digit member identifier used to locate the member record.
+    example: '00000'
+
+outputs:
+  - name: memberName
+    type: string
+    sensitivity: pii
+    required: true
+    when: success
+    description: The member's name as displayed on the member record.
+
+  - name: savingsBalance
+    type: currency
+    sensitivity: pii
+    required: true
+    when: success
+    description: >-
+      The balance of the member's Savings account, as the application displays it. Compared in
+      minor units, never as a string.
+
+recordIdentity:
+  param: memberId
+  description: displayed member identity
+
+logicalStates:
+  - login
+  - member_search
+  - search_results
+  - member_detail
+
+conditionProfile:
+  id: meridian-subaccount
+  version: 1.0.0
+
+safetyProfile:
+  id: banking-default
+  version: 1.0.0

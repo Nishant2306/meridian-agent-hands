@@ -753,3 +753,31 @@ tested, and the bundle exists once somebody with an API key runs it.
   - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 531 passing across
     56 files. `npm run evidence:verify` 29 of 29.
   - **Decisions recorded**: `DECISIONS.md` D96.
+
+- **FINAL PASS** - presentation, and a second capability that answered the question it was built for.
+  - **The architecture diagram was already there** (`README.md`, Mermaid, three modes over one input
+    path). A cold review reported it missing, which is what reading a pre-`52dadbd` state looks like.
+    `REPORT.md` section 1 now points at it.
+  - **README ordering only**: "Real, and deliberately not" lifted from the tail to just after the
+    diagram, and a two-line entry point under the opening paragraph. The demo path keeps its length
+    and position - it works from a clean clone and that is what earned it.
+  - **The reported dead `docs/adr/README.md` does not exist anywhere.** The gap was that nothing
+    MECHANICAL could say so: `contract/docs.paths` checked backticked code paths and not markdown
+    LINKS, which are the references a reviewer actually clicks. It checks both now, across eleven
+    documents, resolving relative links against each document's own directory. Mutation-tested with
+    the reported link, which it names.
+  - **[MUST] A SECOND CAPABILITY COSTS A SPEC FILE** (D97). `lookup_member_savings_balance`, a
+    read-only lookup, runs end to end through the same pipeline, distiller, validator and replay
+    engine with no schema and no engine change. What is single-capability is the EVIDENCE HARNESS:
+    eight hardcoded sites across five files, rooted in `scripts/evidence/lib/manifest.ts`. Of the 30
+    gate checks, 22 are per-capability and 8 bundle-wide. Generalising is an afternoon plus two paid
+    runs; the bundle passes 30 of 30 from a clean clone, so it stops here and `REPORT.md` section 7
+    states the finding with the file named.
+  - **One open defect, recorded not fixed** (D98). A declared `currency` OUTPUT comes back as display
+    text: `extractDeclaredOutput` calls `parseMoney` as a validity check and discards it, so the
+    `Money` half of `OutputValueSchema` has no producer. Nothing caught it because the first
+    capability has a currency input and no currency output. The test asserts the behaviour as it is,
+    with the discrepancy named, rather than being green by omission.
+  - **Verification**: `npm run typecheck` clean, `npm run lint` clean, `npm test` 546 passing across
+    57 files, `npm run evidence:verify` 30 of 30 with the bundle untouched.
+  - **Decisions recorded**: `DECISIONS.md` D97-D98.

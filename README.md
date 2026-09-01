@@ -7,6 +7,10 @@ parameterized capability artifact. The artifact then **replays deterministically
 the decision loop**, which is how an agent invokes the capability in production. The model
 discovers; the artifact becomes a reusable capability; deterministic replay is how it gets called.
 
+**In a hurry?** [The demo path](#the-demo-path) runs from a clean clone, needs no API key, and shows
+every claim below actually working. [Real, and deliberately not](#real-and-deliberately-not) says
+what is genuine and what is a stand-in.
+
 ---
 
 ## Architecture
@@ -61,6 +65,32 @@ numbers structurally cannot reach the artifact.
 
 ---
 
+## Real, and deliberately not
+
+| Thing                              | State                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Accessibility-first perception     | **Real.** CDP AX tree per frame, DOM enrichment, no CSS selector as evidence                                                                                                                                                                                                                                                                                                                                                                                       |
+| The T1-T5 locator cascade          | **Real**, and the tier actually used is asserted per control in evidence                                                                                                                                                                                                                                                                                                                                                                                           |
+| Discovery against a live UI        | **Real.** A model drives a real browser. Two gate runs are written up                                                                                                                                                                                                                                                                                                                                                                                              |
+| Distillation and content hashing   | **Real.** Approval is a status flip that does not move the content hash                                                                                                                                                                                                                                                                                                                                                                                            |
+| Deterministic replay               | **Real.** Zero model calls, proven architecturally and by a call counter                                                                                                                                                                                                                                                                                                                                                                                           |
+| Business outcomes and recoveries   | **Real**, driven by the pinned condition profile against a live fixture                                                                                                                                                                                                                                                                                                                                                                                            |
+| The safety policy                  | **Real**, in two layers. Irreversible actions are always blocked                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Pseudonymization and masking       | **Real.** Masking is verified in pixels, not by inspecting a manifest                                                                                                                                                                                                                                                                                                                                                                                              |
+| Human handoff on the same session  | **Real.** Same browser context and page target, evidenced before and after                                                                                                                                                                                                                                                                                                                                                                                         |
+| The operator console               | **Real but minimal by choice.** Loopback, token-gated, four routes, no live input forwarding                                                                                                                                                                                                                                                                                                                                                                       |
+| **The legacy banking application** | **A fixture.** Written for this project: frames, table-laid-out labels, ASP-style `name=`, no test ids, class names randomized per boot. Every record in it is invented and stamped `DUMMY DATA - NOT REAL`                                                                                                                                                                                                                                                        |
+| **The desktop adapter**            | **A stub.** It compiles, it throws, and it documents the real UI Automation call for every method. It proves the `Surface` contract is expressible without a browser and nothing more                                                                                                                                                                                                                                                                              |
+| **A second capability**            | **Specified and demonstrated in a test, with no artifact anywhere.** `config/specs/lookup_member_savings_balance.yaml` is a real spec that runs end to end under `tests/integration/agent.second-capability.live.test.ts` - no schema or engine change was needed. There is no approved artifact for it, `npm run demo:store` seeds only the first capability, and it has no scenario in the evidence bundle. `REPORT.md` section 7 and `DECISIONS.md` D97 say why |
+| **A second tenant**                | **Not built.** `semanticKey` exists on the descriptor and nothing reads it yet                                                                                                                                                                                                                                                                                                                                                                                     |
+| **`npm run operator`**             | **Not built.** It exits 2 and says so. The handoff needs no separate command                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Durable storage**                | **Not built.** Artifacts are files; the store refuses to overwrite a published version                                                                                                                                                                                                                                                                                                                                                                             |
+| **Enterprise identity**            | **Not built.** The fixture accepts any non-empty credential pair and no credential is stored in this repository                                                                                                                                                                                                                                                                                                                                                    |
+
+`REPORT.md` section 7 says what would come first with another week.
+
+---
+
 ## Setup
 
 ```bash
@@ -82,7 +112,7 @@ discovery is the part where a model is the point.
 npm test
 ```
 
-That is 531 tests across 56 files, browsers and CLIs included, and not one of them contacts a
+That is 546 tests across 57 files, browsers and CLIs included, and not one of them contacts a
 provider. It takes two to four minutes depending on the machine. `npm run test:fast` is the
 browser-free subset and finishes in about twelve seconds.
 
@@ -325,28 +355,3 @@ does **not** prove.
 | `docs/TEST_MAP.md`      | requirement to test, with an honest strength, and what is thin         |
 | `docs/DATA_HANDLING.md` | what is stored, pseudonymized, masked, never captured - and the LIMITS |
 | `evidence/README.md`    | the evidence bundle, scenario by scenario                              |
-
----
-
-## Real, and deliberately not
-
-| Thing                              | State                                                                                                                                                                                                       |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Accessibility-first perception     | **Real.** CDP AX tree per frame, DOM enrichment, no CSS selector as evidence                                                                                                                                |
-| The T1-T5 locator cascade          | **Real**, and the tier actually used is asserted per control in evidence                                                                                                                                    |
-| Discovery against a live UI        | **Real.** A model drives a real browser. Two gate runs are written up                                                                                                                                       |
-| Distillation and content hashing   | **Real.** Approval is a status flip that does not move the content hash                                                                                                                                     |
-| Deterministic replay               | **Real.** Zero model calls, proven architecturally and by a call counter                                                                                                                                    |
-| Business outcomes and recoveries   | **Real**, driven by the pinned condition profile against a live fixture                                                                                                                                     |
-| The safety policy                  | **Real**, in two layers. Irreversible actions are always blocked                                                                                                                                            |
-| Pseudonymization and masking       | **Real.** Masking is verified in pixels, not by inspecting a manifest                                                                                                                                       |
-| Human handoff on the same session  | **Real.** Same browser context and page target, evidenced before and after                                                                                                                                  |
-| The operator console               | **Real but minimal by choice.** Loopback, token-gated, four routes, no live input forwarding                                                                                                                |
-| **The legacy banking application** | **A fixture.** Written for this project: frames, table-laid-out labels, ASP-style `name=`, no test ids, class names randomized per boot. Every record in it is invented and stamped `DUMMY DATA - NOT REAL` |
-| **The desktop adapter**            | **A stub.** It compiles, it throws, and it documents the real UI Automation call for every method. It proves the `Surface` contract is expressible without a browser and nothing more                       |
-| **A second tenant**                | **Not built.** `semanticKey` exists on the descriptor and nothing reads it yet                                                                                                                              |
-| **`npm run operator`**             | **Not built.** It exits 2 and says so. The handoff needs no separate command                                                                                                                                |
-| **Durable storage**                | **Not built.** Artifacts are files; the store refuses to overwrite a published version                                                                                                                      |
-| **Enterprise identity**            | **Not built.** The fixture accepts any non-empty credential pair and no credential is stored in this repository                                                                                             |
-
-`REPORT.md` section 7 says what would come first with another week.

@@ -64,6 +64,14 @@ export interface ScriptedRunOptions {
    * CLI sends - and check what crosses the model boundary against what reaches disk.
    */
   goal?: string;
+  /**
+   * Which DiscoverySpec to drive. Defaults to the first capability's.
+   *
+   * A parameter of the TEST HARNESS, not of anything in src/: the CLI has taken `--spec` since
+   * PHASE 4. It exists so the second capability's spec can be driven through the same scripted
+   * pipeline, which is what proves the schema generalises without paying for a model run.
+   */
+  specPath?: string;
   headless?: boolean;
 }
 
@@ -81,7 +89,7 @@ export async function runScriptedDiscovery(options: ScriptedRunOptions): Promise
   const lease = new LeaseManager();
   const session = new SessionStateMachine();
   const resolver = new DefaultTargetResolver();
-  const loaded = loadDiscoverySpec(SPEC_PATH);
+  const loaded = loadDiscoverySpec(options.specPath ?? SPEC_PATH);
 
   const surface = new PlaywrightWebSurface({
     page: browser.page,

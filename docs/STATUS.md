@@ -21,7 +21,7 @@ npx playwright install chromium
 npm run typecheck && npm run lint && npm test
 ```
 
-Expect: no type errors, no lint errors, and **531 tests passing across 56 files**.
+Expect: no type errors, no lint errors, and **546 tests passing across 57 files**.
 
 **No test needs an API key.** Only `npm run discover` and `npm run evidence:automated` call a model.
 
@@ -1579,6 +1579,89 @@ FAIL, and the README must name the run the manifest names - which is what catche
 failure, a bundle regenerated while its README still describes the previous one. D96.
 
 **29 of 29.**
+
+---
+
+## The second capability, and where this stops
+
+The artifact schema had been demonstrated exactly once, which leaves a fair doubt: is it a capability
+FORMAT, or a schema fitted to one flow? The only honest way to settle that is to build a second one
+and report what it cost.
+
+### It cost a spec file
+
+`config/specs/lookup_member_savings_balance.yaml` is a read-only lookup - sign on, search by member
+id, open the record, read the member's name and Savings balance. Driven through the same scripted
+pipeline, the same distiller, the same validator and the same replay engine:
+
+|                                                                 |      |
+| --------------------------------------------------------------- | ---- |
+| discovery, distillation, validation take the new spec unchanged | pass |
+| replay on a fresh fixture boot, `llmCalls: 0`                   | pass |
+| `MEMBER_NOT_FOUND` from the SAME pinned condition profile       | pass |
+| three steps, read-only tail                                     | pass |
+
+**No schema change and no engine change.** Nothing in `src/` had to learn the capability's name. The
+one harness change was an optional `specPath` on the test helper, because the CLI has taken `--spec`
+since PHASE 4.
+
+It also exercised two shapes the first capability structurally could not: a flow whose last steps are
+pure READS, so the D19 read-step exemption is on the happy path rather than only in its own test; and
+a currency OUTPUT, where the first capability had only a currency input.
+
+```bash
+npx vitest run tests/integration/agent.second-capability.live.test.ts
+```
+
+### What the spec file is, and is not
+
+**It ships in the repository, and there is no artifact for it anywhere.** A spec a reviewer finds
+and cannot run is worse than one that is not there, so the file says this in its own header too:
+
+|                                                            |                                                                                                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| runs end to end, no API key                                | `npx vitest run tests/integration/agent.second-capability.live.test.ts`                                                        |
+| approved artifact in `/artifacts` or `examples/artifacts/` | **none**                                                                                                                       |
+| seeded by `npm run demo:store`                             | **no** - that seeds only the first capability                                                                                  |
+| scenario in the evidence bundle                            | **none** - the bundle is single-capability by construction                                                                     |
+| produce one yourself, one real model call                  | `npm run discover -- --spec config/specs/lookup_member_savings_balance.yaml --target tenant-a --inputs '{"memberId":"10001"}'` |
+
+`npm run replay -- --artifact lookup_member_savings_balance@1.0.0` correctly reports that it is not
+in the store. That is the store refusing to pretend, not a broken demo path.
+
+### What is single-capability is the EVIDENCE HARNESS
+
+That is the more precise claim, and it is checkable. Eight hardcoded sites across five files, rooted
+in `scripts/evidence/lib/manifest.ts`, where `capability`, `discoveryRunId`, `discovery` and
+`fixtureSeeds` are singular and `replayRunIds` is a strictObject of six FIXED scenario names.
+
+The scenario set is the crux rather than the loop. The second capability is read-only, so it has no
+`recovery` and no `unavailable` - both live on the sub-account form. And `EXPECTED_TIERS` requires all
+three control kinds to be exercised, while this capability never drives a table-labelled field,
+because its T3 reads are outputs and reads emit no steps. Per-capability expectations are DATA the
+harness has no place for yet.
+
+Of the 30 required gate checks, **22 are per-capability** and **8 are bundle-wide**.
+
+### Why it stops here
+
+Generalising is an afternoon - six to seven hours, dominated by the README renderer, whose flat
+markdown template has no seam for repetition, and by threading a capability through 1,062 lines of
+verifier - plus two paid discovery runs and a bundle migration. Weighed against a bundle that passes
+**30 of 30 from a clean clone**, it does not earn its cost. `REPORT.md` section 7 states the finding
+instead. D97.
+
+### One open defect, recorded rather than fixed
+
+A declared `currency` OUTPUT comes back as display text. `src/types/run.ts` says _"Currency outputs
+are Money, never a float or a string"_, and `extractDeclaredOutput` returns a string unconditionally:
+for a currency output it calls `parseMoney` as a validity check, discards the result, and returns the
+display text. Nothing in `src/` ever constructs a Money into an outputs record.
+
+Nothing caught it because the first capability has a currency INPUT and no currency OUTPUT - typed
+comparison was exercised on the way in and never on the way out. The fix is one conversion at the
+extraction seam that discovery and replay already share. The test asserts the behaviour AS IT IS, with
+the discrepancy named, so the suite is honest rather than green by omission. D98.
 
 ---
 
